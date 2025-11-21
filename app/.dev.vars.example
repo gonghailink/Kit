@@ -1,0 +1,5 @@
+# 複製此檔案為 .dev.vars 並填入你的 Supabase 資訊
+# .dev.vars 已被加入 .gitignore，不會被提交到 Git
+
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-key-here

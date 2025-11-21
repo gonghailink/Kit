@@ -1,0 +1,7 @@
+name = "bookmarks-remix"
+compatibility_date = "2024-11-21"
+pages_build_output_dir = "./build/client"
+
+# 環境變數在 Cloudflare Dashboard 或 .dev.vars 中設定
+# VITE_SUPABASE_URL
+# VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
