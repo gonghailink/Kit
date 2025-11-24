@@ -87,6 +87,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
         const title = formData.get("title") as string | undefined;
         const url = formData.get("url") as string | undefined;
+        const memo = formData.get("memo") as string | undefined;
 
         if (!id) {
           return json({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
@@ -111,6 +112,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
           }
           updates.url = trimmedUrl;
           updates.favicon_url = getFaviconUrl(trimmedUrl);
+        }
+
+        if (memo !== undefined) {
+          updates.memo = memo.trim() || null;
         }
 
         if (Object.keys(updates).length === 0) {
@@ -179,6 +184,73 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         return json({ success: true }, { headers });
+      }
+
+      case "move": {
+        const id = formData.get("id") as string;
+        const newFolderId = formData.get("newFolderId") as string;
+
+        if (!id) {
+          return json({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
+        }
+
+        if (!newFolderId) {
+          return json({ error: "新資料夾 ID 是必要的" }, { status: 400, headers });
+        }
+
+        // 驗證書籤是否屬於當前使用者
+        const { data: bookmark } = await supabase
+          .from("bookmarks")
+          .select("id, folder_id")
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .single();
+
+        if (!bookmark) {
+          return json({ error: "找不到該書籤" }, { status: 404, headers });
+        }
+
+        // 驗證新資料夾是否屬於當前使用者
+        const { data: newFolder } = await supabase
+          .from("folders")
+          .select("id")
+          .eq("id", newFolderId)
+          .eq("user_id", user.id)
+          .single();
+
+        if (!newFolder) {
+          return json({ error: "找不到該資料夾" }, { status: 404, headers });
+        }
+
+        // 取得目標資料夾中最大的 sort_order
+        const { data: maxSortOrderData } = await supabase
+          .from("bookmarks")
+          .select("sort_order")
+          .eq("folder_id", newFolderId)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .single();
+
+        const newSortOrder = maxSortOrderData ? maxSortOrderData.sort_order + 1 : 0;
+
+        // 更新書籤的 folder_id 和 sort_order
+        const { data, error } = await supabase
+          .from("bookmarks")
+          .update({
+            folder_id: newFolderId,
+            sort_order: newSortOrder,
+          })
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error moving bookmark:", error);
+          return json({ error: error.message }, { status: 400, headers });
+        }
+
+        return json({ bookmark: data, success: true }, { headers });
       }
 
       default:

@@ -1,5 +1,13 @@
 # 複製此檔案為 .dev.vars 並填入你的 Supabase 資訊
 # .dev.vars 已被加入 .gitignore，不會被提交到 Git
 
+# Supabase URL (不含 /auth/v1 等後綴)
+SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-key-here
+
+# Supabase Anon/Public Key (不是 service_role key)
+SUPABASE_ANON_KEY=your-anon-public-key-here
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-anon-public-key-here
+
+# Supabase Service Role Key (僅用於伺服器端的管理操作，選填)
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here

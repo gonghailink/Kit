@@ -4,9 +4,17 @@ import type { Database } from "./types";
 export function createSupabaseServerClient(request: Request, env: any) {
   const headers = new Headers();
 
+  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const supabaseKey = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing Supabase environment variables:", { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
+    throw new Error("Missing Supabase environment variables");
+  }
+
   const supabase = createServerClient<Database>(
-    env.VITE_SUPABASE_URL,
-    env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {

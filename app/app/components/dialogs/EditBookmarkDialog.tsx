@@ -12,39 +12,51 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { Bookmark } from "~/lib/types";
 
-interface CreateTabDialogProps {
+interface EditBookmarkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  bookmark: Bookmark;
 }
 
-export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogProps) {
+export default function EditBookmarkDialog({ open, onOpenChange, bookmark }: EditBookmarkDialogProps) {
   const fetcher = useFetcher();
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(bookmark.title);
+  const [url, setUrl] = useState(bookmark.url);
+  const [memo, setMemo] = useState(bookmark.memo || "");
   const isSubmitting = fetcher.state === "submitting";
 
-  // 成功後關閉對話框並重置
+  // 當 bookmark 改變時更新表單
+  useEffect(() => {
+    setTitle(bookmark.title);
+    setUrl(bookmark.url);
+    setMemo(bookmark.memo || "");
+  }, [bookmark.title, bookmark.url, bookmark.memo]);
+
+  // 成功後關閉對話框並重新載入
   useEffect(() => {
     if (fetcher.data?.success && !isSubmitting) {
-      setTitle("");
       onOpenChange(false);
-      // 重新載入頁面以更新資料
       window.location.reload();
     }
   }, [fetcher.data, isSubmitting, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !url.trim()) return;
 
     fetcher.submit(
       {
-        intent: "create",
+        intent: "update",
+        id: bookmark.id,
         title: title.trim(),
+        url: url.trim(),
+        memo: memo.trim(),
       },
       {
         method: "post",
-        action: "/api/tabs",
+        action: "/api/bookmarks",
       }
     );
   };
@@ -53,23 +65,46 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>建立新 Tab</DialogTitle>
+          <DialogTitle>編輯書籤</DialogTitle>
           <DialogDescription>
-            建立一個新的 Tab 來組織您的書籤
+            修改書籤的標題、網址或備註
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="tab-title">Tab 名稱</Label>
+              <Label htmlFor="edit-bookmark-title">標題</Label>
               <Input
-                id="tab-title"
-                placeholder="例如：工作、學習、娛樂"
+                id="edit-bookmark-title"
+                placeholder="例如：Google"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
                 autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-bookmark-url">網址</Label>
+              <Input
+                id="edit-bookmark-url"
+                type="url"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-bookmark-memo">備註 (選填)</Label>
+              <Input
+                id="edit-bookmark-memo"
+                placeholder="例如：常用的搜尋引擎"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                disabled={isSubmitting}
               />
             </div>
 
@@ -89,14 +124,14 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
             >
               取消
             </Button>
-            <Button type="submit" disabled={isSubmitting || !title.trim()}>
+            <Button type="submit" disabled={isSubmitting || !title.trim() || !url.trim()}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  建立中...
+                  儲存中...
                 </>
               ) : (
-                "建立"
+                "儲存"
               )}
             </Button>
           </DialogFooter>

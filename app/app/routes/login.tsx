@@ -16,49 +16,57 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
-  const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  try {
+    const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
+    const formData = await request.formData();
+    const intent = formData.get("intent");
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-  if (!email || !password) {
-    return json(
-      { error: "請輸入 Email 和密碼" },
-      { status: 400 }
-    );
-  }
-
-  if (intent === "login") {
-    // 登入
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      return json({ error: error.message }, { status: 400 });
+    if (!email || !password) {
+      return json(
+        { error: "請輸入 Email 和密碼" },
+        { status: 400, headers }
+      );
     }
 
-    return redirect("/dashboard", { headers });
-  } else if (intent === "signup") {
-    // 註冊
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    if (intent === "login") {
+      // 登入
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      return json({ error: error.message }, { status: 400 });
+      if (error) {
+        return json({ error: error.message }, { status: 400, headers });
+      }
+
+      return redirect("/dashboard", { headers });
+    } else if (intent === "signup") {
+      // 註冊
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return json({ error: error.message }, { status: 400, headers });
+      }
+
+      return json(
+        { success: "註冊成功！請檢查您的 Email 以驗證帳號。" },
+        { headers }
+      );
     }
 
+    return json({ error: "無效的操作" }, { status: 400, headers });
+  } catch (error) {
+    console.error("Login action error:", error);
     return json(
-      { success: "註冊成功！請檢查您的 Email 以驗證帳號。" },
-      { headers }
+      { error: error instanceof Error ? error.message : "登入時發生錯誤" },
+      { status: 500 }
     );
   }
-
-  return json({ error: "無效的操作" }, { status: 400 });
 }
 
 export default function Login() {

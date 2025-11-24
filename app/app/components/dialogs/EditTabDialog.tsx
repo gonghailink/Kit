@@ -12,23 +12,28 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { Tab } from "~/lib/types";
 
-interface CreateTabDialogProps {
+interface EditTabDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  tab: Tab;
 }
 
-export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogProps) {
+export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialogProps) {
   const fetcher = useFetcher();
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(tab.title);
   const isSubmitting = fetcher.state === "submitting";
 
-  // 成功後關閉對話框並重置
+  // 當 tab 改變時更新 title
+  useEffect(() => {
+    setTitle(tab.title);
+  }, [tab.title]);
+
+  // 成功後關閉對話框並重新載入
   useEffect(() => {
     if (fetcher.data?.success && !isSubmitting) {
-      setTitle("");
       onOpenChange(false);
-      // 重新載入頁面以更新資料
       window.location.reload();
     }
   }, [fetcher.data, isSubmitting, onOpenChange]);
@@ -39,7 +44,8 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
 
     fetcher.submit(
       {
-        intent: "create",
+        intent: "update",
+        id: tab.id,
         title: title.trim(),
       },
       {
@@ -53,18 +59,18 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>建立新 Tab</DialogTitle>
+          <DialogTitle>編輯 Tab</DialogTitle>
           <DialogDescription>
-            建立一個新的 Tab 來組織您的書籤
+            修改 Tab 的名稱
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="tab-title">Tab 名稱</Label>
+              <Label htmlFor="edit-tab-title">Tab 名稱</Label>
               <Input
-                id="tab-title"
+                id="edit-tab-title"
                 placeholder="例如：工作、學習、娛樂"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -93,10 +99,10 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  建立中...
+                  儲存中...
                 </>
               ) : (
-                "建立"
+                "儲存"
               )}
             </Button>
           </DialogFooter>

@@ -12,23 +12,26 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { Folder } from "~/lib/types";
 
-interface CreateTabDialogProps {
+interface EditFolderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  folder: Folder;
 }
 
-export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogProps) {
+export default function EditFolderDialog({ open, onOpenChange, folder }: EditFolderDialogProps) {
   const fetcher = useFetcher();
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(folder.title);
   const isSubmitting = fetcher.state === "submitting";
 
-  // 成功後關閉對話框並重置
+  useEffect(() => {
+    setTitle(folder.title);
+  }, [folder.title]);
+
   useEffect(() => {
     if (fetcher.data?.success && !isSubmitting) {
-      setTitle("");
       onOpenChange(false);
-      // 重新載入頁面以更新資料
       window.location.reload();
     }
   }, [fetcher.data, isSubmitting, onOpenChange]);
@@ -37,35 +40,34 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
     e.preventDefault();
     if (!title.trim()) return;
 
-    fetcher.submit(
-      {
-        intent: "create",
-        title: title.trim(),
-      },
-      {
-        method: "post",
-        action: "/api/tabs",
-      }
-    );
+    const formData = new FormData();
+    formData.append("intent", "update");
+    formData.append("id", folder.id);
+    formData.append("title", title.trim());
+
+    fetcher.submit(formData, {
+      method: "post",
+      action: "/api/folders",
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>建立新 Tab</DialogTitle>
+          <DialogTitle>編輯資料夾</DialogTitle>
           <DialogDescription>
-            建立一個新的 Tab 來組織您的書籤
+            修改資料夾的名稱
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="tab-title">Tab 名稱</Label>
+              <Label htmlFor="edit-folder-title">資料夾名稱</Label>
               <Input
-                id="tab-title"
-                placeholder="例如：工作、學習、娛樂"
+                id="edit-folder-title"
+                placeholder="例如：前端開發、設計資源"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
@@ -93,10 +95,10 @@ export default function CreateTabDialog({ open, onOpenChange }: CreateTabDialogP
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  建立中...
+                  儲存中...
                 </>
               ) : (
-                "建立"
+                "儲存"
               )}
             </Button>
           </DialogFooter>

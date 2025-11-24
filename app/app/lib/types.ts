@@ -30,6 +30,13 @@ export interface Bookmark {
   created_at: string;
 }
 
+export interface Share {
+  id: string;
+  user_id: string;
+  share_token: string;
+  created_at: string;
+}
+
 // UI 用的巢狀結構型別
 export interface FolderWithChildren extends Folder {
   children?: FolderWithChildren[];
@@ -58,6 +65,11 @@ export interface Database {
         Row: Bookmark;
         Insert: Omit<Bookmark, "id" | "created_at">;
         Update: Partial<Omit<Bookmark, "id" | "user_id" | "created_at">>;
+      };
+      shares: {
+        Row: Share;
+        Insert: Omit<Share, "id" | "created_at">;
+        Update: Partial<Omit<Share, "id" | "user_id" | "created_at">>;
       };
     };
   };
