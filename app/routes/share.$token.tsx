@@ -1,10 +1,21 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
 import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { buildFolderTree } from "~/lib/utils";
+
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  const title = data?.share?.name
+    ? `${data.share.name}的精選書籤`
+    : "精選書籤";
+
+  return [
+    { title },
+    { name: "description", content: "分享的書籤收藏" },
+  ];
+};
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const { token } = params;
