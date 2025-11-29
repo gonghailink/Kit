@@ -685,7 +685,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <BookmarkIcon className="w-6 h-6 text-primary" />
+              <BookmarkIcon className="w-6 h-6 text-black" />
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 書籤管理器
               </h1>

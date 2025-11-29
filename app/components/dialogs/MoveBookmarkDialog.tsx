@@ -66,49 +66,57 @@ export default function MoveBookmarkDialog({
 
     return (
       <div key={folder.id}>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isCurrentFolder) {
-              setSelectedFolderId(folder.id);
-            }
-          }}
-          disabled={isCurrentFolder}
-          className={`
-            w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg transition-colors
-            ${isCurrentFolder
-              ? "opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800"
-              : isSelected
-              ? "bg-primary text-primary-foreground"
-              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-            }
-          `}
-          style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
-        >
-          {hasChildren ? (
+        <div className="w-full flex items-center">
+          <div
+            className={`
+              flex items-center gap-2 px-3 py-2 rounded-lg transition-colors flex-1
+              ${isCurrentFolder
+                ? "opacity-50 bg-gray-100 dark:bg-gray-800"
+                : isSelected
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+              }
+            `}
+            style={{ marginLeft: `${level * 1.5}rem` }}
+          >
+            {hasChildren ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFolder(folder.id);
+                }}
+                className="flex-shrink-0 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+            ) : (
+              <span className="w-5" />
+            )}
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFolder(folder.id);
+              onClick={() => {
+                if (!isCurrentFolder) {
+                  setSelectedFolderId(folder.id);
+                }
               }}
-              className="flex-shrink-0 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+              disabled={isCurrentFolder}
+              className={`flex items-center gap-2 flex-1 min-w-0 text-left ${
+                isCurrentFolder ? "cursor-not-allowed" : ""
+              }`}
             >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
+              <Folder className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 truncate">{folder.title}</span>
+              {isCurrentFolder && (
+                <span className="text-xs opacity-70">(當前資料夾)</span>
               )}
             </button>
-          ) : (
-            <span className="w-4" />
-          )}
-          <Folder className="w-4 h-4 flex-shrink-0" />
-          <span className="flex-1 truncate">{folder.title}</span>
-          {isCurrentFolder && (
-            <span className="text-xs opacity-70">(當前資料夾)</span>
-          )}
-        </button>
+          </div>
+        </div>
 
         {hasChildren && isExpanded && (
           <div>

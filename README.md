@@ -27,7 +27,7 @@
 
 ## 📦 專案結構
 
-\`\`\`
+```
 app/
 ├── functions/[[path]].ts    # Cloudflare Pages Functions 入口
 ├── app/
@@ -52,16 +52,16 @@ app/
 ├── tailwind.config.ts           # Tailwind 配置
 ├── components.json              # shadcn/ui 配置
 └── package.json
-\`\`\`
+```
 
 ## 🚀 快速開始
 
 ### 1. 安裝依賴
 
-\`\`\`bash
+```bash
 cd app
 npm install
-\`\`\`
+```
 
 ### 2. 設定 Supabase
 
@@ -70,23 +70,23 @@ npm install
 3. 複製 `.dev.vars.example` 為 `.dev.vars`
 4. 填入你的 Supabase 資訊：
 
-\`\`\`env
+```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-\`\`\`
+```
 
 ### 3. 本地開發
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 開啟 [http://localhost:5173](http://localhost:5173)
 
 ### 4. 建置與部署
 
-\`\`\`bash
+```bash
 # 建置
 npm run build
 
@@ -95,13 +95,13 @@ npm start
 
 # 部署到 Cloudflare Pages
 npm run deploy
-\`\`\`
+```
 
 ## 🗄️ 資料庫設定
 
 在 Supabase SQL Editor 執行以下 SQL：
 
-\`\`\`sql
+```sql
 -- 1. Tabs 表：最頂層的分頁
 create table public.tabs (
   id uuid default gen_random_uuid() primary key,
@@ -131,14 +131,31 @@ create table public.bookmarks (
   title text not null,
   url text not null,
   favicon_url text,
+  memo text,
   sort_order float default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. 設定 RLS (Row Level Security)
+-- 4. Shares 表：分享連結
+create table public.shares (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  share_token text not null unique,
+  short_link text,
+  extra_btn_title text,
+  extra_btn_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 為 short_link 新增唯一索引（null 值不受影響）
+create unique index shares_short_link_unique on public.shares (short_link)
+  where short_link is not null;
+
+-- 5. 設定 RLS (Row Level Security)
 alter table public.tabs enable row level security;
 alter table public.folders enable row level security;
 alter table public.bookmarks enable row level security;
+alter table public.shares enable row level security;
 
 create policy "Users can CRUD their own tabs" on public.tabs
   for all using (auth.uid() = user_id);
@@ -148,7 +165,13 @@ create policy "Users can CRUD their own folders" on public.folders
 
 create policy "Users can CRUD their own bookmarks" on public.bookmarks
   for all using (auth.uid() = user_id);
-\`\`\`
+
+create policy "Users can CRUD their own shares" on public.shares
+  for all using (auth.uid() = user_id);
+
+create policy "Anyone can read shares by token" on public.shares
+  for select using (true);
+```
 
 ## 🔧 Cloudflare Pages 部署設定
 
@@ -168,9 +191,9 @@ create policy "Users can CRUD their own bookmarks" on public.bookmarks
 
 ### 方式二：手動部署
 
-\`\`\`bash
+```bash
 npm run deploy
-\`\`\`
+```
 
 ## 📝 待實作功能
 

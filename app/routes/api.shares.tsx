@@ -55,6 +55,70 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "您已經建立過分享連結" }, { status: 400, headers });
         }
 
+        // 取得顯示名稱
+        const name = formData.get("name") as string | null;
+
+        // 取得自訂短網址
+        const shortLink = formData.get("short_link") as string | null;
+
+        // 取得附加按鈕參數
+        const extraBtnTitle = formData.get("extra_btn_title") as string | null;
+        const extraBtnUrl = formData.get("extra_btn_url") as string | null;
+
+        // 驗證短網址格式
+        if (shortLink) {
+          // 只允許英數字、底線和連字號
+          const shortLinkRegex = /^[a-zA-Z0-9_-]+$/;
+          if (!shortLinkRegex.test(shortLink)) {
+            return json<ActionData>(
+              { error: "短網址只能包含英數字、底線和連字號" },
+              { status: 400, headers }
+            );
+          }
+
+          // 檢查長度
+          if (shortLink.length < 3 || shortLink.length > 50) {
+            return json<ActionData>(
+              { error: "短網址長度必須在 3-50 個字元之間" },
+              { status: 400, headers }
+            );
+          }
+
+          // 檢查短網址是否已被使用
+          const { data: existingShortLink } = await supabase
+            .from("shares")
+            .select("id")
+            .eq("short_link", shortLink)
+            .single();
+
+          if (existingShortLink) {
+            return json<ActionData>(
+              { error: "這個短網址已被使用，請換一個" },
+              { status: 400, headers }
+            );
+          }
+        }
+
+        // 驗證附加按鈕（兩個都填或兩個都不填）
+        if ((extraBtnTitle && !extraBtnUrl) || (!extraBtnTitle && extraBtnUrl)) {
+          return json<ActionData>(
+            { error: "附加按鈕的標題和網址必須同時填寫或同時留空" },
+            { status: 400, headers }
+          );
+        }
+
+        // 驗證附加按鈕 URL 格式
+        if (extraBtnUrl) {
+          try {
+            new URL(extraBtnUrl);
+          } catch {
+            return json<ActionData>(
+              { error: "附加按鈕的網址格式不正確" },
+              { status: 400, headers }
+            );
+          }
+        }
+
         // 生成唯一的分享 token
         const shareToken = crypto.randomUUID().replace(/-/g, "");
 
@@ -64,6 +128,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .insert({
             user_id: user.id,
             share_token: shareToken,
+            name: name || null,
+            short_link: shortLink || null,
+            extra_btn_title: extraBtnTitle || null,
+            extra_btn_url: extraBtnUrl || null,
           })
           .select()
           .single();

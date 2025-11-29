@@ -34,6 +34,10 @@ export interface Share {
   id: string;
   user_id: string;
   share_token: string;
+  short_link: string | null;
+  name: string | null;
+  extra_btn_title: string | null;
+  extra_btn_url: string | null;
   created_at: string;
 }
 

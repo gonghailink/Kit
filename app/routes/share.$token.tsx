@@ -2,8 +2,8 @@ import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { useLoaderData, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp } from "lucide-react";
+import { useState, useEffect } from "react";
 import { buildFolderTree } from "~/lib/utils";
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
@@ -71,7 +71,15 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       ),
     }));
 
-    return json({ tabs: tabsWithFolders, shareToken: token });
+    return json({
+      tabs: tabsWithFolders,
+      shareToken: token,
+      share: {
+        name: share.name,
+        extra_btn_title: share.extra_btn_title,
+        extra_btn_url: share.extra_btn_url,
+      }
+    });
   } catch (error) {
     console.error("Share page error:", error);
     if (error instanceof Response) {
@@ -165,20 +173,45 @@ function FolderTree({ folder }: { folder: FolderWithChildren }) {
 }
 
 export default function SharePage() {
-  const { tabs } = useLoaderData<typeof loader>();
+  const { tabs, share } = useLoaderData<typeof loader>();
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-lg p-6 pb-0 space-y-2">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-lg px-6 pt-4 pb-0 space-y-2">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              分享的書籤
+          <div className="flex items-center space-x-3">
+            <img src="/favicon.png" alt="logo" className="w-6 h-6" />
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              {share.name ? `${share.name}的精選書籤` : "精選書籤"}
             </h1>
           </div>
+          {share.extra_btn_title && share.extra_btn_url && (
+            <a
+              href={share.extra_btn_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
+            >
+              {share.extra_btn_title}
+            </a>
+          )}
         </div>
         {/* Tabs Bar */}
         {tabs.length > 0 && (
@@ -234,6 +267,17 @@ export default function SharePage() {
           </p>
         </div>
       </div>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+          aria-label="返回頂部"
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
+      )}
     </div>
   );
 }
