@@ -20,6 +20,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import CreateTabDialog from "~/components/dialogs/CreateTabDialog";
@@ -289,6 +290,101 @@ function SortableTabItem({
   );
 }
 
+// Sortable Folder Component
+function SortableFolder({
+  folder,
+  isNested = false,
+  onEdit,
+  onDelete,
+  onCreateSubfolder,
+  onCreateBookmark,
+  children,
+}: {
+  folder: FolderWithChildren;
+  isNested?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onCreateSubfolder: () => void;
+  onCreateBookmark: () => void;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: folder.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="group flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <h2 className={`${isNested ? 'text-md font-medium text-gray-700 dark:text-gray-300' : 'text-lg font-semibold text-gray-900 dark:text-white'}`}>
+            {isNested ? `└─ ${folder.title}` : folder.title}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isNested && (
+            <button
+              onClick={onCreateBookmark}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              title="新增書籤"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <MoreVertical className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onCreateSubfolder}>
+                <Plus className="w-4 h-4" />
+                新增子資料夾
+              </DropdownMenuItem>
+              {isNested && (
+                <DropdownMenuItem onClick={onCreateBookmark}>
+                  <Plus className="w-4 h-4" />
+                  新增書籤
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="w-4 h-4" />
+                編輯
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+                刪除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { tabs: initialTabs, user } = useLoaderData<typeof loader>();
   const [tabs, setTabs] = useState(initialTabs);
@@ -371,8 +467,8 @@ export default function Dashboard() {
     }
   };
 
-  // Handle folder reorder
-  const handleFolderDragEnd = (folderId: string) => (event: DragEndEvent) => {
+  // Handle bookmark reorder within a folder
+  const handleBookmarkDragEnd = (folderId: string) => (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -409,6 +505,107 @@ export default function Dashboard() {
                 return folders.map((f) =>
                   f.id === folderId
                     ? { ...f, bookmarks: newBookmarks }
+                    : { ...f, children: f.children ? updateFolders(f.children) : [] }
+                );
+              }
+            }
+
+            // 遞迴處理子資料夾
+            return folders.map((f) => ({
+              ...f,
+              children: f.children ? updateFolders(f.children) : [],
+            }));
+          };
+
+          return {
+            ...tab,
+            folders: updateFolders(tab.folders),
+          };
+        });
+      });
+    }
+  };
+
+  // Handle top-level folder reorder
+  const handleTopLevelFolderDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setTabs((prevTabs) => {
+        return prevTabs.map((tab) => {
+          if (tab.id !== activeTabId) return tab;
+
+          const oldIndex = tab.folders.findIndex((f) => f.id === active.id);
+          const newIndex = tab.folders.findIndex((f) => f.id === over.id);
+
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const newFolders = arrayMove(tab.folders, oldIndex, newIndex);
+
+            // 提交到 API
+            const ids = newFolders.map((f) => f.id);
+            const sortOrders = newFolders.map((_, index) => (index + 1) * 1000);
+
+            reorderFoldersFetcher.submit(
+              {
+                intent: "reorder",
+                ids: JSON.stringify(ids),
+                sortOrders: JSON.stringify(sortOrders),
+              },
+              {
+                method: "post",
+                action: "/api/folders",
+              }
+            );
+
+            return {
+              ...tab,
+              folders: newFolders,
+            };
+          }
+
+          return tab;
+        });
+      });
+    }
+  };
+
+  // Handle nested folder reorder
+  const handleNestedFolderDragEnd = (parentId: string) => (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setTabs((prevTabs) => {
+        return prevTabs.map((tab) => {
+          if (tab.id !== activeTabId) return tab;
+
+          const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
+            const parentFolder = folders.find((f) => f.id === parentId);
+            if (parentFolder && parentFolder.children) {
+              const oldIndex = parentFolder.children.findIndex((f) => f.id === active.id);
+              const newIndex = parentFolder.children.findIndex((f) => f.id === over.id);
+
+              if (oldIndex !== -1 && newIndex !== -1) {
+                const newChildren = arrayMove(parentFolder.children, oldIndex, newIndex);
+
+                // 提交到 API
+                const ids = newChildren.map((f) => f.id);
+                const sortOrders = newChildren.map((_, index) => (index + 1) * 1000);
+
+                reorderFoldersFetcher.submit(
+                  {
+                    intent: "reorder",
+                    ids: JSON.stringify(ids),
+                    sortOrders: JSON.stringify(sortOrders),
+                  },
+                  {
+                    method: "post",
+                    action: "/api/folders",
+                  }
+                );
+
+                return folders.map((f) =>
+                  f.id === parentId
+                    ? { ...f, children: newChildren }
                     : { ...f, children: f.children ? updateFolders(f.children) : [] }
                 );
               }
@@ -626,202 +823,155 @@ export default function Dashboard() {
               </div>
             ) : (
               <div>
-                <div className="space-y-8">
-                  {filteredActiveTab?.folders.map((folder) => (
-                  <div key={folder.id}>
-                    {/* Folder Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {folder.title}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
+                {/* Top-level Folders with Drag and Drop */}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleTopLevelFolderDragEnd}
+                >
+                  <SortableContext
+                    items={filteredActiveTab?.folders.map((f) => f.id) || []}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-8">
+                      {filteredActiveTab?.folders.map((folder) => (
+                        <SortableFolder
+                          key={folder.id}
+                          folder={folder}
+                          onEdit={() => {
+                            setEditingFolder(folder);
+                            setShowEditFolderDialog(true);
+                          }}
+                          onDelete={() => {
+                            setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
+                            setShowDeleteDialog(true);
+                          }}
+                          onCreateSubfolder={() => {
+                            setParentFolderId(folder.id);
+                            setShowCreateFolderDialog(true);
+                          }}
+                          onCreateBookmark={() => {
                             setSelectedFolderId(folder.id);
                             setSelectedFolderName(folder.title);
                             setShowCreateBookmarkDialog(true);
                           }}
-                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                          title="新增書籤"
                         >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setParentFolderId(folder.id);
-                                setShowCreateFolderDialog(true);
-                              }}
+                          {/* Bookmarks Grid */}
+                          {folder.bookmarks && folder.bookmarks.length > 0 ? (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleBookmarkDragEnd(folder.id)}
                             >
-                              <Plus className="w-4 h-4" />
-                              新增子資料夾
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setEditingFolder(folder);
-                                setShowEditFolderDialog(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                              編輯
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
-                                setShowDeleteDialog(true);
-                              }}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              刪除
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
+                              <SortableContext items={folder.bookmarks.map((b) => b.id)}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                  {folder.bookmarks.map((bookmark) => (
+                                    <SortableBookmark
+                                      key={bookmark.id}
+                                      bookmark={bookmark}
+                                      onEdit={() => {
+                                        setEditingBookmark(bookmark);
+                                        setShowEditBookmarkDialog(true);
+                                      }}
+                                      onMove={() => {
+                                        setMovingBookmark(bookmark);
+                                        setMovingBookmarkFolderId(folder.id);
+                                        setShowMoveBookmarkDialog(true);
+                                      }}
+                                      onDelete={() => {
+                                        setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+                                        setShowDeleteDialog(true);
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          ) : (
+                            <div className="text-center py-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                此資料夾尚無書籤
+                              </p>
+                            </div>
+                          )}
 
-                    {/* Bookmarks Grid */}
-                    {folder.bookmarks && folder.bookmarks.length > 0 ? (
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleFolderDragEnd(folder.id)}
-                      >
-                        <SortableContext items={folder.bookmarks.map((b) => b.id)}>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {folder.bookmarks.map((bookmark) => (
-                              <SortableBookmark
-                                key={bookmark.id}
-                                bookmark={bookmark}
-                                onEdit={() => {
-                                  setEditingBookmark(bookmark);
-                                  setShowEditBookmarkDialog(true);
-                                }}
-                                onMove={() => {
-                                  setMovingBookmark(bookmark);
-                                  setMovingBookmarkFolderId(folder.id);
-                                  setShowMoveBookmarkDialog(true);
-                                }}
-                                onDelete={() => {
-                                  setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                  setShowDeleteDialog(true);
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                    ) : (
-                      <div className="text-center py-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          此資料夾尚無書籤
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Nested Folders */}
-                    {folder.children && folder.children.length > 0 && (
-                      <div className="mt-6 ml-6 space-y-6">
-                        {folder.children.map((childFolder) => (
-                          <div key={childFolder.id}>
-                            <div className="flex items-center justify-between mb-3">
-                              <h3 className="text-md font-medium text-gray-700 dark:text-gray-300">
-                                └─ {childFolder.title}
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                      <MoreVertical className="w-3 h-3" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
+                          {/* Nested Folders with Drag and Drop */}
+                          {folder.children && folder.children.length > 0 && (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleNestedFolderDragEnd(folder.id)}
+                            >
+                              <SortableContext
+                                items={folder.children.map((f) => f.id)}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <div className="mt-6 ml-6 space-y-6">
+                                  {folder.children.map((childFolder) => (
+                                    <SortableFolder
+                                      key={childFolder.id}
+                                      folder={childFolder}
+                                      isNested={true}
+                                      onEdit={() => {
+                                        setEditingFolder(childFolder);
+                                        setShowEditFolderDialog(true);
+                                      }}
+                                      onDelete={() => {
+                                        setDeleteResource({ type: "folder", id: childFolder.id, title: childFolder.title });
+                                        setShowDeleteDialog(true);
+                                      }}
+                                      onCreateSubfolder={() => {
                                         setParentFolderId(childFolder.id);
                                         setShowCreateFolderDialog(true);
                                       }}
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                      新增子資料夾
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
+                                      onCreateBookmark={() => {
                                         setSelectedFolderId(childFolder.id);
                                         setSelectedFolderName(childFolder.title);
                                         setShowCreateBookmarkDialog(true);
                                       }}
                                     >
-                                      <Plus className="w-4 h-4" />
-                                      新增書籤
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setEditingFolder(childFolder);
-                                        setShowEditFolderDialog(true);
-                                      }}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                      編輯
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setDeleteResource({ type: "folder", id: childFolder.id, title: childFolder.title });
-                                        setShowDeleteDialog(true);
-                                      }}
-                                      className="text-destructive focus:text-destructive"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      刪除
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                            {childFolder.bookmarks && childFolder.bookmarks.length > 0 && (
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleFolderDragEnd(childFolder.id)}
-                              >
-                                <SortableContext items={childFolder.bookmarks.map((b) => b.id)}>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {childFolder.bookmarks.map((bookmark) => (
-                                      <SortableBookmark
-                                        key={bookmark.id}
-                                        bookmark={bookmark}
-                                        onEdit={() => {
-                                          setEditingBookmark(bookmark);
-                                          setShowEditBookmarkDialog(true);
-                                        }}
-                                        onMove={() => {
-                                          setMovingBookmark(bookmark);
-                                          setMovingBookmarkFolderId(childFolder.id);
-                                          setShowMoveBookmarkDialog(true);
-                                        }}
-                                        onDelete={() => {
-                                          setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                          setShowDeleteDialog(true);
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </SortableContext>
-                              </DndContext>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  ))}
-                </div>
+                                      {childFolder.bookmarks && childFolder.bookmarks.length > 0 && (
+                                        <DndContext
+                                          sensors={sensors}
+                                          collisionDetection={closestCenter}
+                                          onDragEnd={handleBookmarkDragEnd(childFolder.id)}
+                                        >
+                                          <SortableContext items={childFolder.bookmarks.map((b) => b.id)}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                              {childFolder.bookmarks.map((bookmark) => (
+                                                <SortableBookmark
+                                                  key={bookmark.id}
+                                                  bookmark={bookmark}
+                                                  onEdit={() => {
+                                                    setEditingBookmark(bookmark);
+                                                    setShowEditBookmarkDialog(true);
+                                                  }}
+                                                  onMove={() => {
+                                                    setMovingBookmark(bookmark);
+                                                    setMovingBookmarkFolderId(childFolder.id);
+                                                    setShowMoveBookmarkDialog(true);
+                                                  }}
+                                                  onDelete={() => {
+                                                    setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+                                                    setShowDeleteDialog(true);
+                                                  }}
+                                                />
+                                              ))}
+                                            </div>
+                                          </SortableContext>
+                                        </DndContext>
+                                      )}
+                                    </SortableFolder>
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          )}
+                        </SortableFolder>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
 
                 {/* 新增資料夾按鈕 */}
                 {!searchQuery.trim() && (

@@ -171,24 +171,18 @@ export default function SharePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                分享的書籤
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                唯讀分享模式 - 此頁面無法編輯
-              </p>
-            </div>
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-lg p-6 pb-0 space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              分享的書籤
+            </h1>
           </div>
         </div>
-
         {/* Tabs Bar */}
         {tabs.length > 0 && (
-          <div className="mb-4">
+          <div className="">
             <div className="flex items-center gap-2 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
@@ -208,7 +202,9 @@ export default function SharePage() {
             </div>
           </div>
         )}
+      </div>
 
+      <div className="container mx-auto px-4 py-8">
         {/* Content */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           {!activeTab || activeTab.folders.length === 0 ? (
