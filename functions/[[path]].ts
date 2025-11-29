@@ -5,7 +5,7 @@ import { createPagesFunctionHandler } from "@remix-run/cloudflare-pages";
 import * as build from "../build/server/index.js";
 
 const handleRequest = createPagesFunctionHandler({
-  // @ts-expect-error - Type mismatch between build and runtime ServerBuild types
+  // @ts-expect-error - Build time type mismatch with runtime types
   build,
   mode: process.env.NODE_ENV,
   getLoadContext: ({ context }) => context,
