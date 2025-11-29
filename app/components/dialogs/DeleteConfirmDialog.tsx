@@ -42,6 +42,10 @@ const resourceConfig = {
   },
 };
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function DeleteConfirmDialog({
   open,
   onOpenChange,
@@ -49,12 +53,12 @@ export default function DeleteConfirmDialog({
   resourceId,
   resourceTitle,
 }: DeleteConfirmDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const isSubmitting = fetcher.state === "submitting";
   const config = resourceConfig[resourceType];
 
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       onOpenChange(false);
       window.location.reload();
     }
@@ -101,7 +105,7 @@ export default function DeleteConfirmDialog({
             </p>
           </div>
 
-          {fetcher.data?.error && (
+          {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
             <div className="text-sm text-destructive">
               {fetcher.data.error}
             </div>

@@ -17,12 +17,20 @@ interface ShareDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type CreateFetcherData =
+  | { error: string; success?: never; share?: never }
+  | { share: Share; success: true; error?: never };
+
+type DeleteFetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function ShareDialog({
   open,
   onOpenChange,
 }: ShareDialogProps) {
-  const createFetcher = useFetcher<{ share?: Share; success?: boolean; error?: string }>();
-  const deleteFetcher = useFetcher();
+  const createFetcher = useFetcher<CreateFetcherData>();
+  const deleteFetcher = useFetcher<DeleteFetcherData>();
   const loadFetcher = useFetcher<{ shares?: Share[] }>();
 
   const [copied, setCopied] = useState(false);
@@ -40,14 +48,14 @@ export default function ShareDialog({
 
   // 建立成功後重新載入
   useEffect(() => {
-    if (createFetcher.data?.success && !isCreating) {
+    if (createFetcher.data && "success" in createFetcher.data && createFetcher.data.success && !isCreating) {
       loadFetcher.load(`/api/shares`);
     }
   }, [createFetcher.data, isCreating]);
 
   // 刪除成功後重新載入
   useEffect(() => {
-    if (deleteFetcher.data?.success && deleteFetcher.state === "idle") {
+    if (deleteFetcher.data && "success" in deleteFetcher.data && deleteFetcher.data.success && deleteFetcher.state === "idle") {
       loadFetcher.load(`/api/shares`);
     }
   }, [deleteFetcher.data, deleteFetcher.state]);
@@ -198,7 +206,7 @@ export default function ShareDialog({
                   </>
                 )}
               </Button>
-              {createFetcher.data?.error && (
+              {createFetcher.data && "error" in createFetcher.data && createFetcher.data.error && (
                 <div className="text-sm text-destructive">
                   {createFetcher.data.error}
                 </div>

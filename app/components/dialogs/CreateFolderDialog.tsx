@@ -20,18 +20,22 @@ interface CreateFolderDialogProps {
   parentId?: string | null;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function CreateFolderDialog({
   open,
   onOpenChange,
   tabId,
   parentId = null,
 }: CreateFolderDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       setTitle("");
       onOpenChange(false);
       window.location.reload();
@@ -82,7 +86,7 @@ export default function CreateFolderDialog({
               />
             </div>
 
-            {fetcher.data?.error && (
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
               <div className="text-sm text-destructive">
                 {fetcher.data.error}
               </div>

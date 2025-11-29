@@ -12,6 +12,10 @@ interface MoveBookmarkDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function MoveBookmarkDialog({
   bookmark,
   allFolders,
@@ -19,14 +23,14 @@ export default function MoveBookmarkDialog({
   open,
   onOpenChange,
 }: MoveBookmarkDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
-    if (fetcher.data?.success) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
       onOpenChange(false);
       setSelectedFolderId(null);
     }
@@ -143,7 +147,7 @@ export default function MoveBookmarkDialog({
             </div>
           </div>
 
-          {fetcher.data?.error && (
+          {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
               {fetcher.data.error}
             </div>

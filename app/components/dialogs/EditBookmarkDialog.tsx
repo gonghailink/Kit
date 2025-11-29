@@ -20,8 +20,12 @@ interface EditBookmarkDialogProps {
   bookmark: Bookmark;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function EditBookmarkDialog({ open, onOpenChange, bookmark }: EditBookmarkDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState(bookmark.title);
   const [url, setUrl] = useState(bookmark.url);
   const [memo, setMemo] = useState(bookmark.memo || "");
@@ -36,7 +40,7 @@ export default function EditBookmarkDialog({ open, onOpenChange, bookmark }: Edi
 
   // 成功後關閉對話框並重新載入
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       onOpenChange(false);
       window.location.reload();
     }
@@ -108,7 +112,7 @@ export default function EditBookmarkDialog({ open, onOpenChange, bookmark }: Edi
               />
             </div>
 
-            {fetcher.data?.error && (
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
               <div className="text-sm text-destructive">
                 {fetcher.data.error}
               </div>

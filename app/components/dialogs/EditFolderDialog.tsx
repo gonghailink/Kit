@@ -20,8 +20,12 @@ interface EditFolderDialogProps {
   folder: Folder;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function EditFolderDialog({ open, onOpenChange, folder }: EditFolderDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState(folder.title);
   const isSubmitting = fetcher.state === "submitting";
 
@@ -30,7 +34,7 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
   }, [folder.title]);
 
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       onOpenChange(false);
       window.location.reload();
     }
@@ -75,7 +79,7 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
               />
             </div>
 
-            {fetcher.data?.error && (
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
               <div className="text-sm text-destructive">
                 {fetcher.data.error}
               </div>

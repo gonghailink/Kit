@@ -15,6 +15,10 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return json({});
 }
 
+type ActionData =
+  | { error: string; success?: never }
+  | { success: string; error?: never };
+
 export async function action({ request, context }: ActionFunctionArgs) {
   try {
     const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
@@ -24,7 +28,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      return json(
+      return json<ActionData>(
         { error: "請輸入 Email 和密碼" },
         { status: 400, headers }
       );
@@ -38,7 +42,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       });
 
       if (error) {
-        return json({ error: error.message }, { status: 400, headers });
+        return json<ActionData>({ error: error.message }, { status: 400, headers });
       }
 
       return redirect("/dashboard", { headers });
@@ -50,19 +54,19 @@ export async function action({ request, context }: ActionFunctionArgs) {
       });
 
       if (error) {
-        return json({ error: error.message }, { status: 400, headers });
+        return json<ActionData>({ error: error.message }, { status: 400, headers });
       }
 
-      return json(
+      return json<ActionData>(
         { success: "註冊成功！請檢查您的 Email 以驗證帳號。" },
         { headers }
       );
     }
 
-    return json({ error: "無效的操作" }, { status: 400, headers });
+    return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
   } catch (error) {
     console.error("Login action error:", error);
-    return json(
+    return json<ActionData>(
       { error: error instanceof Error ? error.message : "登入時發生錯誤" },
       { status: 500 }
     );
@@ -128,14 +132,14 @@ export default function Login() {
             </div>
 
             {/* Error Message */}
-            {actionData?.error && (
+            {actionData && "error" in actionData && actionData.error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
                 {actionData.error}
               </div>
             )}
 
             {/* Success Message */}
-            {actionData?.success && (
+            {actionData && "success" in actionData && actionData.success && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg text-sm">
                 {actionData.success}
               </div>

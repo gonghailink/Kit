@@ -20,19 +20,23 @@ interface CreateBookmarkDialogProps {
   folderName?: string;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function CreateBookmarkDialog({
   open,
   onOpenChange,
   folderId,
   folderName,
 }: CreateBookmarkDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       setTitle("");
       setUrl("");
       onOpenChange(false);
@@ -95,7 +99,7 @@ export default function CreateBookmarkDialog({
               </p>
             </div>
 
-            {fetcher.data?.error && (
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
               <div className="text-sm text-destructive">
                 {fetcher.data.error}
               </div>

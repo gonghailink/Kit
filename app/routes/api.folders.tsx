@@ -1,6 +1,10 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { createSupabaseServerClient, requireAuth } from "~/lib/supabase.server";
 
+type ActionData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export async function action({ request, context }: ActionFunctionArgs) {
   const { user, headers } = await requireAuth(request, context.cloudflare.env);
   const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
@@ -16,11 +20,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!tab_id) {
-          return json({ error: "Tab ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400, headers });
         }
 
         if (!title || title.trim() === "") {
-          return json({ error: "資料夾名稱不能為空" }, { status: 400, headers });
+          return json<ActionData>({ error: "資料夾名稱不能為空" }, { status: 400, headers });
         }
 
         // 驗證 tab 是否屬於當前使用者
@@ -32,7 +36,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .single();
 
         if (!tab) {
-          return json({ error: "找不到該 Tab" }, { status: 404, headers });
+          return json<ActionData>({ error: "找不到該 Tab" }, { status: 404, headers });
         }
 
         // 如果有 parent_id，驗證 parent folder 是否存在
@@ -45,7 +49,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .single();
 
           if (!parentFolder) {
-            return json({ error: "找不到上層資料夾" }, { status: 404, headers });
+            return json<ActionData>({ error: "找不到上層資料夾" }, { status: 404, headers });
           }
         }
 
@@ -77,7 +81,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error creating folder:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ folder: data, success: true }, { headers });
@@ -89,13 +93,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const is_collapsed = formData.get("is_collapsed") as string | undefined;
 
         if (!id) {
-          return json({ error: "Folder ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400, headers });
         }
 
         const updates: any = {};
         if (title !== undefined) {
           if (title.trim() === "") {
-            return json({ error: "資料夾名稱不能為空" }, { status: 400, headers });
+            return json<ActionData>({ error: "資料夾名稱不能為空" }, { status: 400, headers });
           }
           updates.title = title.trim();
         }
@@ -104,7 +108,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         if (Object.keys(updates).length === 0) {
-          return json({ error: "沒有要更新的欄位" }, { status: 400, headers });
+          return json<ActionData>({ error: "沒有要更新的欄位" }, { status: 400, headers });
         }
 
         const { data, error } = await supabase
@@ -117,7 +121,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error updating folder:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ folder: data, success: true }, { headers });
@@ -127,7 +131,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json({ error: "Folder ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400, headers });
         }
 
         // 刪除資料夾（會級聯刪除子資料夾和書籤）
@@ -139,10 +143,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error deleting folder:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       case "reorder": {
@@ -150,14 +154,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json({ error: "缺少必要參數" }, { status: 400, headers });
+          return json<ActionData>({ error: "缺少必要參數" }, { status: 400, headers });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
+          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
         }
 
         // 批次更新
@@ -169,11 +173,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .eq("user_id", user.id);
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       default:
-        return json({ error: "無效的操作" }, { status: 400, headers });
+        return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
     }
   } catch (error) {
     console.error("API Error:", error);

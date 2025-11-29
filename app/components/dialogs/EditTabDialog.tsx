@@ -20,8 +20,12 @@ interface EditTabDialogProps {
   tab: Tab;
 }
 
+type FetcherData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialogProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState(tab.title);
   const isSubmitting = fetcher.state === "submitting";
 
@@ -32,7 +36,7 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
 
   // 成功後關閉對話框並重新載入
   useEffect(() => {
-    if (fetcher.data?.success && !isSubmitting) {
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       onOpenChange(false);
       window.location.reload();
     }
@@ -79,7 +83,7 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
               />
             </div>
 
-            {fetcher.data?.error && (
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
               <div className="text-sm text-destructive">
                 {fetcher.data.error}
               </div>

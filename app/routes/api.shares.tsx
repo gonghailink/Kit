@@ -16,7 +16,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
     if (error) {
       console.error("Error fetching shares:", error);
-      return json({ error: error.message }, { status: 400, headers });
+      return json<ActionData>({ error: error.message }, { status: 400, headers });
     }
 
     return json({ shares: data }, { headers });
@@ -28,6 +28,10 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     );
   }
 }
+
+type ActionData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
 
 // POST: 建立或刪除分享連結
 export async function action({ request, context }: ActionFunctionArgs) {
@@ -48,7 +52,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         // 如果已有分享連結，返回錯誤
         if (existingShares && existingShares.length > 0) {
-          return json({ error: "您已經建立過分享連結" }, { status: 400, headers });
+          return json<ActionData>({ error: "您已經建立過分享連結" }, { status: 400, headers });
         }
 
         // 生成唯一的分享 token
@@ -66,7 +70,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error creating share:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ share: data, success: true }, { headers });
@@ -76,7 +80,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json({ error: "Share ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Share ID 是必要的" }, { status: 400, headers });
         }
 
         const { error } = await supabase
@@ -87,14 +91,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error deleting share:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       default:
-        return json({ error: "無效的操作" }, { status: 400, headers });
+        return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
     }
   } catch (error) {
     console.error("API Error:", error);

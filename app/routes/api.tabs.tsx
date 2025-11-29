@@ -2,6 +2,10 @@ import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { createSupabaseServerClient, requireAuth } from "~/lib/supabase.server";
 import type { CreateTabInput } from "~/lib/types";
 
+type ActionData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export async function action({ request, context }: ActionFunctionArgs) {
   const { user, headers } = await requireAuth(request, context.cloudflare.env);
   const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
@@ -15,7 +19,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!title || title.trim() === "") {
-          return json({ error: "Tab 名稱不能為空" }, { status: 400, headers });
+          return json<ActionData>({ error: "Tab 名稱不能為空" }, { status: 400, headers });
         }
 
         // 取得當前最大的 sort_order
@@ -41,7 +45,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error creating tab:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ tab: data, success: true }, { headers });
@@ -52,11 +56,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!id) {
-          return json({ error: "Tab ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400, headers });
         }
 
         if (!title || title.trim() === "") {
-          return json({ error: "Tab 名稱不能為空" }, { status: 400, headers });
+          return json<ActionData>({ error: "Tab 名稱不能為空" }, { status: 400, headers });
         }
 
         const { data, error } = await supabase
@@ -69,7 +73,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error updating tab:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ tab: data, success: true }, { headers });
@@ -79,7 +83,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json({ error: "Tab ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400, headers });
         }
 
         const { error } = await supabase
@@ -90,10 +94,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error deleting tab:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       case "reorder": {
@@ -101,14 +105,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json({ error: "缺少必要參數" }, { status: 400, headers });
+          return json<ActionData>({ error: "缺少必要參數" }, { status: 400, headers });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
+          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
         }
 
         // 批次更新
@@ -125,11 +129,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .eq("user_id", user.id);
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       default:
-        return json({ error: "無效的操作" }, { status: 400, headers });
+        return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
     }
   } catch (error) {
     console.error("API Error:", error);

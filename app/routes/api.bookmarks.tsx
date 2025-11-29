@@ -2,6 +2,10 @@ import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { createSupabaseServerClient, requireAuth } from "~/lib/supabase.server";
 import { getFaviconUrl, isValidUrl } from "~/lib/utils";
 
+type ActionData =
+  | { error: string; success?: never }
+  | { success: true; error?: never };
+
 export async function action({ request, context }: ActionFunctionArgs) {
   const { user, headers } = await requireAuth(request, context.cloudflare.env);
   const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
@@ -17,22 +21,22 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const url = formData.get("url") as string;
 
         if (!folder_id) {
-          return json({ error: "Folder ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400, headers });
         }
 
         if (!title || title.trim() === "") {
-          return json({ error: "書籤標題不能為空" }, { status: 400, headers });
+          return json<ActionData>({ error: "書籤標題不能為空" }, { status: 400, headers });
         }
 
         if (!url || url.trim() === "") {
-          return json({ error: "URL 不能為空" }, { status: 400, headers });
+          return json<ActionData>({ error: "URL 不能為空" }, { status: 400, headers });
         }
 
         const trimmedUrl = url.trim();
 
         // 驗證 URL 格式
         if (!isValidUrl(trimmedUrl)) {
-          return json({ error: "URL 格式不正確" }, { status: 400, headers });
+          return json<ActionData>({ error: "URL 格式不正確" }, { status: 400, headers });
         }
 
         // 驗證 folder 是否屬於當前使用者
@@ -44,7 +48,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .single();
 
         if (!folder) {
-          return json({ error: "找不到該資料夾" }, { status: 404, headers });
+          return json<ActionData>({ error: "找不到該資料夾" }, { status: 404, headers });
         }
 
         // 取得當前最大的 sort_order
@@ -77,7 +81,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error creating bookmark:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ bookmark: data, success: true }, { headers });
@@ -90,14 +94,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const memo = formData.get("memo") as string | undefined;
 
         if (!id) {
-          return json({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
         }
 
         const updates: any = {};
 
         if (title !== undefined) {
           if (title.trim() === "") {
-            return json({ error: "書籤標題不能為空" }, { status: 400, headers });
+            return json<ActionData>({ error: "書籤標題不能為空" }, { status: 400, headers });
           }
           updates.title = title.trim();
         }
@@ -105,10 +109,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
         if (url !== undefined) {
           const trimmedUrl = url.trim();
           if (trimmedUrl === "") {
-            return json({ error: "URL 不能為空" }, { status: 400, headers });
+            return json<ActionData>({ error: "URL 不能為空" }, { status: 400, headers });
           }
           if (!isValidUrl(trimmedUrl)) {
-            return json({ error: "URL 格式不正確" }, { status: 400, headers });
+            return json<ActionData>({ error: "URL 格式不正確" }, { status: 400, headers });
           }
           updates.url = trimmedUrl;
           updates.favicon_url = getFaviconUrl(trimmedUrl);
@@ -119,7 +123,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         if (Object.keys(updates).length === 0) {
-          return json({ error: "沒有要更新的欄位" }, { status: 400, headers });
+          return json<ActionData>({ error: "沒有要更新的欄位" }, { status: 400, headers });
         }
 
         const { data, error } = await supabase
@@ -132,7 +136,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error updating bookmark:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ bookmark: data, success: true }, { headers });
@@ -142,7 +146,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
         }
 
         const { error } = await supabase
@@ -153,10 +157,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error deleting bookmark:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       case "reorder": {
@@ -164,14 +168,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json({ error: "缺少必要參數" }, { status: 400, headers });
+          return json<ActionData>({ error: "缺少必要參數" }, { status: 400, headers });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
+          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400, headers });
         }
 
         // 批次更新
@@ -183,7 +187,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .eq("user_id", user.id);
         }
 
-        return json({ success: true }, { headers });
+        return json<ActionData>({ success: true }, { headers });
       }
 
       case "move": {
@@ -191,11 +195,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const newFolderId = formData.get("newFolderId") as string;
 
         if (!id) {
-          return json({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "Bookmark ID 是必要的" }, { status: 400, headers });
         }
 
         if (!newFolderId) {
-          return json({ error: "新資料夾 ID 是必要的" }, { status: 400, headers });
+          return json<ActionData>({ error: "新資料夾 ID 是必要的" }, { status: 400, headers });
         }
 
         // 驗證書籤是否屬於當前使用者
@@ -207,7 +211,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .single();
 
         if (!bookmark) {
-          return json({ error: "找不到該書籤" }, { status: 404, headers });
+          return json<ActionData>({ error: "找不到該書籤" }, { status: 404, headers });
         }
 
         // 驗證新資料夾是否屬於當前使用者
@@ -219,7 +223,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .single();
 
         if (!newFolder) {
-          return json({ error: "找不到該資料夾" }, { status: 404, headers });
+          return json<ActionData>({ error: "找不到該資料夾" }, { status: 404, headers });
         }
 
         // 取得目標資料夾中最大的 sort_order
@@ -247,14 +251,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         if (error) {
           console.error("Error moving bookmark:", error);
-          return json({ error: error.message }, { status: 400, headers });
+          return json<ActionData>({ error: error.message }, { status: 400, headers });
         }
 
         return json({ bookmark: data, success: true }, { headers });
       }
 
       default:
-        return json({ error: "無效的操作" }, { status: 400, headers });
+        return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
     }
   } catch (error) {
     console.error("API Error:", error);
