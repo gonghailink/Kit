@@ -346,7 +346,7 @@ export default function SharePage() {
           <p>
             由{" "}
             <Link to="/" className="text-primary hover:underline">
-              Bookmarks Remix
+              Bookmarks Clip
             </Link>{" "}
             提供
           </p>
