@@ -108,25 +108,103 @@ function getHostname(url: string): string {
   }
 }
 
-function FolderTree({ folder }: { folder: FolderWithChildren }) {
+function FolderCard({ folder }: { folder: FolderWithChildren }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+      {/* 資料夾標題 */}
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        {folder.title}
+      </h2>
+
+      {/* 書籤網格 */}
+      {folder.bookmarks && folder.bookmarks.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {folder.bookmarks.map((bookmark) => (
+            <a
+              key={bookmark.id}
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all group"
+            >
+              <div className="flex items-start gap-3">
+                {bookmark.favicon_url ? (
+                  <img
+                    src={bookmark.favicon_url}
+                    alt=""
+                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-gray-400 mt-0.5" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                    {bookmark.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+                    {getHostname(bookmark.url)}
+                  </p>
+                  {bookmark.memo && (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+                      {bookmark.memo}
+                    </p>
+                  )}
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            此資料夾尚無書籤
+          </p>
+        </div>
+      )}
+
+      {/* 子資料夾區域 */}
+      {folder.children && folder.children.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <SubFolderTree folders={folder.children} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubFolderTree({ folders }: { folders: FolderWithChildren[] }) {
+  return (
+    <div className="space-y-4">
+      {folders.map((folder) => (
+        <CollapsibleSubFolder key={folder.id} folder={folder} />
+      ))}
+    </div>
+  );
+}
+
+function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
   const [isOpen, setIsOpen] = useState(!folder.is_collapsed);
 
   return (
-    <div className="mb-4">
+    <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-lg font-semibold mb-3 hover:text-primary transition-colors"
+        className="flex items-center gap-2 text-md font-medium text-gray-700 dark:text-gray-300 mb-3 hover:text-primary transition-colors"
       >
         {isOpen ? (
-          <ChevronDown className="w-5 h-5" />
+          <ChevronDown className="w-4 h-4" />
         ) : (
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         )}
         {folder.title}
       </button>
 
       {isOpen && (
-        <div className="ml-6">
+        <div className="ml-2">
           {folder.bookmarks && folder.bookmarks.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
               {folder.bookmarks.map((bookmark) => (
@@ -135,7 +213,7 @@ function FolderTree({ folder }: { folder: FolderWithChildren }) {
                   href={bookmark.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all group"
+                  className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all group"
                 >
                   <div className="flex items-start gap-3">
                     {bookmark.favicon_url ? (
@@ -171,11 +249,7 @@ function FolderTree({ folder }: { folder: FolderWithChildren }) {
           )}
 
           {folder.children && folder.children.length > 0 && (
-            <div className="space-y-4">
-              {folder.children.map((child) => (
-                <FolderTree key={child.id} folder={child} />
-              ))}
-            </div>
+            <SubFolderTree folders={folder.children} />
           )}
         </div>
       )}
@@ -250,22 +324,22 @@ export default function SharePage() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Content */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          {!activeTab || activeTab.folders.length === 0 ? (
+        {!activeTab || activeTab.folders.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div className="text-center py-12">
               <BookmarkIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
                 這個 Tab 目前沒有任何書籤
               </p>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {activeTab.folders.map((folder) => (
-                <FolderTree key={folder.id} folder={folder} />
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {activeTab.folders.map((folder) => (
+              <FolderCard key={folder.id} folder={folder} />
+            ))}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
