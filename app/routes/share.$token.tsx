@@ -132,7 +132,7 @@ function FolderCard({ folder }: { folder: FolderWithChildren }) {
                   <img
                     src={bookmark.favicon_url}
                     alt=""
-                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                    className="w-5 h-5 flex-shrink-0 mt-0.5 rounded"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
@@ -220,7 +220,7 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
                       <img
                         src={bookmark.favicon_url}
                         alt=""
-                        className="w-5 h-5 flex-shrink-0 mt-0.5"
+                        className="w-5 h-5 flex-shrink-0 mt-0.5 rounded"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
