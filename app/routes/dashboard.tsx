@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { createSupabaseServerClient, requireAuth } from "~/lib/supabase.server";
 import { buildFolderTree } from "~/lib/utils";
 import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { Bookmark as BookmarkIcon, Plus, LogOut, Search, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen } from "lucide-react";
+import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -391,7 +391,7 @@ export default function Dashboard() {
   const { tabs: initialTabs, user } = useLoaderData<typeof loader>();
   const [tabs, setTabs] = useState(initialTabs);
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
-  const [searchQuery, setSearchQuery] = useState("");
+
   const logoutFetcher = useFetcher();
   const reorderTabsFetcher = useFetcher();
   const reorderFoldersFetcher = useFetcher();
@@ -631,49 +631,7 @@ export default function Dashboard() {
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  // 搜尋過濾邏輯
-  const filteredActiveTab = useMemo(() => {
-    if (!activeTab || !searchQuery.trim()) {
-      return activeTab;
-    }
 
-    const query = searchQuery.toLowerCase();
-
-    // 遞迴過濾 folder 和 bookmarks
-    const filterFolder = (folder: FolderWithChildren): FolderWithChildren | null => {
-      const filteredBookmarks = folder.bookmarks?.filter((bookmark) => {
-        return (
-          bookmark.title.toLowerCase().includes(query) ||
-          bookmark.url.toLowerCase().includes(query) ||
-          bookmark.memo?.toLowerCase().includes(query)
-        );
-      }) || [];
-
-      const filteredChildren = folder.children
-        ?.map(filterFolder)
-        .filter((f): f is FolderWithChildren => f !== null) || [];
-
-      // 如果資料夾有匹配的書籤或子資料夾，就保留
-      if (filteredBookmarks.length > 0 || filteredChildren.length > 0) {
-        return {
-          ...folder,
-          bookmarks: filteredBookmarks,
-          children: filteredChildren,
-        };
-      }
-
-      return null;
-    };
-
-    const filteredFolders = activeTab.folders
-      .map(filterFolder)
-      .filter((f): f is FolderWithChildren => f !== null);
-
-    return {
-      ...activeTab,
-      folders: filteredFolders,
-    };
-  }, [activeTab, searchQuery]);
 
   // 獲取所有可用的資料夾（用於移動書籤）
   const allFolders = useMemo(() => {
@@ -686,29 +644,17 @@ export default function Dashboard() {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-                <img src="/favicon.svg" alt="Kit" className="h-full w-full object-contain p-[1px]" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
+                <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
               </div>
               <h1 className="text-xl font-semibold text-primary">
                 Kit
               </h1>
             </div>
-
-            {/* Search Bar */}
-            <div className="relative ml-8">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="搜尋書籤..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-80 border border-input rounded-lg bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowShareDialog(true)}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
@@ -716,19 +662,29 @@ export default function Dashboard() {
               <Share2 className="w-4 h-4" />
               分享
             </button>
-            <span className="text-sm text-muted-foreground">
-              {user.email}
-            </span>
-            <Form method="post">
-              <input type="hidden" name="intent" value="logout" />
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                登出
-              </button>
-            </Form>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors">
+                  {user.email}
+                  <ChevronDown className="w-4 h-4 opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Form method="post" className="w-full">
+                    <input type="hidden" name="intent" value="logout" />
+                    <button
+                      type="submit"
+                      className="w-full flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      登出
+                    </button>
+                  </Form>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -796,34 +752,20 @@ export default function Dashboard() {
         ) : activeTab ? (
           // 顯示資料夾和書籤
           <div className="max-w-7xl mx-auto">
-            {filteredActiveTab?.folders.length === 0 ? (
+            {activeTab?.folders.length === 0 ? (
               <div className="text-center py-12">
-                {searchQuery.trim() ? (
-                  <div>
-                    <p className="text-muted-foreground mb-2">
-                      找不到符合「{searchQuery}」的書籤
-                    </p>
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="text-primary hover:underline"
-                    >
-                      清除搜尋
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-muted-foreground mb-4">
-                      此 Tab 尚無資料夾
-                    </p>
-                    <button
-                      onClick={() => setShowCreateFolderDialog(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors mx-auto"
-                    >
-                      <Plus className="w-4 h-4" />
-                      建立資料夾
-                    </button>
-                  </div>
-                )}
+                <div>
+                  <p className="text-muted-foreground mb-4">
+                    此 Tab 尚無資料夾
+                  </p>
+                  <button
+                    onClick={() => setShowCreateFolderDialog(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors mx-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    建立資料夾
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -834,11 +776,11 @@ export default function Dashboard() {
                   onDragEnd={handleTopLevelFolderDragEnd}
                 >
                   <SortableContext
-                    items={filteredActiveTab?.folders.map((f) => f.id) || []}
+                    items={activeTab?.folders.map((f) => f.id) || []}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-8">
-                      {filteredActiveTab?.folders.map((folder) => (
+                      {activeTab?.folders.map((folder) => (
                         <SortableFolder
                           key={folder.id}
                           folder={folder}
@@ -978,20 +920,18 @@ export default function Dashboard() {
                 </DndContext>
 
                 {/* 新增資料夾按鈕 */}
-                {!searchQuery.trim() && (
-                  <div className="mt-8 flex justify-center">
-                    <button
-                      onClick={() => {
-                        setParentFolderId(null);
-                        setShowCreateFolderDialog(true);
-                      }}
-                      className="flex items-center gap-2 px-6 py-3 bg-card/70 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-secondary/40 transition-colors text-muted-foreground"
-                    >
-                      <Plus className="w-5 h-5" />
-                      新增資料夾
-                    </button>
-                  </div>
-                )}
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => {
+                      setParentFolderId(null);
+                      setShowCreateFolderDialog(true);
+                    }}
+                    className="flex items-center gap-2 px-6 py-3 bg-card/70 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-secondary/40 transition-colors text-muted-foreground"
+                  >
+                    <Plus className="w-5 h-5" />
+                    新增資料夾
+                  </button>
+                </div>
               </div>
             )}
           </div>

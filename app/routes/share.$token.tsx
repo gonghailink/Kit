@@ -8,9 +8,10 @@ import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 
+
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   const title = data?.share?.name
-    ? `${data.share.name}的精選書籤`
+    ? `${data.share.name} 的精選書籤`
     : "精選書籤";
 
   return [
@@ -265,9 +266,10 @@ export default function SharePage() {
   const { tabs, share } = useLoaderData<typeof loader>();
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const activeTab = tabs.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
-  const activeTab = tabs.find((t) => t.id === activeTabId);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -321,15 +323,16 @@ export default function SharePage() {
   } : activeTab;
 
 
+
+
   return (
     <div className="min-h-screen bg-transparent">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/85 backdrop-blur-sm shadow-lg px-6 pt-4 pb-0 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img src="/favicon-darker.svg" alt="logo" className="w-6 h-6" />
             <h1 className="text-xl font-semibold text-foreground/90">
-              {share.name ? `${share.name}的精選書籤` : "精選書籤"}
+              {share.name ? `${share.name} 的精選書籤` : "精選書籤"}
             </h1>
           </div>
           <div className="hidden md:flex items-center gap-3">
@@ -340,7 +343,7 @@ export default function SharePage() {
                 placeholder="搜尋書籤..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-9"
+                className="w-64 pl-9 rounded-full"
               />
               {searchQuery && (
                 <button
@@ -351,6 +354,7 @@ export default function SharePage() {
                 </button>
               )}
             </div>
+
             {share.extra_btn_title && share.extra_btn_url && (
               <a
                 href={share.extra_btn_url}
@@ -429,14 +433,17 @@ export default function SharePage() {
         )}
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-muted-foreground">
-          <p>
+        <div className="flex flex-col items-center justify-center gap-4">
+          <p className="text-center mt-8 text-sm text-muted-foreground">
             由{" "}
-            <Link to="/" className="text-primary hover:underline">
+            <Link to="/intro" className="text-primary hover:underline">
               Kit (Bookmark Manager)
             </Link>{" "}
             提供
           </p>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm opacity-50">
+            <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
+          </div>
         </div>
       </div>
 
@@ -444,7 +451,7 @@ export default function SharePage() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 p-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+          className="fixed bottom-12 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
           aria-label="返回頂部"
         >
           <ArrowUp className="w-6 h-6" />
@@ -454,7 +461,7 @@ export default function SharePage() {
       {/* Mobile Search Button */}
       <button
         onClick={() => setIsSearchSheetOpen(true)}
-        className="md:hidden fixed bottom-8 right-8 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+        className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
         aria-label="搜尋書籤"
       >
         <Search className="w-6 h-6" />

@@ -1,12 +1,12 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import { Loader2, Share2, Copy, Check, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Share2, Copy, Check, Trash2, ExternalLink, MonitorOffIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  // DialogFooter,
   DialogDescription,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
@@ -126,7 +126,7 @@ export default function ShareDialog({
             <Share2 className="w-5 h-5" />
             分享我的書籤
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pt-3">
             建立唯讀分享連結，讓其他人可以瀏覽您的所有書籤（不可編輯）
           </DialogDescription>
         </DialogHeader>
@@ -148,13 +148,13 @@ export default function ShareDialog({
                 return (
                   <div
                     key={share.id}
-                    className="border border-border rounded-lg p-4 space-y-3 bg-card/80"
+                    className="rounded-lg p-6 space-y-3 bg-card/80"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-4">
                       <p className="text-xs text-muted-foreground mb-2">
                         建立於：{formatDate(share.created_at)}
                       </p>
-                      <div className="bg-secondary/50 p-3 rounded min-w-0">
+                      <div className="bg-secondary/50 p-3 -mx-3 rounded min-w-0">
                         <p className="text-sm text-muted-foreground font-mono break-all">
                           {shareUrl}
                         </p>
@@ -175,7 +175,7 @@ export default function ShareDialog({
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-4">
                       <Button
                         onClick={() => handleCopy(share)}
                         className="flex-1 gap-2"
@@ -199,9 +199,8 @@ export default function ShareDialog({
                         <ExternalLink className="w-4 h-4" />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         onClick={() => handleDelete(share.id)}
-                        className="text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -212,77 +211,81 @@ export default function ShareDialog({
             </div>
           ) : (
             // 顯示建立按鈕
-            <div className="space-y-4">
-              <div className="text-center">
-                <Share2 className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground mb-2">
-                  您尚未建立分享連結
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  建立後，任何人都可以透過連結瀏覽您的所有書籤
-                </p>
+            <div className="px-2 space-y-4">
+              <div className="text-center flex justify-center items-center gap-4 pb-4">
+                <MonitorOffIcon className="w-16 h-16 text-background p-4 rounded-lg bg-primary/90" />
+                <div className="text-left">
+                  <p className="text-muted-foreground mb-2">
+                    您尚未建立分享連結
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    建立後，任何人都可以透過連結瀏覽您的所有書籤
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  顯示名稱（選填）
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="例如：小明"
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  disabled={isCreating}
-                />
-                <p className="text-xs text-muted-foreground">
-                  將在分享頁面顯示為「XXX 的精選書籤」
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  自訂短網址（選填）
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">/s/</span>
+              <div className="bg-card/80 p-3 rounded-lg">
+                <div className="space-y-2 ">
+                  <label className="block text-sm font-medium">
+                    顯示名稱（選填）
+                  </label>
                   <input
                     type="text"
-                    value={shortLink}
-                    onChange={(e) => setShortLink(e.target.value)}
-                    placeholder="例如：myBookmarks"
-                    className="flex-1 px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="例如：小明"
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     disabled={isCreating}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    將在分享頁面顯示為「XXX 的精選書籤」
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  留空則使用隨機產生的長網址。只能使用英數字、底線和連字號。
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  附加按鈕（選填）
-                </label>
-                <input
-                  type="text"
-                  value={extraBtnTitle}
-                  onChange={(e) => setExtraBtnTitle(e.target.value)}
-                  placeholder="按鈕文字，例如：聯絡我"
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  disabled={isCreating}
-                />
-                <input
-                  type="url"
-                  value={extraBtnUrl}
-                  onChange={(e) => setExtraBtnUrl(e.target.value)}
-                  placeholder="按鈕連結，例如：https://example.com"
-                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  disabled={isCreating}
-                />
-                <p className="text-xs text-muted-foreground">
-                  在分享頁面右上角顯示自訂按鈕，兩個欄位都需填寫才會顯示。
-                </p>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">
+                    自訂短網址（選填）
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">/s/</span>
+                    <input
+                      type="text"
+                      value={shortLink}
+                      onChange={(e) => setShortLink(e.target.value)}
+                      placeholder="例如：myBookmarks"
+                      className="flex-1 px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      disabled={isCreating}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    留空則使用隨機產生的長網址。只能使用英數字、底線和連字號。
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">
+                    附加按鈕（選填）
+                  </label>
+                  <input
+                    type="text"
+                    value={extraBtnTitle}
+                    onChange={(e) => setExtraBtnTitle(e.target.value)}
+                    placeholder="按鈕文字，例如：聯絡我"
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={isCreating}
+                  />
+                  <input
+                    type="url"
+                    value={extraBtnUrl}
+                    onChange={(e) => setExtraBtnUrl(e.target.value)}
+                    placeholder="按鈕連結，例如：https://example.com"
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={isCreating}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    在分享頁面右上角顯示自訂按鈕，兩個欄位都需填寫才會顯示。
+                  </p>
+                </div>
               </div>
 
               <Button
@@ -311,11 +314,11 @@ export default function ShareDialog({
           )}
         </div>
 
-        <DialogFooter>
+        {/* <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             關閉
           </Button>
-        </DialogFooter>
+        </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );
