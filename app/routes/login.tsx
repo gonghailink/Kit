@@ -80,29 +80,29 @@ export default function Login() {
   const isSubmitting = navigation.state === "submitting";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-sm">
             <Bookmark className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            書籤管理器
+          <h1 className="text-3xl font-semibold text-foreground">
+            Kit
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             {isSignUp ? "建立您的帳號" : "登入您的帳號"}
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div className="bg-card/85 backdrop-blur-sm border border-border rounded-3xl shadow-xl p-8">
           <Form method="post" className="space-y-6">
             <input type="hidden" name="intent" value={isSignUp ? "signup" : "login"} />
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-2">
                 Email
               </label>
               <input
@@ -110,14 +110,14 @@ export default function Login() {
                 name="email"
                 id="email"
                 required
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-3 rounded-lg border border-input bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="your@email.com"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-2">
                 密碼
               </label>
               <input
@@ -126,21 +126,21 @@ export default function Login() {
                 id="password"
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-3 rounded-lg border border-input bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="••••••••"
               />
             </div>
 
             {/* Error Message */}
             {actionData && "error" in actionData && actionData.error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
                 {actionData.error}
               </div>
             )}
 
             {/* Success Message */}
             {actionData && "success" in actionData && actionData.success && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-lg text-sm">
                 {actionData.success}
               </div>
             )}

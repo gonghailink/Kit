@@ -195,6 +195,6 @@ npm install    # 安裝依賴（如果還沒安裝）
 npm run dev    # 啟動開發伺服器
 ```
 
-開啟 http://localhost:5173 開始使用你的書籤管理器！
+開啟 http://localhost:5173 開始使用你的Kit！
 
 **🎊 祝你使用愉快！**

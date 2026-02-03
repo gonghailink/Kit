@@ -134,7 +134,7 @@ export default function ShareDialog({
         <div className="space-y-6 py-4 overflow-hidden">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : hasShare ? (
             // 顯示現有分享連結
@@ -148,29 +148,29 @@ export default function ShareDialog({
                 return (
                   <div
                     key={share.id}
-                    className="border rounded-lg p-4 space-y-3 bg-white dark:bg-gray-800"
+                    className="border border-border rounded-lg p-4 space-y-3 bg-card/80"
                   >
                     <div className="min-w-0">
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-xs text-muted-foreground mb-2">
                         建立於：{formatDate(share.created_at)}
                       </p>
-                      <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded min-w-0">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 font-mono break-all">
+                      <div className="bg-secondary/50 p-3 rounded min-w-0">
+                        <p className="text-sm text-muted-foreground font-mono break-all">
                           {shareUrl}
                         </p>
                       </div>
                       {share.name && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           顯示名稱：{share.name}
                         </p>
                       )}
                       {share.short_link && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           短網址：/s/{share.short_link}
                         </p>
                       )}
                       {share.extra_btn_title && share.extra_btn_url && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           附加按鈕：{share.extra_btn_title} → {share.extra_btn_url}
                         </p>
                       )}
@@ -214,11 +214,11 @@ export default function ShareDialog({
             // 顯示建立按鈕
             <div className="space-y-4">
               <div className="text-center">
-                <Share2 className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-2">
+                <Share2 className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground mb-2">
                   您尚未建立分享連結
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   建立後，任何人都可以透過連結瀏覽您的所有書籤
                 </p>
               </div>
@@ -232,10 +232,10 @@ export default function ShareDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="例如：小明"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={isCreating}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   將在分享頁面顯示為「XXX 的精選書籤」
                 </p>
               </div>
@@ -245,17 +245,17 @@ export default function ShareDialog({
                   自訂短網址（選填）
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">/s/</span>
+                  <span className="text-sm text-muted-foreground">/s/</span>
                   <input
                     type="text"
                     value={shortLink}
                     onChange={(e) => setShortLink(e.target.value)}
                     placeholder="例如：myBookmarks"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     disabled={isCreating}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   留空則使用隨機產生的長網址。只能使用英數字、底線和連字號。
                 </p>
               </div>
@@ -269,7 +269,7 @@ export default function ShareDialog({
                   value={extraBtnTitle}
                   onChange={(e) => setExtraBtnTitle(e.target.value)}
                   placeholder="按鈕文字，例如：聯絡我"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={isCreating}
                 />
                 <input
@@ -277,10 +277,10 @@ export default function ShareDialog({
                   value={extraBtnUrl}
                   onChange={(e) => setExtraBtnUrl(e.target.value)}
                   placeholder="按鈕連結，例如：https://example.com"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-input rounded-lg bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   disabled={isCreating}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   在分享頁面右上角顯示自訂按鈕，兩個欄位都需填寫才會顯示。
                 </p>
               </div>
@@ -303,7 +303,7 @@ export default function ShareDialog({
                 )}
               </Button>
               {createFetcher.data && "error" in createFetcher.data && createFetcher.data.error && (
-                <div className="text-sm text-destructive bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 rounded-lg">
+                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-lg">
                   {createFetcher.data.error}
                 </div>
               )}

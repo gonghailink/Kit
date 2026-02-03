@@ -20,7 +20,7 @@ declare global {
 }
 
 export const links: LinksFunction = () => [
-  { rel: "icon", href: "/favicon.png", type: "image/png" },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -29,7 +29,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap",
   },
 ];
 

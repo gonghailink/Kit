@@ -2,9 +2,11 @@ import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/clo
 import { useLoaderData, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { buildFolderTree } from "~/lib/utils";
+import { Input } from "~/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   const title = data?.share?.name
@@ -110,9 +112,9 @@ function getHostname(url: string): string {
 
 function FolderCard({ folder }: { folder: FolderWithChildren }) {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+    <div className="bg-card/85 rounded-xl p-6 shadow-sm">
       {/* 資料夾標題 */}
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <h2 className="text-lg font-semibold text-foreground mb-4">
         {folder.title}
       </h2>
 
@@ -125,42 +127,44 @@ function FolderCard({ folder }: { folder: FolderWithChildren }) {
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all group"
+              className="bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all group"
             >
               <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (
-                  <img
-                    src={bookmark.favicon_url}
-                    alt=""
-                    className="w-5 h-5 flex-shrink-0 mt-0.5 rounded"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
+                    <img
+                      src={bookmark.favicon_url}
+                      alt=""
+                      className="w-5 h-5 flex-shrink-0 rounded-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
                 ) : (
-                  <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-gray-400 mt-0.5" />
+                  <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
                 )}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium truncate group-hover:text-primary transition-colors">
                     {bookmark.title}
                   </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+                  {/* <p className="text-xs text-muted-foreground/80 truncate mt-1">
                     {getHostname(bookmark.url)}
-                  </p>
+                  </p> */}
                   {bookmark.memo && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {bookmark.memo}
                     </p>
                   )}
                 </div>
-                <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </a>
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-center py-8 bg-secondary/40 rounded-lg">
+          <p className="text-sm text-muted-foreground">
             此資料夾尚無書籤
           </p>
         </div>
@@ -168,7 +172,7 @@ function FolderCard({ folder }: { folder: FolderWithChildren }) {
 
       {/* 子資料夾區域 */}
       {folder.children && folder.children.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-6 pt-6 border-t border-border">
           <SubFolderTree folders={folder.children} />
         </div>
       )}
@@ -193,7 +197,7 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
     <div>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-md font-medium text-gray-700 dark:text-gray-300 mb-3 hover:text-primary transition-colors"
+        className="flex items-center gap-2 text-md font-medium text-muted-foreground mb-3 hover:text-primary transition-colors"
       >
         {isOpen ? (
           <ChevronDown className="w-4 h-4" />
@@ -213,7 +217,7 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
                   href={bookmark.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all group"
+                  className="bg-secondary/50 border border-border rounded-lg p-4 hover:shadow-lg hover:border-primary/70 transition-all group"
                 >
                   <div className="flex items-start gap-3">
                     {bookmark.favicon_url ? (
@@ -226,22 +230,22 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
                         }}
                       />
                     ) : (
-                      <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-gray-400 mt-0.5" />
+                      <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium truncate group-hover:text-primary transition-colors">
                         {bookmark.title}
                       </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+                      <p className="text-xs text-muted-foreground/80 truncate mt-1">
                         {getHostname(bookmark.url)}
                       </p>
                       {bookmark.memo && (
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                           {bookmark.memo}
                         </p>
                       )}
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </a>
               ))}
@@ -261,6 +265,8 @@ export default function SharePage() {
   const { tabs, share } = useLoaderData<typeof loader>();
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   useEffect(() => {
@@ -276,27 +282,86 @@ export default function SharePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // 搜索过滤函数
+  const filterFolder = (folder: FolderWithChildren, query: string): FolderWithChildren | null => {
+    const lowerQuery = query.toLowerCase();
+
+    // 过滤书签
+    const filteredBookmarks = folder.bookmarks?.filter((bookmark) => {
+      return (
+        bookmark.title.toLowerCase().includes(lowerQuery) ||
+        bookmark.url.toLowerCase().includes(lowerQuery) ||
+        bookmark.memo?.toLowerCase().includes(lowerQuery)
+      );
+    });
+
+    // 递归过滤子文件夹
+    const filteredChildren = folder.children
+      ?.map((child) => filterFolder(child, query))
+      .filter((child): child is FolderWithChildren => child !== null);
+
+    // 如果有匹配的书签或子文件夹，保留此文件夹
+    if ((filteredBookmarks && filteredBookmarks.length > 0) || (filteredChildren && filteredChildren.length > 0)) {
+      return {
+        ...folder,
+        bookmarks: filteredBookmarks || [],
+        children: filteredChildren || [],
+      };
+    }
+
+    return null;
+  };
+
+  // 应用搜索过滤
+  const filteredTab = activeTab && searchQuery ? {
+    ...activeTab,
+    folders: activeTab.folders
+      .map((folder) => filterFolder(folder, searchQuery))
+      .filter((folder): folder is FolderWithChildren => folder !== null),
+  } : activeTab;
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-lg px-6 pt-4 pb-0 space-y-2">
+      <div className="sticky top-0 z-10 bg-card/85 backdrop-blur-sm shadow-lg px-6 pt-4 pb-0 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img src="/favicon.png" alt="logo" className="w-6 h-6" />
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <img src="/favicon-darker.svg" alt="logo" className="w-6 h-6" />
+            <h1 className="text-xl font-semibold text-foreground/90">
               {share.name ? `${share.name}的精選書籤` : "精選書籤"}
             </h1>
           </div>
-          {share.extra_btn_title && share.extra_btn_url && (
-            <a
-              href={share.extra_btn_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
-            >
-              {share.extra_btn_title}
-            </a>
-          )}
+          <div className="hidden md:flex items-center gap-3">
+            {/* 搜尋功能 */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="搜尋書籤..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-64 pl-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {share.extra_btn_title && share.extra_btn_url && (
+              <a
+                href={share.extra_btn_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
+              >
+                {share.extra_btn_title}
+              </a>
+            )}
+          </div>
         </div>
         {/* Tabs Bar */}
         {tabs.length > 0 && (
@@ -310,7 +375,7 @@ export default function SharePage() {
                     px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
                     ${activeTabId === tab.id
                       ? "border-primary text-primary"
-                      : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                     }
                   `}
                 >
@@ -324,29 +389,51 @@ export default function SharePage() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Content */}
-        {!activeTab || activeTab.folders.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        {!filteredTab || filteredTab.folders.length === 0 ? (
+          <div className="bg-card/85 rounded-lg shadow-sm p-6">
             <div className="text-center py-12">
-              <BookmarkIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">
-                這個 Tab 目前沒有任何書籤
+              <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">
+                {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
               </p>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4 text-primary hover:underline"
+                >
+                  清除搜尋
+                </button>
+              )}
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            {activeTab.folders.map((folder) => (
-              <FolderCard key={folder.id} folder={folder} />
-            ))}
-          </div>
+          <>
+            {searchQuery && (
+              <div className="mb-4 text-sm text-muted-foreground">
+                搜尋結果：共找到 {filteredTab.folders.reduce((count, folder) => {
+                  const countBookmarks = (f: FolderWithChildren): number => {
+                    const bookmarkCount = f.bookmarks?.length || 0;
+                    const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
+                    return bookmarkCount + childrenCount;
+                  };
+                  return count + countBookmarks(folder);
+                }, 0)} 個書籤
+              </div>
+            )}
+            <div className="space-y-6">
+              {filteredTab.folders.map((folder) => (
+                <FolderCard key={folder.id} folder={folder} />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-center mt-8 text-sm text-muted-foreground">
           <p>
             由{" "}
             <Link to="/" className="text-primary hover:underline">
-              Bookmarks Clip
+              Kit (Bookmark Manager)
             </Link>{" "}
             提供
           </p>
@@ -363,6 +450,60 @@ export default function SharePage() {
           <ArrowUp className="w-6 h-6" />
         </button>
       )}
+
+      {/* Mobile Search Button */}
+      <button
+        onClick={() => setIsSearchSheetOpen(true)}
+        className="md:hidden fixed bottom-8 right-8 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+        aria-label="搜尋書籤"
+      >
+        <Search className="w-6 h-6" />
+      </button>
+
+      {/* Mobile Search Sheet */}
+      <Sheet open={isSearchSheetOpen} onOpenChange={setIsSearchSheetOpen}>
+        <SheetContent side="bottom" className="h-auto">
+          <SheetHeader>
+            <SheetTitle>搜尋書籤</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 pb-2 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="輸入關鍵字搜尋..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery) {
+                    setIsSearchSheetOpen(false);
+                  }
+                }}
+                className="pl-10 h-12 text-lg"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                if (searchQuery) {
+                  setIsSearchSheetOpen(false);
+                }
+              }}
+              disabled={!searchQuery}
+              className="w-full h-12 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              搜尋
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

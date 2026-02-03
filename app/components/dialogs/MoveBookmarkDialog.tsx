@@ -71,10 +71,10 @@ export default function MoveBookmarkDialog({
             className={`
               flex items-center gap-2 px-3 py-2 rounded-lg transition-colors flex-1
               ${isCurrentFolder
-                ? "opacity-50 bg-gray-100 dark:bg-gray-800"
+                ? "opacity-50 bg-secondary/40"
                 : isSelected
                 ? "bg-primary text-primary-foreground"
-                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                : "hover:bg-secondary/60"
               }
             `}
             style={{ marginLeft: `${level * 1.5}rem` }}
@@ -86,7 +86,7 @@ export default function MoveBookmarkDialog({
                   e.stopPropagation();
                   toggleFolder(folder.id);
                 }}
-                className="flex-shrink-0 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded"
+                className="flex-shrink-0 p-0.5 hover:bg-foreground/10 rounded"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4" />
@@ -136,17 +136,17 @@ export default function MoveBookmarkDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {bookmark && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">移動書籤：</p>
+            <div className="bg-secondary/40 rounded-lg p-3">
+              <p className="text-sm text-muted-foreground">移動書籤：</p>
               <p className="font-medium truncate">{bookmark.title}</p>
             </div>
           )}
 
           <div>
             <label className="block text-sm font-medium mb-2">選擇目標資料夾</label>
-            <div className="border rounded-lg p-2 max-h-[400px] overflow-y-auto bg-white dark:bg-gray-900">
+            <div className="border border-border rounded-lg p-2 max-h-[400px] overflow-y-auto bg-background/70">
               {allFolders.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">沒有可用的資料夾</p>
+                <p className="text-center text-muted-foreground py-4">沒有可用的資料夾</p>
               ) : (
                 <div className="space-y-1">
                   {allFolders.map((folder) => renderFolder(folder, 0))}
@@ -156,7 +156,7 @@ export default function MoveBookmarkDialog({
           </div>
 
           {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
               {fetcher.data.error}
             </div>
           )}
@@ -166,7 +166,7 @@ export default function MoveBookmarkDialog({
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
             >
               取消
             </button>

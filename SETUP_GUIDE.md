@@ -231,7 +231,7 @@ npx wrangler pages deploy ./build/client --project-name=bookmarks-remix
 
 ## 🎉 完成！
 
-現在你的書籤管理器應該已經：
+現在你的Kit應該已經：
 - ✅ 本地開發環境正常運作
 - ✅ 部署到 Cloudflare Pages
 - ✅ 使用者可以註冊和登入

@@ -142,12 +142,12 @@ function SortableBookmark({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg hover:border-primary transition-all"
+      className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all group"
     >
       <button
         {...attributes}
         {...listeners}
-        className="absolute top-2 left-2 p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 left-2 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <GripVertical className="w-3 h-3" />
       </button>
@@ -158,24 +158,26 @@ function SortableBookmark({
         className="block"
       >
         <div className="flex items-start gap-3">
-          <img
-            src={bookmark.favicon_url || "/default-favicon.svg"}
-            alt=""
-            className="w-6 h-6 mt-1 rounded"
-            onError={(e) => {
-              e.currentTarget.src = "/default-favicon.svg";
-            }}
-          />
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
+            <img
+              src={bookmark.favicon_url || "/default-favicon.svg"}
+              alt=""
+              className="w-5 h-5 flex-shrink-0 rounded-sm"
+              onError={(e) => {
+                e.currentTarget.src = "/default-favicon.svg";
+              }}
+            />
+          </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-gray-900 dark:text-white truncate group-hover:text-primary">
+            <h4 className="font-medium text-foreground truncate group-hover:text-primary">
               {bookmark.title}
             </h4>
             {bookmark.memo && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {bookmark.memo}
               </p>
             )}
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+            <p className="text-xs text-muted-foreground/80 truncate mt-1">
               {getHostname(bookmark.url)}
             </p>
           </div>
@@ -186,9 +188,9 @@ function SortableBookmark({
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.preventDefault()}
-              className="p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1 bg-background/70 border border-border rounded hover:bg-secondary/60"
             >
-              <MoreVertical className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+              <MoreVertical className="w-3 h-3 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -248,7 +250,7 @@ function SortableTabItem({
       <button
         {...attributes}
         {...listeners}
-        className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
       >
         <GripVertical className="w-4 h-4" />
       </button>
@@ -258,7 +260,7 @@ function SortableTabItem({
           px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
           ${isActive
             ? "border-primary text-primary"
-            : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            : "border-transparent text-muted-foreground hover:text-foreground"
           }
         `}
       >
@@ -267,7 +269,7 @@ function SortableTabItem({
       <div className="opacity-0 group-hover:opacity-100 transition-opacity -ml-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+            <button className="p-1 hover:bg-secondary/60 rounded">
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
@@ -324,25 +326,25 @@ function SortableFolder({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <div className="group flex items-center justify-between mb-4">
+    <div ref={setNodeRef} style={style} className="bg-card/85 rounded-xl p-6">
+      <div className="group flex items-center justify-between mb-4 -ml-7">
         <div className="flex items-center gap-2">
           <button
             {...attributes}
             {...listeners}
-            className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <GripVertical className="w-4 h-4" />
           </button>
-          <h2 className={`${isNested ? 'text-md font-medium text-gray-700 dark:text-gray-300' : 'text-lg font-semibold text-gray-900 dark:text-white'}`}>
-            {isNested ? `└─ ${folder.title}` : folder.title}
+          <h2 className={`${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>
+            {isNested ? `→ ${folder.title}` : folder.title}
           </h2>
         </div>
         <div className="flex items-center gap-2">
           {!isNested && (
             <button
               onClick={onCreateBookmark}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="text-muted-foreground hover:text-foreground"
               title="新增書籤"
             >
               <Plus className="w-4 h-4" />
@@ -350,7 +352,7 @@ function SortableFolder({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button className="text-muted-foreground hover:text-foreground">
                 <MoreVertical className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
               </button>
             </DropdownMenuTrigger>
@@ -679,27 +681,29 @@ export default function Dashboard() {
   }, [activeTab]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-transparent">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <BookmarkIcon className="w-6 h-6 text-black" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                書籤管理器
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+                <img src="/favicon.svg" alt="Kit" className="h-full w-full object-contain p-[1px]" />
+              </div>
+              <h1 className="text-xl font-semibold text-primary">
+                Kit
               </h1>
             </div>
 
             {/* Search Bar */}
             <div className="relative ml-8">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="搜尋書籤..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-80 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="pl-10 pr-4 py-2 w-80 border border-input rounded-lg bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
           </div>
@@ -707,19 +711,19 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowShareDialog(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
             >
               <Share2 className="w-4 h-4" />
               分享
             </button>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-muted-foreground">
               {user.email}
             </span>
             <Form method="post">
               <input type="hidden" name="intent" value="logout" />
               <button
                 type="submit"
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 登出
@@ -730,7 +734,7 @@ export default function Dashboard() {
       </header>
 
       {/* Tabs Bar */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+      <div className="bg-card/70 backdrop-blur-sm border-b border-border px-6">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -761,7 +765,7 @@ export default function Dashboard() {
 
             <button
               onClick={() => setShowCreateTabDialog(true)}
-              className="px-4 py-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="px-4 py-3 text-muted-foreground hover:text-foreground"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -774,11 +778,11 @@ export default function Dashboard() {
         {tabs.length === 0 ? (
           // 空狀態
           <div className="flex flex-col items-center justify-center h-full">
-            <BookmarkIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <BookmarkIcon className="w-16 h-16 text-muted-foreground/50 mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               還沒有任何書籤
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               開始建立你的第一個 Tab 和資料夾吧！
             </p>
             <button
@@ -796,7 +800,7 @@ export default function Dashboard() {
               <div className="text-center py-12">
                 {searchQuery.trim() ? (
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    <p className="text-muted-foreground mb-2">
                       找不到符合「{searchQuery}」的書籤
                     </p>
                     <button
@@ -808,7 +812,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-muted-foreground mb-4">
                       此 Tab 尚無資料夾
                     </p>
                     <button
@@ -888,8 +892,8 @@ export default function Dashboard() {
                               </SortableContext>
                             </DndContext>
                           ) : (
-                            <div className="text-center py-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-center py-8 bg-secondary/50 rounded-lg">
+                              <p className="text-sm text-muted-foreground">
                                 此資料夾尚無書籤
                               </p>
                             </div>
@@ -906,7 +910,7 @@ export default function Dashboard() {
                                 items={folder.children.map((f) => f.id)}
                                 strategy={verticalListSortingStrategy}
                               >
-                                <div className="mt-6 ml-6 space-y-6">
+                                <div className="mt-6 ml-0 space-y-0">
                                   {folder.children.map((childFolder) => (
                                     <SortableFolder
                                       key={childFolder.id}
@@ -981,7 +985,7 @@ export default function Dashboard() {
                         setParentFolderId(null);
                         setShowCreateFolderDialog(true);
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+                      className="flex items-center gap-2 px-6 py-3 bg-card/70 border-2 border-dashed border-border rounded-lg hover:border-primary hover:bg-secondary/40 transition-colors text-muted-foreground"
                     >
                       <Plus className="w-5 h-5" />
                       新增資料夾

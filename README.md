@@ -1,4 +1,4 @@
-# 📚 書籤管理器 (Bookmarks Clip)
+# 📚 Kit (Bookmarks Clip)
 
 基於 **Remix + Cloudflare Pages + Supabase** 的現代化書籤管理系統。
 
