@@ -33,12 +33,14 @@ export default function CreateBookmarkDialog({
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
+  const [memo, setMemo] = useState("");
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
     if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
       setTitle("");
       setUrl("");
+      setMemo("");
       onOpenChange(false);
       window.location.reload();
     }
@@ -53,6 +55,9 @@ export default function CreateBookmarkDialog({
     formData.append("folder_id", folderId);
     formData.append("title", title.trim());
     formData.append("url", url.trim());
+    if (memo.trim()) {
+      formData.append("memo", memo.trim());
+    }
 
     fetcher.submit(formData, {
       method: "post",
@@ -97,6 +102,18 @@ export default function CreateBookmarkDialog({
               <p className="text-xs text-muted-foreground">
                 網站圖示會自動抓取
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bookmark-memo">備註 (選填)</Label>
+              <textarea
+                id="bookmark-memo"
+                placeholder="輸入備註..."
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                disabled={isSubmitting}
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
 
             {fetcher.data && "error" in fetcher.data && fetcher.data.error && (

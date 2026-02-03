@@ -19,6 +19,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const folder_id = formData.get("folder_id") as string;
         const title = formData.get("title") as string;
         const url = formData.get("url") as string;
+        const memo = formData.get("memo") as string | undefined;
 
         if (!folder_id) {
           return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400, headers });
@@ -74,6 +75,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             title: title.trim(),
             url: trimmedUrl,
             favicon_url,
+            memo: memo ? memo.trim() : null,
             sort_order: newSortOrder,
           })
           .select()

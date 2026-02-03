@@ -1,6 +1,6 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/cloudflare";
-import { useLoaderData, useFetcher, Form } from "@remix-run/react";
-import { useState, useMemo } from "react";
+import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/react";
+import { useState, useMemo, useEffect } from "react";
 import { createSupabaseServerClient, requireAuth } from "~/lib/supabase.server";
 import { buildFolderTree } from "~/lib/utils";
 import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren } from "~/lib/types";
@@ -246,11 +246,11 @@ function SortableTabItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="group flex items-center">
+    <div ref={setNodeRef} style={style} className="group flex items-center relative">
       <button
         {...attributes}
         {...listeners}
-        className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+        className="absolute -left-3 z-10 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 rounded"
       >
         <GripVertical className="w-4 h-4" />
       </button>
@@ -390,7 +390,29 @@ function SortableFolder({
 export default function Dashboard() {
   const { tabs: initialTabs, user } = useLoaderData<typeof loader>();
   const [tabs, setTabs] = useState(initialTabs);
-  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramTabId = searchParams.get("tab");
+  // 檢查 URL 參數中的 tab id 是否存在於目前的 tabs 中
+  const activeTabId = (paramTabId && tabs.find((t) => t.id === paramTabId))
+    ? paramTabId
+    : tabs[0]?.id;
+
+  // 如果 URL 中的 tab 無效（例如已被刪除），則更新 URL 為有效值
+  useEffect(() => {
+    if (paramTabId && !tabs.find((t) => t.id === paramTabId) && tabs.length > 0) {
+      setSearchParams((prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set("tab", tabs[0].id);
+        return newParams;
+      }, { replace: true, preventScrollReset: true });
+    }
+  }, [tabs, paramTabId, setSearchParams]);
+
+  // 確保 tabs 數據更新時同步（例如拖曳排序後）
+  useEffect(() => {
+    setTabs(initialTabs);
+  }, [initialTabs]);
 
   const logoutFetcher = useFetcher();
   const reorderTabsFetcher = useFetcher();
@@ -696,7 +718,7 @@ export default function Dashboard() {
           collisionDetection={closestCenter}
           onDragEnd={handleTabDragEnd}
         >
-          <div className="flex items-center gap-2 overflow-x-auto">
+          <div className="flex items-center gap-0 overflow-x-auto">
             <SortableContext
               items={tabs.map((t) => t.id)}
               strategy={horizontalListSortingStrategy}
@@ -706,7 +728,7 @@ export default function Dashboard() {
                   key={tab.id}
                   tab={tab}
                   isActive={activeTabId === tab.id}
-                  onSelect={() => setActiveTabId(tab.id)}
+                  onSelect={() => setSearchParams({ tab: tab.id }, { preventScrollReset: true })}
                   onEdit={() => {
                     setEditingTab(tab);
                     setShowEditTabDialog(true);
