@@ -328,7 +328,7 @@ export default function SharePage() {
   return (
     <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card/85 backdrop-blur-sm shadow-lg px-6 pt-4 pb-0 space-y-2">
+      <div className="sticky top-0 z-10 bg-card/85 backdrop-blur-sm shadow-lg px-6 pr-0 md:pr-6 pt-4 pb-0 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h1 className="text-xl font-semibold text-foreground/90">
@@ -370,13 +370,13 @@ export default function SharePage() {
         {/* Tabs Bar */}
         {tabs.length > 0 && (
           <div className="">
-            <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto pr-4 md:pr-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTabId(tab.id)}
                   className={`
-                    px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
+                    px-4 py-3 pr-0 md:pr-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
                     ${activeTabId === tab.id
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
