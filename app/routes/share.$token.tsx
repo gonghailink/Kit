@@ -376,7 +376,7 @@ export default function SharePage() {
                   key={tab.id}
                   onClick={() => setActiveTabId(tab.id)}
                   className={`
-                    px-4 py-3 pr-0 md:pr-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
+                    px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
                     ${activeTabId === tab.id
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
