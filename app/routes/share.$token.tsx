@@ -1,18 +1,22 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, Link } from "@remix-run/react";
-import { createSupabaseServerClient } from "~/lib/supabase.server";
+import { createDb } from "~/lib/db.server";
+import { shares, tabs, folders, bookmarks } from "~/drizzle/schema";
+import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
 import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
+import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
+import { FolderCard } from "~/components/page-ui/share-id/FolderCard";
 
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  const title = data?.share?.name
-    ? `${data.share.name} 的精選書籤`
-    : "精選書籤";
+  const title = (data as any)?.share?.name
+    ? `${(data as any).share.name} · Kit`
+    : "精選書籤 · Kit";
 
   return [
     { title },
@@ -27,63 +31,54 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     throw new Response("找不到分享連結", { status: 404 });
   }
 
-  const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
+  const db = createDb(context.cloudflare.env);
 
   try {
     // 查詢分享資訊
-    const { data: share, error: shareError } = await supabase
-      .from("shares")
-      .select("*")
-      .eq("share_token", token)
-      .single();
+    const share = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.share_token, token))
+      .get();
 
-    if (shareError || !share) {
+    if (!share) {
       throw new Response("找不到分享連結", { status: 404 });
     }
 
     // 取得該使用者的所有 Tabs
-    const { data: tabs, error: tabsError } = await supabase
-      .from("tabs")
-      .select("*")
-      .eq("user_id", share.user_id)
-      .order("sort_order", { ascending: true });
-
-    if (tabsError) {
-      throw new Response("載入書籤失敗", { status: 500 });
-    }
+    const allTabs = (await db
+      .select()
+      .from(tabs)
+      .where(eq(tabs.user_id, share.user_id))
+      .orderBy(asc(tabs.sort_order))
+      .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
 
     // 取得所有資料夾
-    const { data: folders, error: foldersError } = await supabase
-      .from("folders")
-      .select("*")
-      .eq("user_id", share.user_id)
-      .order("sort_order", { ascending: true });
-
-    if (foldersError) {
-      throw new Response("載入資料夾失敗", { status: 500 });
-    }
+    const allFolders = (await db
+      .select()
+      .from(folders)
+      .where(eq(folders.user_id, share.user_id))
+      .orderBy(asc(folders.sort_order))
+      .all()).map(f => ({ ...f, is_collapsed: !!f.is_collapsed, sort_order: f.sort_order ?? 0 }));
 
     // 取得所有書籤
-    const { data: bookmarks, error: bookmarksError } = await supabase
-      .from("bookmarks")
-      .select("*")
-      .eq("user_id", share.user_id)
-      .order("sort_order", { ascending: true });
-
-    if (bookmarksError) {
-      throw new Response("載入書籤失敗", { status: 500 });
-    }
+    const allBookmarks = (await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.user_id, share.user_id))
+      .orderBy(asc(bookmarks.sort_order))
+      .all()).map(b => ({ ...b, sort_order: b.sort_order ?? 0 }));
 
     // 組織成樹狀結構
-    const tabsWithFolders: TabWithFolders[] = (tabs || []).map((tab) => ({
+    const tabsWithFolders: TabWithFolders[] = (allTabs || []).map((tab) => ({
       ...tab,
       folders: buildFolderTree(
-        (folders || []).filter((f) => f.tab_id === tab.id),
-        (bookmarks || []).filter((b) =>
-          (folders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
+        (allFolders || []).filter((f) => f.tab_id === tab.id),
+        (allBookmarks || []).filter((b) =>
+          (allFolders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
         )
       ),
-    }));
+    })) as any;
 
     return json({
       tabs: tabsWithFolders,
@@ -103,171 +98,12 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
   }
 }
 
-function getHostname(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
-}
-
-function FolderCard({ folder }: { folder: FolderWithChildren }) {
-  return (
-    <div className="bg-card/85 rounded-xl p-6 shadow-sm">
-      {/* 資料夾標題 */}
-      <h2 className="text-lg font-semibold text-foreground mb-4">
-        {folder.title}
-      </h2>
-
-      {/* 書籤網格 */}
-      {folder.bookmarks && folder.bookmarks.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {folder.bookmarks.map((bookmark) => (
-            <a
-              key={bookmark.id}
-              href={bookmark.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all group"
-            >
-              <div className="flex items-start gap-3">
-                {bookmark.favicon_url ? (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
-                    <img
-                      src={bookmark.favicon_url}
-                      alt=""
-                      className="w-5 h-5 flex-shrink-0 rounded-sm"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate group-hover:text-primary transition-colors">
-                    {bookmark.title}
-                  </h4>
-                  {/* <p className="text-xs text-muted-foreground/80 truncate mt-1">
-                    {getHostname(bookmark.url)}
-                  </p> */}
-                  {bookmark.memo && (
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {bookmark.memo}
-                    </p>
-                  )}
-                </div>
-                <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 bg-secondary/40 rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            此資料夾尚無書籤
-          </p>
-        </div>
-      )}
-
-      {/* 子資料夾區域 */}
-      {folder.children && folder.children.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-border">
-          <SubFolderTree folders={folder.children} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SubFolderTree({ folders }: { folders: FolderWithChildren[] }) {
-  return (
-    <div className="space-y-4">
-      {folders.map((folder) => (
-        <CollapsibleSubFolder key={folder.id} folder={folder} />
-      ))}
-    </div>
-  );
-}
-
-function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
-  const [isOpen, setIsOpen] = useState(!folder.is_collapsed);
-
-  return (
-    <div>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-md font-medium text-muted-foreground mb-3 hover:text-primary transition-colors"
-      >
-        {isOpen ? (
-          <ChevronDown className="w-4 h-4" />
-        ) : (
-          <ChevronRight className="w-4 h-4" />
-        )}
-        {folder.title}
-      </button>
-
-      {isOpen && (
-        <div className="ml-2">
-          {folder.bookmarks && folder.bookmarks.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
-              {folder.bookmarks.map((bookmark) => (
-                <a
-                  key={bookmark.id}
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-secondary/50 border border-border rounded-lg p-4 hover:shadow-lg hover:border-primary/70 transition-all group"
-                >
-                  <div className="flex items-start gap-3">
-                    {bookmark.favicon_url ? (
-                      <img
-                        src={bookmark.favicon_url}
-                        alt=""
-                        className="w-5 h-5 flex-shrink-0 mt-0.5 rounded"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate group-hover:text-primary transition-colors">
-                        {bookmark.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground/80 truncate mt-1">
-                        {getHostname(bookmark.url)}
-                      </p>
-                      {bookmark.memo && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                          {bookmark.memo}
-                        </p>
-                      )}
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-
-          {folder.children && folder.children.length > 0 && (
-            <SubFolderTree folders={folder.children} />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function SharePage() {
-  const { tabs, share } = useLoaderData<typeof loader>();
-  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
+  const { tabs: tabsData, share } = useLoaderData<typeof loader>();
+  const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeTab = tabsData.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
 
@@ -284,11 +120,11 @@ export default function SharePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 搜索过滤函数
+  // 搜尋過濾函數
   const filterFolder = (folder: FolderWithChildren, query: string): FolderWithChildren | null => {
     const lowerQuery = query.toLowerCase();
 
-    // 过滤书签
+    // 過濾書籤
     const filteredBookmarks = folder.bookmarks?.filter((bookmark) => {
       return (
         bookmark.title.toLowerCase().includes(lowerQuery) ||
@@ -297,12 +133,12 @@ export default function SharePage() {
       );
     });
 
-    // 递归过滤子文件夹
+    // 遞迴過濾子資料夾
     const filteredChildren = folder.children
       ?.map((child) => filterFolder(child, query))
       .filter((child): child is FolderWithChildren => child !== null);
 
-    // 如果有匹配的书签或子文件夹，保留此文件夹
+    // 如果有匹配的書籤或子資料夾，保留此資料夾
     if ((filteredBookmarks && filteredBookmarks.length > 0) || (filteredChildren && filteredChildren.length > 0)) {
       return {
         ...folder,
@@ -314,7 +150,7 @@ export default function SharePage() {
     return null;
   };
 
-  // 应用搜索过滤
+  // 應用搜尋過濾
   const filteredTab = activeTab && searchQuery ? {
     ...activeTab,
     folders: activeTab.folders
@@ -323,21 +159,19 @@ export default function SharePage() {
   } : activeTab;
 
 
-
-
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="h-screen flex flex-col bg-transparent">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card/85 backdrop-blur-sm shadow-lg px-6 pr-0 md:pr-6 pt-4 pb-0 space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="z-10 bg-card/85 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
+        <div className="flex items-center justify-between px-6">
           <div className="flex items-center space-x-3">
             <h1 className="text-xl font-semibold text-foreground/90">
-              {share.name ? `${share.name} 的精選書籤` : "精選書籤"}
+              {share.name ? `${share.name}` : "精選書籤"}
             </h1>
           </div>
-          <div className="hidden md:flex items-center gap-3">
+          <div className="md:flex items-center gap-3">
             {/* 搜尋功能 */}
-            <div className="relative">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="搜尋書籤..."
@@ -368,10 +202,10 @@ export default function SharePage() {
           </div>
         </div>
         {/* Tabs Bar */}
-        {tabs.length > 0 && (
-          <div className="">
-            <div className="flex items-center gap-2 overflow-x-auto pr-4 md:pr-0">
-              {tabs.map((tab) => (
+        {tabsData.length > 0 && (
+          <ScrollArea className="w-full">
+            <div className="flex items-center gap-2 px-4">
+              {tabsData.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTabId(tab.id)}
@@ -387,65 +221,68 @@ export default function SharePage() {
                 </button>
               ))}
             </div>
-          </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         )}
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Content */}
-        {!filteredTab || filteredTab.folders.length === 0 ? (
-          <div className="bg-card/85 rounded-lg shadow-sm p-6">
-            <div className="text-center py-12">
-              <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">
-                {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
-              </p>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="mt-4 text-primary hover:underline"
-                >
-                  清除搜尋
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <>
-            {searchQuery && (
-              <div className="mb-4 text-sm text-muted-foreground">
-                搜尋結果：共找到 {filteredTab.folders.reduce((count, folder) => {
-                  const countBookmarks = (f: FolderWithChildren): number => {
-                    const bookmarkCount = f.bookmarks?.length || 0;
-                    const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
-                    return bookmarkCount + childrenCount;
-                  };
-                  return count + countBookmarks(folder);
-                }, 0)} 個書籤
+      <ScrollArea className="flex-1 relative min-h-0">
+        <div className="container mx-auto px-4 py-8">
+          {/* Content */}
+          {!filteredTab || filteredTab.folders.length === 0 ? (
+            <div className="bg-card/85 rounded-lg shadow-sm p-6">
+              <div className="text-center py-12">
+                <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">
+                  {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="mt-4 text-primary hover:underline"
+                  >
+                    清除搜尋
+                  </button>
+                )}
               </div>
-            )}
-            <div className="space-y-6">
-              {filteredTab.folders.map((folder) => (
-                <FolderCard key={folder.id} folder={folder} />
-              ))}
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              {searchQuery && (
+                <div className="mb-4 text-sm text-muted-foreground">
+                  搜尋結果：共找到 {filteredTab.folders.reduce((count, folder) => {
+                    const countBookmarks = (f: FolderWithChildren): number => {
+                      const bookmarkCount = f.bookmarks?.length || 0;
+                      const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
+                      return bookmarkCount + childrenCount;
+                    };
+                    return count + countBookmarks(folder);
+                  }, 0)} 個書籤
+                </div>
+              )}
+              <div className="space-y-6">
+                {filteredTab.folders.map((folder) => (
+                  <FolderCard key={folder.id} folder={folder} />
+                ))}
+              </div>
+            </>
+          )}
 
-        {/* Footer */}
-        <div className="flex flex-col items-center justify-center gap-4">
-          <p className="text-center mt-8 text-sm text-muted-foreground">
-            由{" "}
-            <Link to="/intro" className="text-primary hover:underline">
-              Kit (Bookmark Manager)
-            </Link>{" "}
-            提供
-          </p>
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm opacity-50">
-            <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
+          {/* Footer */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <p className="text-center mt-8 text-sm text-muted-foreground">
+              由{" "}
+              <Link to="/intro" className="text-primary hover:underline">
+                Kit (Bookmark Manager)
+              </Link>{" "}
+              提供
+            </p>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm opacity-50">
+              <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Scroll to Top Button */}
       {showScrollTop && (

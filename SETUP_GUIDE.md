@@ -6,211 +6,98 @@
 
 - Node.js 18 或以上
 - npm 或 yarn
-- Supabase 帳號（免費）
-- Cloudflare 帳號（免費）
+- Supabase 帳號（僅用於身份驗證）
+- Cloudflare 帳號（用於資料庫和託管）
 
 ---
 
 ## 步驟 1️⃣：安裝依賴套件
 
 ```bash
-cd app
 npm install
 ```
 
-如果遇到套件版本問題，可以使用：
+---
+
+## 步驟 2️⃣：設定 Cloudflare D1
+
+### 2.1 建立資料庫
+
+1. 確保你已安裝 Wrangler 並登入：
+   ```bash
+   npx wrangler login
+   ```
+2. 建立 D1 資料庫：
+   ```bash
+   npx wrangler d1 create bookmarks-db
+   ```
+3. 複製輸出的內容（包含 `database_id`），並更新 `wrangler.toml` 中的 `database_id`。
+
+### 2.2 套用資料庫 Schema
+
+專案使用 Drizzle ORM 管理結構。執行以下指令初始化資料庫：
+
 ```bash
-npm install --legacy-peer-deps
+# 本地開發環境
+npm run db:migrate
+
+# 生產環境 (雲端)
+npm run db:migrate:remote
 ```
 
 ---
 
-## 步驟 2️⃣：設定 Supabase
+## 步驟 3️⃣：設定 Supabase (僅 Auth)
 
-### 2.1 建立 Supabase 專案
+雖然資料存在 D1，但我們仍使用 Supabase 處理登入。
 
-1. 前往 [https://supabase.com](https://supabase.com)
-2. 點選「Start your project」
-3. 建立新專案：
-   - **Organization**: 建立或選擇現有的
-   - **Project name**: bookmarks-remix
-   - **Database Password**: 設定一個強密碼（記下來！）
-   - **Region**: 選擇離你最近的區域（建議 Northeast Asia (Tokyo)）
-4. 等待專案建立完成（約 2 分鐘）
-
-### 2.2 建立資料庫表格
-
-1. 在 Supabase Dashboard 左側選單點選「SQL Editor」
-2. 點選「New query」
-3. 複製貼上以下 SQL 並執行：
-
-```sql
--- 1. Tabs 表：最頂層的分頁
-create table public.tabs (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  title text not null,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 2. Folders 表：支援無限層級嵌套
-create table public.folders (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  tab_id uuid references public.tabs on delete cascade not null,
-  parent_id uuid references public.folders on delete cascade,
-  title text not null,
-  is_collapsed boolean default false,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 3. Bookmarks 表：實際的書籤
-create table public.bookmarks (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  folder_id uuid references public.folders on delete cascade not null,
-  title text not null,
-  url text not null,
-  favicon_url text,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 4. 設定 RLS (Row Level Security)
-alter table public.tabs enable row level security;
-alter table public.folders enable row level security;
-alter table public.bookmarks enable row level security;
-
-create policy "Users can CRUD their own tabs" on public.tabs
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own folders" on public.folders
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own bookmarks" on public.bookmarks
-  for all using (auth.uid() = user_id);
-```
-
-4. 點選「Run」執行 SQL
-5. 驗證：左側選單「Table Editor」應該會看到 3 個新表格
-
-### 2.3 設定 Email Auth
-
-1. 左側選單點選「Authentication」→「Providers」
-2. 找到「Email」並確認已啟用
-3. **重要**：關閉「Confirm email」（開發階段）
-   - 展開 Email Provider 設定
-   - 取消勾選「Enable email confirmations」
-   - 點選「Save」
-
-### 2.4 取得 API Keys
-
-1. 左側選單點選「Settings」→「API」
-2. 複製以下資訊：
-   - **Project URL** (例如: https://xxxxx.supabase.co)
-   - **anon public** key
-   - **service_role** key（點選「Reveal」顯示）
+1. 前往 [Supabase](https://supabase.com) 建立專案。
+2. 左側選單點選「Authentication」→「Providers」→「Email」：
+   - 確認已啟用。
+   - 建議關閉「Confirm email」（開發階段）。
+3. 前往 「Settings」→「API」，複製 **Project URL** 和 **anon public** key。
 
 ---
 
-## 步驟 3️⃣：設定環境變數
+## 步驟 4️⃣：設定環境變數
 
-在 `app/` 目錄下：
+複製 `.dev.vars.example` 並填入資訊：
 
 ```bash
 cp .dev.vars.example .dev.vars
 ```
 
-編輯 `.dev.vars` 並填入你的 Supabase 資訊：
+編輯 `.dev.vars`：
 
 ```env
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
-
-⚠️ **重要**：`.dev.vars` 已加入 `.gitignore`，不會被提交到 Git
 
 ---
 
-## 步驟 4️⃣：本地開發測試
+## 步驟 5️⃣：本地開發測試
 
 ```bash
 npm run dev
 ```
 
-開啟瀏覽器前往 [http://localhost:5173](http://localhost:5173)
-
-### 測試流程
-
-1. **註冊帳號**
-   - 輸入 Email 和密碼（至少 6 個字元）
-   - 點選「註冊」
-   - 因為關閉了 Email 確認，應該會直接註冊成功
-
-2. **登入**
-   - 使用剛註冊的帳號登入
-   - 應該會自動跳轉到 Dashboard
-
-3. **驗證 Dashboard**
-   - 目前應該顯示「還沒有任何書籤」
-   - 這是正常的，因為還沒實作新增功能
+開啟瀏覽器前往 [http://localhost:8788](http://localhost:8788) (本地 Wrangler 模擬環境) 或 [http://localhost:5173](http://localhost:5173) (Vite 開發環境)。
 
 ---
 
-## 步驟 5️⃣：部署到 Cloudflare Pages
+## 步驟 6️⃣：部署到 Cloudflare Pages
 
-### 5.1 方式一：透過 Git 自動部署（推薦）
-
-1. **將程式碼推送到 GitHub**
-   ```bash
-   cd /Users/meowlu/Documents/github/Personal-BookmarksRemix
-   git add .
-   git commit -m "Initial commit: Remix + Supabase Bookmarks"
-   git push origin main
-   ```
-
-2. **連結 Cloudflare Pages**
-   - 前往 [Cloudflare Dashboard](https://dash.cloudflare.com)
-   - 點選「Workers & Pages」→「Create application」
-   - 選擇「Pages」→「Connect to Git」
-   - 授權並選擇你的 GitHub repository
-
-3. **設定建置**
-   - **Framework preset**: Remix
+1. **上傳程式碼到 GitHub**。
+2. **在 Cloudflare 建立 Pages 專案**：
+   - 連結 GitHub 倉庫。
    - **Build command**: `npm run build`
    - **Build output directory**: `build/client`
-   - **Root directory**: `app`（如果你的 package.json 在 app 資料夾內）
-
-4. **設定環境變數**
-   - 在專案設定頁面找到「Settings」→「Environment variables」
-   - 新增以下變數：
-     ```
-     SUPABASE_URL=https://xxxxx.supabase.co
-     SUPABASE_ANON_KEY=eyJhbG...
-     SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
-     ```
-
-5. **部署**
-   - 點選「Save and Deploy」
-   - 等待建置完成（約 2-3 分鐘）
-   - 你會得到一個 `.pages.dev` 的網址
-
-### 5.2 方式二：手動部署
-
-```bash
-cd app
-npm run build
-npx wrangler pages deploy ./build/client --project-name=bookmarks-remix
-```
-
-第一次執行會要求登入 Cloudflare 帳號。
-
----
-
-## 步驟 6️⃣：設定 Supabase Auth 回調 URL
+3. **綁定 D1 資料庫**：
+   - 在 Pages 專案設定中的「Bindings」功能，新增 D1 資料庫綁定。
+   - 變數名稱必須為 `DB`。
+4. **設定環境變數**：
+   - 新增 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY`。
 
 部署完成後，需要將 Cloudflare Pages URL 加入 Supabase 允許清單：
 

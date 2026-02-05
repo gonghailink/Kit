@@ -6,17 +6,22 @@
 
 ```bash
 # 1. 安裝依賴
-cd app
 npm install
 
-# 2. 設定環境變數（複製並填入你的 Supabase 資訊）
+# 2. 設定環境變數（複製並填入你的資訊）
 cp .dev.vars.example .dev.vars
 
-# 3. 啟動開發伺服器
+# 3. 初始化本地資料庫 (D1)
+# 建立本地 D1 資料庫 (如果還沒建立)
+npx wrangler d1 create bookmarks-db
+# 套用遷移
+npm run db:migrate
+
+# 4. 啟動開發伺服器
 npm run dev
 ```
 
-開啟 http://localhost:5173
+開啟 http://localhost:8788 (Wrangler Pages Dev) 或 http://localhost:5173 (Vite Dev)
 
 ---
 
@@ -27,78 +32,45 @@ npm run dev
 ```env
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### 如何取得這些值？
-
-1. 前往 [Supabase](https://supabase.com) 並登入
-2. 選擇你的專案（或建立新專案）
-3. 左側選單：Settings → API
-4. 複製 Project URL 和 API Keys
+> [!NOTE]
+> 目前專案仍使用 Supabase 處理身份驗證 (Auth)，但資料存儲已切換至 Cloudflare D1。
 
 ---
 
-## 🗄️ Supabase 資料庫設定
+## 🗄️ 資料庫管理 (Drizzle + D1)
 
-在 Supabase SQL Editor 執行以下 SQL：
+專案使用 Drizzle ORM 管理 Cloudflare D1 資料庫。
 
-```sql
--- Tabs 表
-create table public.tabs (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  title text not null,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+### 本地開發
+```bash
+# 生成遷移文件 (當修改 schema.ts 後)
+npm run db:generate
 
--- Folders 表
-create table public.folders (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  tab_id uuid references public.tabs on delete cascade not null,
-  parent_id uuid references public.folders on delete cascade,
-  title text not null,
-  is_collapsed boolean default false,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+# 推送結構到本地資料庫 (快速同步)
+npm run db:push
 
--- Bookmarks 表
-create table public.bookmarks (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  folder_id uuid references public.folders on delete cascade not null,
-  title text not null,
-  url text not null,
-  favicon_url text,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+# 套用遷移到本地 D1
+npm run db:migrate
 
--- RLS 政策
-alter table public.tabs enable row level security;
-alter table public.folders enable row level security;
-alter table public.bookmarks enable row level security;
+# 開啟資料庫管理界面 (GUI)
+npm run db:studio
+```
 
-create policy "Users can CRUD their own tabs" on public.tabs
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own folders" on public.folders
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own bookmarks" on public.bookmarks
-  for all using (auth.uid() = user_id);
+### 線上環境 (Production)
+```bash
+# 套用遷移到雲端 D1
+npm run db:migrate:remote
 ```
 
 ---
 
 ## ✅ 測試
 
-1. 開啟 http://localhost:5173
+1. 開啟開發伺服器
 2. 點選「註冊」建立新帳號
-3. 登入後應該會看到 Dashboard
+3. 登入後開始新增書籤
 
 ---
 

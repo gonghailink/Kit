@@ -5,3 +5,9 @@ pages_build_output_dir = "./build/client"
 # 環境變數在 Cloudflare Dashboard 或 .dev.vars 中設定
 # VITE_SUPABASE_URL
 # VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bookmarks-db"
+database_id = "709c3a2d-36b7-4d78-886a-e985a49a3f5d"
+migrations_dir = "drizzle"

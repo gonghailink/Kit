@@ -1,5 +1,5 @@
 import { redirect, type LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { getUser } from "~/lib/supabase.server";
+import { getUser } from "~/lib/auth.server";
 
 // 首頁：已登入則跳轉到 dashboard，未登入則跳轉到 login
 export async function loader({ request, context }: LoaderFunctionArgs) {

@@ -1,4 +1,4 @@
-// 資料庫表格型別 (對應你的 Supabase Schema)
+// 資料庫表格型別
 export interface Tab {
   id: string;
   user_id: string;
@@ -49,34 +49,6 @@ export interface FolderWithChildren extends Folder {
 
 export interface TabWithFolders extends Tab {
   folders: FolderWithChildren[];
-}
-
-// Supabase Database 型別定義
-export interface Database {
-  public: {
-    Tables: {
-      tabs: {
-        Row: Tab;
-        Insert: Omit<Tab, "id" | "created_at">;
-        Update: Partial<Omit<Tab, "id" | "user_id" | "created_at">>;
-      };
-      folders: {
-        Row: Folder;
-        Insert: Omit<Folder, "id" | "created_at">;
-        Update: Partial<Omit<Folder, "id" | "user_id" | "created_at">>;
-      };
-      bookmarks: {
-        Row: Bookmark;
-        Insert: Omit<Bookmark, "id" | "created_at">;
-        Update: Partial<Omit<Bookmark, "id" | "user_id" | "created_at">>;
-      };
-      shares: {
-        Row: Share;
-        Insert: Omit<Share, "id" | "created_at">;
-        Update: Partial<Omit<Share, "id" | "user_id" | "created_at">>;
-      };
-    };
-  };
 }
 
 // API 請求/回應型別

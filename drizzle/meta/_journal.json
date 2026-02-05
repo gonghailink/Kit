@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1770178535107,
+      "tag": "0000_purple_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1770178969366,
+      "tag": "0001_curious_norrin_radd",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770313701342,
+      "tag": "0002_mature_puck",
+      "breakpoints": true
+    }
+  ]
+}

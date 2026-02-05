@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import { Loader2, Share2, Copy, Check, Trash2, ExternalLink, MonitorOffIcon } from "lucide-react";
+import { Loader2, Share2, Copy, Check, Trash2, ExternalLink, MonitorOffIcon, Clock, TypeIcon, LinkIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -120,7 +120,7 @@ export default function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-w-[95vw]">
+      <DialogContent className="sm:max-w-[600px] max-w-[95vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
@@ -131,7 +131,7 @@ export default function ShareDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4 overflow-hidden">
+        <div className="space-y-6 pt-4 overflow-hidden">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -139,7 +139,6 @@ export default function ShareDialog({
           ) : hasShare ? (
             // 顯示現有分享連結
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">您的分享連結</h3>
               {shares.map((share) => {
                 const shareUrl = share.short_link
                   ? `${window.location.origin}/s/${share.short_link}`
@@ -148,32 +147,30 @@ export default function ShareDialog({
                 return (
                   <div
                     key={share.id}
-                    className="rounded-lg p-6 space-y-3 bg-card/80"
+                    className="rounded-lg p-6 pt-4 space-y-3 bg-card/80"
                   >
                     <div className="min-w-0 space-y-4">
-                      <p className="text-xs text-muted-foreground mb-2">
-                        建立於：{formatDate(share.created_at)}
-                      </p>
                       <div className="bg-secondary/50 p-3 -mx-3 rounded min-w-0">
                         <p className="text-sm text-muted-foreground font-mono break-all">
                           {shareUrl}
                         </p>
                       </div>
-                      {share.name && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          顯示名稱：{share.name}
+                      <div className="grid grid-cols-2 gap-2">
+                        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                          <Clock className="w-4 h-4" /> {formatDate(share.created_at)} 建立
                         </p>
-                      )}
-                      {share.short_link && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          短網址：/s/{share.short_link}
-                        </p>
-                      )}
-                      {share.extra_btn_title && share.extra_btn_url && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          附加按鈕：{share.extra_btn_title} → {share.extra_btn_url}
-                        </p>
-                      )}
+                        {share.name && (
+                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                            <TypeIcon className="w-4 h-4" /> {share.name}
+                          </p>
+                        )}
+                        {share.extra_btn_title && share.extra_btn_url && (
+                          <p className="col-span-2 text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                            <ExternalLink className="w-4 h-4" /> {share.extra_btn_title}
+                            <span className="text-muted-foreground/50">({share.extra_btn_url})</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 pt-4">
                       <Button

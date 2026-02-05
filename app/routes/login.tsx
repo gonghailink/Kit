@@ -1,7 +1,7 @@
 import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
-import { createSupabaseServerClient, getUser } from "~/lib/supabase.server";
+import { getUser, login, signup, getSessionStorage } from "~/lib/auth.server";
 import { Bookmark, Loader2 } from "lucide-react";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
@@ -15,13 +15,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   return json({});
 }
 
-type ActionData =
-  | { error: string; success?: never }
-  | { success: string; error?: never };
+type ActionData = { error?: string; success?: string };
 
 export async function action({ request, context }: ActionFunctionArgs) {
   try {
-    const { supabase, headers } = createSupabaseServerClient(request, context.cloudflare.env);
+    const env = context.cloudflare.env;
     const formData = await request.formData();
     const intent = formData.get("intent");
     const email = formData.get("email") as string;
@@ -30,40 +28,47 @@ export async function action({ request, context }: ActionFunctionArgs) {
     if (!email || !password) {
       return json<ActionData>(
         { error: "請輸入 Email 和密碼" },
-        { status: 400, headers }
+        { status: 400 }
       );
     }
 
     if (intent === "login") {
       // 登入
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const result = await login(email, password, env);
 
-      if (error) {
-        return json<ActionData>({ error: error.message }, { status: 400, headers });
+      if ("error" in result) {
+        return json<ActionData>({ error: result.error }, { status: 400 });
       }
 
-      return redirect("/dashboard", { headers });
+      const storage = getSessionStorage(env);
+      const session = await storage.getSession();
+      session.set("jwt", result.token);
+
+      return redirect("/dashboard", {
+        headers: {
+          "Set-Cookie": await storage.commitSession(session),
+        },
+      });
     } else if (intent === "signup") {
       // 註冊
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const result = await signup(email, password, env);
 
-      if (error) {
-        return json<ActionData>({ error: error.message }, { status: 400, headers });
+      if ("error" in result) {
+        return json<ActionData>({ error: result.error }, { status: 400 });
       }
 
-      return json<ActionData>(
-        { success: "註冊成功！請檢查您的 Email 以驗證帳號。" },
-        { headers }
-      );
+      const storage = getSessionStorage(env);
+      const session = await storage.getSession();
+      session.set("jwt", result.token);
+
+      return redirect("/dashboard", {
+        headers: {
+          "Set-Cookie": await storage.commitSession(session),
+        },
+      });
     }
 
-    return json<ActionData>({ error: "無效的操作" }, { status: 400, headers });
+    return json<ActionData>({ error: "無效的操作" }, { status: 400 });
   } catch (error) {
     console.error("Login action error:", error);
     return json<ActionData>(
@@ -83,14 +88,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
         {/* Logo & Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-sm">
-            <Bookmark className="w-8 h-8 text-primary-foreground" />
+        <div className="grid justify-items-center text-center gap-4 mb-8">
+          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
+            <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
           </div>
           <h1 className="text-3xl font-semibold text-foreground">
             Kit
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground">
             {isSignUp ? "建立您的帳號" : "登入您的帳號"}
           </p>
         </div>

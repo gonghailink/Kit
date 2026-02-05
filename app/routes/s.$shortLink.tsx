@@ -1,5 +1,7 @@
 import { type LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { createSupabaseServerClient } from "~/lib/supabase.server";
+import { createDb } from "~/lib/db.server";
+import { shares } from "~/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export async function loader({ params, request, context }: LoaderFunctionArgs) {
   const { shortLink } = params;
@@ -8,17 +10,17 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     throw new Response("找不到短網址", { status: 404 });
   }
 
-  const { supabase } = createSupabaseServerClient(request, context.cloudflare.env);
+  const db = createDb(context.cloudflare.env);
 
   try {
     // 查詢短網址對應的分享資訊
-    const { data: share, error } = await supabase
-      .from("shares")
-      .select("share_token")
-      .eq("short_link", shortLink)
-      .single();
+    const share = await db
+      .select({ share_token: shares.share_token })
+      .from(shares)
+      .where(eq(shares.short_link, shortLink))
+      .get();
 
-    if (error || !share) {
+    if (!share) {
       throw new Response("找不到此短網址", { status: 404 });
     }
 
