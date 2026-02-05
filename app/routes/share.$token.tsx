@@ -5,7 +5,7 @@ import { shares, tabs, folders, bookmarks } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
 import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
@@ -102,22 +102,31 @@ export default function SharePage() {
   const { tabs: tabsData, share } = useLoaderData<typeof loader>();
   const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const activeTab = tabsData.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      setShowScrollTop(target.scrollTop > 300);
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    if (scrollContainer) {
+      scrollContainer.addEventListener("scroll", handleScroll);
+      return () => scrollContainer.removeEventListener("scroll", handleScroll);
+    }
+  }, [activeTabId]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   // 搜尋過濾函數
@@ -226,7 +235,7 @@ export default function SharePage() {
         )}
       </div>
 
-      <ScrollArea className="flex-1 relative min-h-0">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
         <div className="container mx-auto px-4 py-8">
           {/* Content */}
           {!filteredTab || filteredTab.folders.length === 0 ? (

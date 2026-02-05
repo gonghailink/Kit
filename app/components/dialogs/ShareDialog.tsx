@@ -150,12 +150,12 @@ export default function ShareDialog({
                     className="rounded-lg p-6 pt-4 space-y-3 bg-card/80"
                   >
                     <div className="min-w-0 space-y-4">
-                      <div className="bg-secondary/50 p-3 -mx-3 rounded min-w-0">
+                      <div className="bg-secondary/50 px-4 py-2 -mx-3 rounded-full min-w-0">
                         <p className="text-sm text-muted-foreground font-mono break-all">
                           {shareUrl}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 pt-2">
                         <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
                           <Clock className="w-4 h-4" /> {formatDate(share.created_at)} 建立
                         </p>

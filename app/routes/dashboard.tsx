@@ -438,7 +438,9 @@ export default function Dashboard() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel asChild>
-                  <p className="text-sm px-2 py-1.5 text-muted-foreground">{user.email}</p>
+                  <div className="grid grid-cols-1 gap-2 px-3 pt-1.5 pb-2 -mx-1 mb-1 border-b border-border">
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
                 </DropdownMenuLabel>
                 <DropdownMenuItem asChild>
                   <Form method="post" className="w-full">
