@@ -1,7 +1,7 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/react";
 import { useState, useMemo, useEffect } from "react";
-import { requireAuth, logout } from "~/lib/auth.server";
+import { requireAuth, logout, changePassword } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema } from "~/drizzle/schema";
 import { eq, asc } from "drizzle-orm";
@@ -35,6 +35,7 @@ import EditBookmarkDialog from "~/components/dialogs/EditBookmarkDialog";
 import DeleteConfirmDialog from "~/components/dialogs/DeleteConfirmDialog";
 import ShareDialog from "~/components/dialogs/ShareDialog";
 import MoveBookmarkDialog from "~/components/dialogs/MoveBookmarkDialog";
+import ChangePasswordDialog from "~/components/dialogs/ChangePasswordDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +99,21 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   if (intent === "logout") {
     return logout(request, context.cloudflare.env);
+  }
+
+  if (intent === "change-password") {
+    const oldPassword = formData.get("oldPassword") as string;
+    const newPassword = formData.get("newPassword") as string;
+
+    if (!oldPassword || !newPassword) {
+      return json({ error: "密碼不得為空" }, { status: 400 });
+    }
+
+    const result = await changePassword(user.id, oldPassword, newPassword, context.cloudflare.env);
+    if (result.error) {
+      return json({ error: result.error }, { status: 400 });
+    }
+    return json({ success: true });
   }
 
   return json({ error: "無效的操作" }, { status: 400 });
@@ -178,6 +194,9 @@ export default function Dashboard() {
 
   // 分享 Dialog 狀態
   const [showShareDialog, setShowShareDialog] = useState(false);
+
+  // 修改密碼 Dialog 狀態
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
 
   // 移動書籤 Dialog 狀態
   const [showMoveBookmarkDialog, setShowMoveBookmarkDialog] = useState(false);
@@ -442,6 +461,13 @@ export default function Dashboard() {
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => setShowChangePasswordDialog(true)}
+                  className="w-full flex items-center gap-2 cursor-pointer"
+                >
+                  <Edit className="w-4 h-4" />
+                  修改密碼
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Form method="post" className="w-full">
                     <input type="hidden" name="intent" value="logout" />
@@ -757,6 +783,10 @@ export default function Dashboard() {
         bookmark={movingBookmark}
         currentFolderId={movingBookmarkFolderId}
         allFolders={allFoldersForMove}
+      />
+      <ChangePasswordDialog
+        open={showChangePasswordDialog}
+        onOpenChange={setShowChangePasswordDialog}
       />
     </div>
   );

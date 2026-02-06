@@ -2,7 +2,7 @@ import { createCookieSessionStorage, redirect } from "@remix-run/cloudflare";
 import * as jose from "jose";
 import { createDb } from "./db.server";
 import { users } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const SESSION_SECRET_KEY = "JWT_KW";
 
@@ -159,6 +159,24 @@ export async function signup(email: string, password: string, env: any) {
 
     const token = await signJWT({ sub: newUser.id, email: newUser.email }, env);
     return { token, user: newUser };
+}
+
+export async function changePassword(userId: string, oldPassword: string, newPassword: string, env: any) {
+    const db = createDb(env);
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+    });
+
+    if (!user || !(await verifyPassword(oldPassword, user.password_hash))) {
+        return { error: "目前的密碼錯誤" };
+    }
+
+    const password_hash = await hashPassword(newPassword);
+    await db.update(users)
+        .set({ password_hash, updated_at: sql`(CURRENT_TIMESTAMP)` })
+        .where(eq(users.id, userId));
+
+    return { success: true };
 }
 
 export async function logout(request: Request, env: any) {
