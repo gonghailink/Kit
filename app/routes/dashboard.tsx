@@ -84,11 +84,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   // 取得該使用者在當前 workspace 的 Tabs (按 sort_order 排序)
   const allTabs = currentWorkspaceId
     ? (await db
-        .select()
-        .from(tabsSchema)
-        .where(and(eq(tabsSchema.user_id, user.id), eq(tabsSchema.workspace_id, currentWorkspaceId)))
-        .orderBy(asc(tabsSchema.sort_order))
-        .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }))
+      .select()
+      .from(tabsSchema)
+      .where(and(eq(tabsSchema.user_id, user.id), eq(tabsSchema.workspace_id, currentWorkspaceId)))
+      .orderBy(asc(tabsSchema.sort_order))
+      .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }))
     : [];
 
   // 取得該使用者的 Folders
@@ -542,36 +542,36 @@ export default function Dashboard() {
       {/* Tabs Bar */}
       <div className="flex flex-col bg-card/70 backdrop-blur-sm border-b border-border">
         <div className="flex ps-6">
-        {/* Tab 管理按鈕 */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowOrganizeTabsSheet(true)}
-            className="flex items-center gap-1.5 px-3 py-2  text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
-          >
-            <MonitorCogIcon className="w-4 h-4" />
-            <span>管理 Tabs</span>
-          </button>
-          <div className="h-4 w-[1px] bg-muted-foreground/20 mr-2"></div>
+          {/* Tab 管理按鈕 */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowOrganizeTabsSheet(true)}
+              className="flex items-center gap-1.5 px-3 py-2  text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
+            >
+              <MonitorCogIcon className="w-4 h-4" />
+              <span className="hidden md:block">管理 Tabs</span>
+            </button>
+            <div className="h-4 w-[1px] bg-muted-foreground/20 mr-2"></div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <ScrollArea className="w-full pt-2 pb-3 pr-6">
+              <div className="flex items-center gap-0">
+                {tabsState.map((tab: TabWithFolders) => (
+                  <SortableTabItem
+                    key={tab.id}
+                    tab={tab}
+                    isActive={activeTabId === tab.id}
+                    onSelect={() => setSearchParams((prev) => {
+                      const newParams = new URLSearchParams(prev);
+                      newParams.set("tab", tab.id);
+                      return newParams;
+                    }, { preventScrollReset: true })}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <ScrollArea className="w-full pt-2 pb-3 pr-6">
-            <div className="flex items-center gap-0">
-              {tabsState.map((tab: TabWithFolders) => (
-                <SortableTabItem
-                  key={tab.id}
-                  tab={tab}
-                  isActive={activeTabId === tab.id}
-                  onSelect={() => setSearchParams((prev) => {
-                    const newParams = new URLSearchParams(prev);
-                    newParams.set("tab", tab.id);
-                    return newParams;
-                  }, { preventScrollReset: true })}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
       </div>
       {/* Main Content */}
       <main className="flex-1 relative min-h-0 bg-transparent">
