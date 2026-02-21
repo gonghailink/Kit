@@ -143,6 +143,15 @@ export async function login(email: string, password: string, env: any) {
 export async function signup(email: string, password: string, env: any) {
     const db = createDb(env);
 
+    // Check whitelist if configured
+    const whitelist = env.REGISTRATION_WHITELIST?.trim();
+    if (whitelist) {
+        const allowedEmails = whitelist.split(',').map((e: string) => e.trim().toLowerCase());
+        if (!allowedEmails.includes(email.toLowerCase())) {
+            return { error: "此 Email 未被授權註冊，請聯絡管理員" };
+        }
+    }
+
     // Check if user exists
     const existingUser = await db.query.users.findFirst({
         where: eq(users.email, email),

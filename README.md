@@ -63,18 +63,31 @@ cd app
 npm install
 ```
 
-### 2. 設定 Supabase
+### 2. 環境變數設定
 
-1. 前往 [Supabase](https://supabase.com) 建立新專案
-2. 執行 SQL Schema（見下方「資料庫設定」）
-3. 複製 `.dev.vars.example` 為 `.dev.vars`
-4. 填入你的 Supabase 資訊：
+1. 複製 `.env.example` 為 `.dev.vars`（本地開發用）
+
+```bash
+cp .env.example .dev.vars
+```
+
+2. 填入以下環境變數：
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# JWT Secret - 請改為你自己的安全金鑰
+JWT_KW=your_very_secret_key_here
+
+# Registration Whitelist（註冊白名單）
+# 留空 = 開放所有人註冊
+# 有值 = 僅限白名單內的 email 可以註冊（用逗號分隔）
+# 範例：REGISTRATION_WHITELIST=user1@example.com,user2@example.com
+REGISTRATION_WHITELIST=
 ```
+
+**註冊白名單說明：**
+- **完全公開註冊**：`REGISTRATION_WHITELIST=`（留空）
+- **限制特定人員**：`REGISTRATION_WHITELIST=alice@example.com,bob@example.com`
+- **僅限自己使用**：`REGISTRATION_WHITELIST=your@email.com`
 
 ### 3. 本地開發
 
@@ -182,12 +195,11 @@ create policy "Anyone can read shares by token" on public.shares
 3. 連結你的 GitHub repository
 4. 建置設定：
    - **Framework preset**: Remix
-   - **Build command**: \`npm run build\`
-   - **Build output directory**: \`build/client\`
-5. 環境變數：
-   - \`SUPABASE_URL\`
-   - \`SUPABASE_ANON_KEY\`
-   - \`SUPABASE_SERVICE_ROLE_KEY\`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `build/client`
+5. 環境變數（Settings → Environment variables）：
+   - `JWT_KW` - JWT 簽名密鑰
+   - `REGISTRATION_WHITELIST` - 註冊白名單（選填，留空表示開放註冊）
 
 ### 方式二：手動部署
 
