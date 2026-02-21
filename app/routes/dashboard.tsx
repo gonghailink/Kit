@@ -50,6 +50,7 @@ import { DashboardHeader } from "~/components/page-ui/dashboard/DashboardHeader"
 import { OrganizeTabsSheet } from "~/components/page-ui/dashboard/OrganizeTabsSheet";
 import { OrganizeFoldersSheet } from "~/components/page-ui/dashboard/OrganizeFoldersSheet";
 import { OrganizeSubFoldersSheet } from "~/components/page-ui/dashboard/OrganizeSubFoldersSheet";
+import { OrganizeWorkspacesSheet } from "~/components/page-ui/dashboard/OrganizeWorkspacesSheet";
 import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 import CreateWorkspaceDialog from "~/components/dialogs/CreateWorkspaceDialog";
@@ -213,6 +214,7 @@ export default function Dashboard() {
   const reorderTabsFetcher = useFetcher();
   const reorderFoldersFetcher = useFetcher();
   const reorderBookmarksFetcher = useFetcher();
+  const reorderWorkspacesFetcher = useFetcher();
 
   // Dialog 狀態
   const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
@@ -264,6 +266,9 @@ export default function Dashboard() {
   const [showEditWorkspaceDialog, setShowEditWorkspaceDialog] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
 
+  // 整理工作區 Sheet 狀態
+  const [showOrganizeWorkspacesSheet, setShowOrganizeWorkspacesSheet] = useState(false);
+
   // Drag and Drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -271,6 +276,25 @@ export default function Dashboard() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Handle workspace reorder
+  const handleWorkspaceReorder = (newWorkspaces: Workspace[]) => {
+    // 提交重新排序到 API
+    const ids = newWorkspaces.map((item) => item.id);
+    const sortOrders = newWorkspaces.map((_, index) => (index + 1) * 1000);
+
+    reorderWorkspacesFetcher.submit(
+      {
+        intent: "reorder",
+        ids: JSON.stringify(ids),
+        sortOrders: JSON.stringify(sortOrders),
+      },
+      {
+        method: "post",
+        action: "/api/workspaces",
+      }
+    );
+  };
 
   // Handle tab reorder
   const handleTabReorder = (newTabs: TabWithFolders[]) => {
@@ -496,31 +520,21 @@ export default function Dashboard() {
         userEmail={user.email}
         onShare={() => setShowShareDialog(true)}
         onChangePassword={() => setShowChangePasswordDialog(true)}
-      />
-
-      {/* Workspace Switcher and Tabs Bar */}
-      <div className="flex flex-col bg-card/70 backdrop-blur-sm border-b border-border">
-        {/* Workspace Switcher */}
-        <div className="flex items-center gap-4 px-6 pt-3 pb-2">
+        workspaceSwitcher={
           <WorkspaceSwitcher
             workspaces={workspaces}
             currentWorkspaceId={currentWorkspaceId || ""}
             onWorkspaceChange={(workspaceId) => {
               setSearchParams({ workspace: workspaceId }, { preventScrollReset: true });
             }}
-            onCreateWorkspace={() => setShowCreateWorkspaceDialog(true)}
-            onEditWorkspace={(workspace) => {
-              setEditingWorkspace(workspace);
-              setShowEditWorkspaceDialog(true);
-            }}
-            onDeleteWorkspace={(workspace) => {
-              setDeleteResource({ type: "workspace", id: workspace.id, title: workspace.title });
-              setShowDeleteDialog(true);
-            }}
+            onManageWorkspaces={() => setShowOrganizeWorkspacesSheet(true)}
+            allowEdit={true}
           />
-        </div>
+        }
+      />
 
-        {/* Tabs Bar */}
+      {/* Tabs Bar */}
+      <div className="flex flex-col bg-card/70 backdrop-blur-sm border-b border-border">
         <div className="flex ps-6">
         {/* Tab 管理按鈕 */}
         <div className="flex items-center gap-1">
@@ -866,6 +880,21 @@ export default function Dashboard() {
         onOpenChange={setShowOrganizeSubFoldersSheet}
         parentFolder={organizingSubFoldersParent}
         onReorder={handleSubFolderReorder}
+      />
+      <OrganizeWorkspacesSheet
+        open={showOrganizeWorkspacesSheet}
+        onOpenChange={setShowOrganizeWorkspacesSheet}
+        workspaces={workspaces}
+        onReorder={handleWorkspaceReorder}
+        onAddWorkspace={() => setShowCreateWorkspaceDialog(true)}
+        onEditWorkspace={(workspace) => {
+          setEditingWorkspace(workspace);
+          setShowEditWorkspaceDialog(true);
+        }}
+        onDeleteWorkspace={(workspace) => {
+          setDeleteResource({ type: "workspace", id: workspace.id, title: workspace.title });
+          setShowDeleteDialog(true);
+        }}
       />
     </div>
   );

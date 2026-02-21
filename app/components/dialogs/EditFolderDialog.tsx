@@ -66,8 +66,8 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <div className="space-y-2 p-4 mb-4 bg-card/80 rounded-lg">
               <Label htmlFor="edit-folder-title">資料夾名稱</Label>
               <Input
                 id="edit-folder-title"

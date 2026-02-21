@@ -1,17 +1,19 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
-import { tabs, folders, bookmarks } from "~/drizzle/schema";
+import { tabs, folders, bookmarks, workspaces as workspacesSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, Search, LogIn } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, LogIn } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { FolderCard } from "~/components/page-ui/share-id/FolderCard";
+import { FolderCard } from "~/components/page-ui/view/FolderCard";
+import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
 import { getUser } from "~/lib/auth.server";
+import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
     const title = "我的書籤 · Kit";
@@ -26,19 +28,36 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     const { user } = await getUser(request, context.cloudflare.env);
 
     if (!user) {
-        return json({ user: null, tabs: [], share: null });
+        return json({ user: null, tabs: [], workspaces: [], currentWorkspaceId: null, share: null });
     }
 
     const db = createDb(context.cloudflare.env);
+    const url = new URL(request.url);
+    const workspaceParam = url.searchParams.get("workspace");
 
     try {
-        // 取得該使用者的所有 Tabs
-        const allTabs = (await db
+        // 取得該使用者的所有 Workspaces (按 sort_order 排序)
+        const allWorkspaces = (await db
             .select()
-            .from(tabs)
-            .where(eq(tabs.user_id, user.id))
-            .orderBy(asc(tabs.sort_order))
-            .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
+            .from(workspacesSchema)
+            .where(eq(workspacesSchema.user_id, user.id))
+            .orderBy(asc(workspacesSchema.sort_order))
+            .all()).map(w => ({ ...w, sort_order: w.sort_order ?? 0 }));
+
+        // 確定當前的 workspace（從 URL 參數或使用第一個）
+        const currentWorkspaceId = (workspaceParam && allWorkspaces.find(w => w.id === workspaceParam))
+            ? workspaceParam
+            : allWorkspaces[0]?.id;
+
+        // 取得該使用者在當前 workspace 的 Tabs (按 sort_order 排序)
+        const allTabs = currentWorkspaceId
+            ? (await db
+                .select()
+                .from(tabs)
+                .where(and(eq(tabs.user_id, user.id), eq(tabs.workspace_id, currentWorkspaceId)))
+                .orderBy(asc(tabs.sort_order))
+                .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }))
+            : [];
 
         // 取得所有資料夾
         const allFolders = (await db
@@ -70,6 +89,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         return json({
             user,
             tabs: tabsWithFolders,
+            workspaces: allWorkspaces,
+            currentWorkspaceId: currentWorkspaceId || null,
             share: {
                 name: "我的所有書籤",
                 extra_btn_title: "進入管理後台",
@@ -84,6 +105,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
 export default function MePage() {
     const data = useLoaderData<typeof loader>();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     if (!data.user) {
         return (
@@ -115,28 +137,21 @@ export default function MePage() {
         );
     }
 
-    const { tabs: tabsData, share } = data;
+    const { tabs: tabsData, share, workspaces, currentWorkspaceId } = data;
     const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     const activeTab = tabsData.find((t: any) => t.id === activeTabId);
     const [searchQuery, setSearchQuery] = useState("");
-    const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
 
+    // 當 tabs 變化時，更新 activeTabId
     useEffect(() => {
-        const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-
-        const handleScroll = (e: Event) => {
-            const target = e.target as HTMLElement;
-            setShowScrollTop(target.scrollTop > 300);
-        };
-
-        if (scrollContainer) {
-            scrollContainer.addEventListener("scroll", handleScroll);
-            return () => scrollContainer.removeEventListener("scroll", handleScroll);
+        if (tabsData.length > 0 && !tabsData.find((t: any) => t.id === activeTabId)) {
+            setActiveTabId(tabsData[0].id);
         }
-    }, [activeTabId]); // Re-attach when tab changes just in case, though it should stay
+    }, [tabsData, activeTabId]);
+
 
     const scrollToTop = () => {
         const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -184,70 +199,33 @@ export default function MePage() {
     } : activeTab;
 
 
+
     return (
         <div className="h-screen flex flex-col bg-transparent">
-            {/* Header */}
-            <div className="z-10 bg-card/85 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
-                <div className="flex items-center justify-between px-6">
-                    <div className="flex items-center space-x-3">
-                        <h1 className="text-xl font-semibold text-foreground/90">
-                            {share?.name || "我的書籤"}
-                        </h1>
-                    </div>
-                    <div className="md:flex items-center gap-3">
-                        {/* 搜尋功能 */}
-                        <div className="relative hidden md:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <Input
-                                placeholder="搜尋書籤..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-64 pl-9 rounded-full"
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery("")}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </div>
-
-                        {share?.extra_btn_title && share?.extra_btn_url && (
-                            <Link
-                                to={share.extra_btn_url}
-                                className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
-                            >
-                                {share.extra_btn_title}
-                            </Link>
-                        )}
-                    </div>
-                </div>
-                {/* Tabs Bar */}
-                {tabsData.length > 0 && (
-                    <ScrollArea className="w-full">
-                        <div className="flex items-center gap-2 px-4">
-                            {tabsData.map((tab: any) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTabId(tab.id)}
-                                    className={`
-                    px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
-                    ${activeTabId === tab.id
-                                            ? "border-primary text-primary"
-                                            : "border-transparent text-muted-foreground hover:text-foreground"
-                                        }
-                  `}
-                                >
-                                    {tab.title}
-                                </button>
-                            ))}
-                        </div>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                )}
-            </div>
+            <ViewHeader
+                title={share?.name || "我的書籤"}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                extraBtn={share?.extra_btn_title && share?.extra_btn_url ? {
+                    title: share.extra_btn_title,
+                    url: share.extra_btn_url
+                } : undefined}
+                tabs={tabsData}
+                activeTabId={activeTabId}
+                setActiveTabId={setActiveTabId}
+                workspaceSwitcher={
+                    workspaces.length > 0 ? (
+                        <WorkspaceSwitcher
+                            workspaces={workspaces}
+                            currentWorkspaceId={currentWorkspaceId || ""}
+                            onWorkspaceChange={(workspaceId) => {
+                                setSearchParams({ workspace: workspaceId }, { preventScrollReset: true });
+                            }}
+                            allowEdit={false}
+                        />
+                    ) : undefined
+                }
+            />
 
             <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
                 <div className="container mx-auto px-4 py-8">
@@ -318,59 +296,6 @@ export default function MePage() {
                 </button>
             )}
 
-            {/* Mobile Search Button */}
-            <button
-                onClick={() => setIsSearchSheetOpen(true)}
-                className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
-                aria-label="搜尋書籤"
-            >
-                <Search className="w-6 h-6" />
-            </button>
-
-            {/* Mobile Search Sheet */}
-            <Sheet open={isSearchSheetOpen} onOpenChange={setIsSearchSheetOpen}>
-                <SheetContent side="bottom" className="h-auto">
-                    <SheetHeader>
-                        <SheetTitle>搜尋書籤</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6 pb-2 space-y-3">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                            <Input
-                                placeholder="輸入關鍵字搜尋..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && searchQuery) {
-                                        setIsSearchSheetOpen(false);
-                                    }
-                                }}
-                                className="pl-10 h-12 text-lg"
-                                autoFocus
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery("")}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </div>
-                        <button
-                            onClick={() => {
-                                if (searchQuery) {
-                                    setIsSearchSheetOpen(false);
-                                }
-                            }}
-                            disabled={!searchQuery}
-                            className="w-full h-12 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            搜尋
-                        </button>
-                    </div>
-                </SheetContent>
-            </Sheet>
         </div>
     );
 }

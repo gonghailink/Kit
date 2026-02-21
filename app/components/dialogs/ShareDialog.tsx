@@ -131,7 +131,7 @@ export default function ShareDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4 overflow-hidden">
+        <div className="space-y-6 overflow-hidden">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -155,17 +155,14 @@ export default function ShareDialog({
                           {shareUrl}
                         </p>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                          <Clock className="w-4 h-4" /> {formatDate(share.created_at)} 建立
-                        </p>
+                      <div className="grid grid-cols-1 gap-2 pt-2">
                         {share.name && (
                           <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
                             <TypeIcon className="w-4 h-4" /> {share.name}
                           </p>
                         )}
                         {share.extra_btn_title && share.extra_btn_url && (
-                          <p className="col-span-2 text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
                             <ExternalLink className="w-4 h-4" /> {share.extra_btn_title}
                             <span className="text-muted-foreground/50">({share.extra_btn_url})</span>
                           </p>
@@ -310,12 +307,6 @@ export default function ShareDialog({
             </div>
           )}
         </div>
-
-        {/* <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            關閉
-          </Button>
-        </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );

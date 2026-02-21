@@ -84,7 +84,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-4 p-4 mb-4 bg-card/80 rounded-lg">
                         <div className="space-y-2">
                             <Label htmlFor="old-password">目前的密碼</Label>
                             <Input

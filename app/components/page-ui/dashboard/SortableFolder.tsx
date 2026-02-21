@@ -1,6 +1,4 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, MoreVertical, Edit, Trash2, CornerDownRightIcon } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, CornerDownRightIcon, ArrowUpDown } from "lucide-react";
 import type { FolderWithChildren } from "~/lib/types";
 import {
     DropdownMenu,
@@ -16,6 +14,7 @@ interface SortableFolderProps {
     onDelete: () => void;
     onCreateSubfolder: () => void;
     onCreateBookmark: () => void;
+    onOrganizeSubfolders?: () => void;
     children: React.ReactNode;
 }
 
@@ -26,34 +25,14 @@ export function SortableFolder({
     onDelete,
     onCreateSubfolder,
     onCreateBookmark,
+    onOrganizeSubfolders,
     children,
 }: SortableFolderProps) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({ id: folder.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-    };
-
+    const hasSubfolders = folder.children && folder.children.length > 0;
     return (
-        <div ref={setNodeRef} style={style} className="px-6 py-4 bg-card/85 rounded-xl">
-            <div className="group flex items-center justify-between mb-4 -ml-7">
+        <div className="px-6 py-4 bg-card/85 rounded-xl">
+            <div className="group flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <button
-                        {...attributes}
-                        {...listeners}
-                        className="p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <GripVertical className="w-4 h-4" />
-                    </button>
                     <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>
                         {
                             isNested && <CornerDownRightIcon className="w-4 h-4" />
@@ -82,6 +61,12 @@ export function SortableFolder({
                                 <Plus className="w-4 h-4" />
                                 新增子資料夾
                             </DropdownMenuItem>
+                            {hasSubfolders && onOrganizeSubfolders && (
+                                <DropdownMenuItem onClick={onOrganizeSubfolders}>
+                                    <ArrowUpDown className="w-4 h-4" />
+                                    排序子資料夾
+                                </DropdownMenuItem>
+                            )}
                             {isNested && (
                                 <DropdownMenuItem onClick={onCreateBookmark}>
                                     <Plus className="w-4 h-4" />

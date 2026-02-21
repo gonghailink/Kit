@@ -1,7 +1,22 @@
--- Disable foreign key constraints temporarily
-PRAGMA foreign_keys=OFF;
+-- Step 1: Backup bookmarks data
+CREATE TABLE `bookmarks_backup` AS SELECT * FROM `bookmarks`;
 --> statement-breakpoint
--- Step 1: Create workspaces table
+-- Step 2: Backup folders data
+CREATE TABLE `folders_backup` AS SELECT * FROM `folders`;
+--> statement-breakpoint
+-- Step 3: Backup tabs data
+CREATE TABLE `tabs_backup` AS SELECT * FROM `tabs`;
+--> statement-breakpoint
+-- Step 4: Drop bookmarks table (to remove foreign key constraint)
+DROP TABLE `bookmarks`;
+--> statement-breakpoint
+-- Step 5: Drop folders table (to remove foreign key constraint)
+DROP TABLE `folders`;
+--> statement-breakpoint
+-- Step 6: Drop tabs table
+DROP TABLE `tabs`;
+--> statement-breakpoint
+-- Step 7: Create workspaces table
 CREATE TABLE `workspaces` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
@@ -11,7 +26,7 @@ CREATE TABLE `workspaces` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
--- Step 2: Create default workspace for each existing user
+-- Step 8: Create default workspace for each existing user
 INSERT INTO `workspaces` (`id`, `user_id`, `title`, `sort_order`, `created_at`)
 SELECT
     lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))) as id,
@@ -21,8 +36,8 @@ SELECT
     CURRENT_TIMESTAMP as created_at
 FROM `users`;
 --> statement-breakpoint
--- Step 3: Create new tabs table with workspace_id
-CREATE TABLE `tabs_new` (
+-- Step 9: Create new tabs table with workspace_id
+CREATE TABLE `tabs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`workspace_id` text NOT NULL,
@@ -32,27 +47,55 @@ CREATE TABLE `tabs_new` (
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
--- Step 4: Copy data from old tabs to new tabs with workspace_id
-INSERT INTO `tabs_new` (`id`, `user_id`, `workspace_id`, `title`, `sort_order`, `created_at`)
+-- Step 10: Restore tabs data with workspace_id
+INSERT INTO `tabs` (`id`, `user_id`, `workspace_id`, `title`, `sort_order`, `created_at`)
 SELECT
     t.`id`,
     t.`user_id`,
     w.`id` as workspace_id,
     t.`title`,
-    t.`sort_order`,
+    COALESCE(t.`sort_order`, 0) as sort_order,
     t.`created_at`
-FROM `tabs` t
-LEFT JOIN `workspaces` w ON w.`user_id` = t.`user_id`;
+FROM `tabs_backup` t
+INNER JOIN `workspaces` w ON w.`user_id` = t.`user_id`;
 --> statement-breakpoint
--- Step 5: Update folders to point to new tabs (maintain relationships)
--- Since folders have foreign key to tabs, we need to handle this carefully
--- Folders will automatically work because we're keeping the same tab IDs
+-- Step 11: Recreate folders table
+CREATE TABLE `folders` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`tab_id` text NOT NULL,
+	`parent_id` text,
+	`title` text NOT NULL,
+	`is_collapsed` integer DEFAULT false,
+	`sort_order` real DEFAULT 0,
+	`created_at` text DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	FOREIGN KEY (`tab_id`) REFERENCES `tabs`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`parent_id`) REFERENCES `folders`(`id`) ON UPDATE no action ON DELETE cascade
+);
 --> statement-breakpoint
--- Step 6: Drop old tabs table
-DROP TABLE `tabs`;
+-- Step 12: Restore folders data
+INSERT INTO `folders` SELECT * FROM `folders_backup`;
 --> statement-breakpoint
--- Step 7: Rename new table to tabs
-ALTER TABLE `tabs_new` RENAME TO `tabs`;
+-- Step 13: Recreate bookmarks table
+CREATE TABLE `bookmarks` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`folder_id` text NOT NULL,
+	`title` text NOT NULL,
+	`url` text NOT NULL,
+	`favicon_url` text,
+	`memo` text,
+	`sort_order` real DEFAULT 0,
+	`created_at` text DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+	FOREIGN KEY (`folder_id`) REFERENCES `folders`(`id`) ON UPDATE no action ON DELETE cascade
+);
 --> statement-breakpoint
--- Re-enable foreign key constraints
-PRAGMA foreign_keys=ON;
+-- Step 14: Restore bookmarks data
+INSERT INTO `bookmarks` SELECT * FROM `bookmarks_backup`;
+--> statement-breakpoint
+-- Step 15: Clean up backup tables
+DROP TABLE `tabs_backup`;
+--> statement-breakpoint
+DROP TABLE `folders_backup`;
+--> statement-breakpoint
+DROP TABLE `bookmarks_backup`;

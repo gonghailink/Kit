@@ -4,13 +4,13 @@ import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { FolderCard } from "~/components/page-ui/share-id/FolderCard";
+import { FolderCard } from "~/components/page-ui/view/FolderCard";
+import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
 
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -106,7 +106,6 @@ export default function SharePage() {
 
   const activeTab = tabsData.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
 
   useEffect(() => {
     const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -168,72 +167,23 @@ export default function SharePage() {
   } : activeTab;
 
 
+
   return (
     <div className="h-screen flex flex-col bg-transparent">
       {/* Header */}
-      <div className="z-10 bg-card/85 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
-        <div className="flex items-center justify-between px-6">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-xl font-semibold text-foreground/90">
-              {share.name ? `${share.name}` : "精選書籤"}
-            </h1>
-          </div>
-          <div className="md:flex items-center gap-3">
-            {/* 搜尋功能 */}
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="搜尋書籤..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-9 rounded-full"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-
-            {share.extra_btn_title && share.extra_btn_url && (
-              <a
-                href={share.extra_btn_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
-              >
-                {share.extra_btn_title}
-              </a>
-            )}
-          </div>
-        </div>
-        {/* Tabs Bar */}
-        {tabsData.length > 0 && (
-          <ScrollArea className="w-full">
-            <div className="flex items-center gap-2 px-4">
-              {tabsData.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTabId(tab.id)}
-                  className={`
-                    px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors
-                    ${activeTabId === tab.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                    }
-                  `}
-                >
-                  {tab.title}
-                </button>
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-        )}
-      </div>
+      <ViewHeader
+        title={share.name ? `${share.name}` : "精選書籤"}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        extraBtn={share.extra_btn_title && share.extra_btn_url ? {
+          title: share.extra_btn_title,
+          url: share.extra_btn_url,
+          isLink: true
+        } : undefined}
+        tabs={tabsData}
+        activeTabId={activeTabId}
+        setActiveTabId={setActiveTabId}
+      />
 
       <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
         <div className="container mx-auto px-4 py-8">
@@ -304,59 +254,6 @@ export default function SharePage() {
         </button>
       )}
 
-      {/* Mobile Search Button */}
-      <button
-        onClick={() => setIsSearchSheetOpen(true)}
-        className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
-        aria-label="搜尋書籤"
-      >
-        <Search className="w-6 h-6" />
-      </button>
-
-      {/* Mobile Search Sheet */}
-      <Sheet open={isSearchSheetOpen} onOpenChange={setIsSearchSheetOpen}>
-        <SheetContent side="bottom" className="h-auto">
-          <SheetHeader>
-            <SheetTitle>搜尋書籤</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 pb-2 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="輸入關鍵字搜尋..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery) {
-                    setIsSearchSheetOpen(false);
-                  }
-                }}
-                className="pl-10 h-12 text-lg"
-                autoFocus
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                if (searchQuery) {
-                  setIsSearchSheetOpen(false);
-                }
-              }}
-              disabled={!searchQuery}
-              className="w-full h-12 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              搜尋
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
