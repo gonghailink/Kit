@@ -15,6 +15,7 @@ import type { Share } from "~/lib/types";
 interface ShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  workspaceId: string;
 }
 
 type CreateFetcherData =
@@ -28,6 +29,7 @@ type DeleteFetcherData =
 export default function ShareDialog({
   open,
   onOpenChange,
+  workspaceId,
 }: ShareDialogProps) {
   const createFetcher = useFetcher<CreateFetcherData>();
   const deleteFetcher = useFetcher<DeleteFetcherData>();
@@ -45,28 +47,29 @@ export default function ShareDialog({
 
   // 載入現有的分享連結
   useEffect(() => {
-    if (open) {
-      loadFetcher.load(`/api/shares`);
+    if (open && workspaceId) {
+      loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
     }
-  }, [open]);
+  }, [open, workspaceId]);
 
   // 建立成功後重新載入
   useEffect(() => {
-    if (createFetcher.data && "success" in createFetcher.data && createFetcher.data.success && !isCreating) {
-      loadFetcher.load(`/api/shares`);
+    if (createFetcher.data && "success" in createFetcher.data && createFetcher.data.success && !isCreating && workspaceId) {
+      loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
     }
-  }, [createFetcher.data, isCreating]);
+  }, [createFetcher.data, isCreating, workspaceId]);
 
   // 刪除成功後重新載入
   useEffect(() => {
-    if (deleteFetcher.data && "success" in deleteFetcher.data && deleteFetcher.data.success && deleteFetcher.state === "idle") {
-      loadFetcher.load(`/api/shares`);
+    if (deleteFetcher.data && "success" in deleteFetcher.data && deleteFetcher.data.success && deleteFetcher.state === "idle" && workspaceId) {
+      loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
     }
-  }, [deleteFetcher.data, deleteFetcher.state]);
+  }, [deleteFetcher.data, deleteFetcher.state, workspaceId]);
 
   const handleCreate = () => {
     const formData = new FormData();
     formData.append("intent", "create");
+    formData.append("workspace_id", workspaceId);
     if (name.trim()) {
       formData.append("name", name.trim());
     }
@@ -91,6 +94,7 @@ export default function ShareDialog({
       {
         intent: "delete",
         id: shareId,
+        workspace_id: workspaceId,
       },
       {
         method: "post",
@@ -127,7 +131,7 @@ export default function ShareDialog({
             分享我的書籤
           </DialogTitle>
           <DialogDescription className="pt-3">
-            建立唯讀分享連結，讓其他人可以瀏覽您的所有書籤（不可編輯）
+            建立唯讀分享連結，讓其他人可以瀏覽此工作區的所有書籤（不可編輯）
           </DialogDescription>
         </DialogHeader>
 
@@ -213,7 +217,7 @@ export default function ShareDialog({
                     您尚未建立分享連結
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    建立後，任何人都可以透過連結瀏覽您的所有書籤
+                    建立後，任何人都可以透過連結瀏覽此工作區的所有書籤
                   </p>
                 </div>
               </div>

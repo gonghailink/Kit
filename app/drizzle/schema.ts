@@ -51,7 +51,8 @@ export const bookmarks = sqliteTable("bookmarks", {
 
 export const shares = sqliteTable("shares", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    user_id: text("user_id").notNull(),
+    user_id: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    workspace_id: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
     share_token: text("share_token").notNull().unique(),
     name: text("name"),
     short_link: text("short_link").unique(),

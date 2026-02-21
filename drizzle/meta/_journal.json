@@ -29,6 +29,13 @@
       "when": 1771646797354,
       "tag": "0003_good_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771654836954,
+      "tag": "0004_bright_betty_ross",
+      "breakpoints": true
     }
   ]
 }

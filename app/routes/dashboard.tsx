@@ -842,6 +842,7 @@ export default function Dashboard() {
       <ShareDialog
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
+        workspaceId={currentWorkspaceId || ""}
       />
       <MoveBookmarkDialog
         open={showMoveBookmarkDialog}

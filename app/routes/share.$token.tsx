@@ -45,11 +45,11 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       throw new Response("找不到分享連結", { status: 404 });
     }
 
-    // 取得該使用者的所有 Tabs
+    // 取得該工作區的所有 Tabs
     const allTabs = (await db
       .select()
       .from(tabs)
-      .where(eq(tabs.user_id, share.user_id))
+      .where(and(eq(tabs.user_id, share.user_id), eq(tabs.workspace_id, share.workspace_id)))
       .orderBy(asc(tabs.sort_order))
       .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
 

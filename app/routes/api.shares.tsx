@@ -8,16 +8,23 @@ type ActionData =
   | { error: string; success?: never }
   | { success: true; error?: never };
 
-// GET: 取得當前使用者的分享連結
+// GET: 取得當前工作區的分享連結
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { user } = await requireAuth(request, context.cloudflare.env);
   const db = createDb(context.cloudflare.env);
+
+  const url = new URL(request.url);
+  const workspaceId = url.searchParams.get("workspace_id");
+
+  if (!workspaceId) {
+    return json({ error: "缺少 workspace_id 參數" }, { status: 400 });
+  }
 
   try {
     const data = await db
       .select()
       .from(shares)
-      .where(eq(shares.user_id, user.id))
+      .where(and(eq(shares.user_id, user.id), eq(shares.workspace_id, workspaceId)))
       .orderBy(desc(shares.created_at))
       .all();
 
@@ -42,16 +49,23 @@ export async function action({ request, context }: ActionFunctionArgs) {
   try {
     switch (intent) {
       case "create": {
-        // 檢查是否已經有分享連結
+        // 取得 workspace_id
+        const workspaceId = formData.get("workspace_id") as string;
+
+        if (!workspaceId) {
+          return json<ActionData>({ error: "缺少 workspace_id 參數" }, { status: 400 });
+        }
+
+        // 檢查該 workspace 是否已經有分享連結
         const existingShares = await db
           .select({ id: shares.id })
           .from(shares)
-          .where(eq(shares.user_id, user.id))
+          .where(and(eq(shares.user_id, user.id), eq(shares.workspace_id, workspaceId)))
           .all();
 
         // 如果已有分享連結，返回錯誤
         if (existingShares && existingShares.length > 0) {
-          return json<ActionData>({ error: "您已經建立過分享連結" }, { status: 400 });
+          return json<ActionData>({ error: "此工作區已經建立過分享連結" }, { status: 400 });
         }
 
         // 取得顯示名稱
@@ -126,6 +140,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .insert(shares)
           .values({
             user_id: user.id,
+            workspace_id: workspaceId,
             share_token: shareToken,
             name: name || null,
             short_link: shortLink || null,
@@ -140,14 +155,19 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
       case "delete": {
         const id = formData.get("id") as string;
+        const workspaceId = formData.get("workspace_id") as string;
 
-        if (!id) {
-          return json<ActionData>({ error: "Share ID 是必要的" }, { status: 400 });
+        if (!id || !workspaceId) {
+          return json<ActionData>({ error: "缺少必要參數" }, { status: 400 });
         }
 
         await db
           .delete(shares)
-          .where(and(eq(shares.id, id), eq(shares.user_id, user.id)))
+          .where(and(
+            eq(shares.id, id),
+            eq(shares.user_id, user.id),
+            eq(shares.workspace_id, workspaceId)
+          ))
           .run();
 
         return json<ActionData>({ success: true });
