@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { tabs } from "~/drizzle/schema";
+import { tabs, workspaces } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 type ActionData =
@@ -19,16 +19,32 @@ export async function action({ request, context }: ActionFunctionArgs) {
     switch (intent) {
       case "create": {
         const title = formData.get("title") as string;
+        const workspace_id = formData.get("workspace_id") as string;
 
         if (!title || title.trim() === "") {
           return json<ActionData>({ error: "Tab 名稱不能為空" }, { status: 400 });
         }
 
-        // 取得當前最大的 sort_order
+        if (!workspace_id) {
+          return json<ActionData>({ error: "Workspace ID 是必要的" }, { status: 400 });
+        }
+
+        // 驗證 workspace 是否屬於當前使用者
+        const workspace = await db
+          .select({ id: workspaces.id })
+          .from(workspaces)
+          .where(and(eq(workspaces.id, workspace_id), eq(workspaces.user_id, user.id)))
+          .get();
+
+        if (!workspace) {
+          return json<ActionData>({ error: "找不到該工作區" }, { status: 404 });
+        }
+
+        // 取得當前最大的 sort_order（只在該 workspace 內）
         const existingTabs = await db
           .select({ sort_order: tabs.sort_order })
           .from(tabs)
-          .where(eq(tabs.user_id, user.id))
+          .where(and(eq(tabs.user_id, user.id), eq(tabs.workspace_id, workspace_id)))
           .orderBy(desc(tabs.sort_order))
           .limit(1)
           .all();
@@ -41,6 +57,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .insert(tabs)
           .values({
             user_id: user.id,
+            workspace_id,
             title: title.trim(),
             sort_order: newSortOrder,
           })

@@ -1,7 +1,7 @@
 import { createCookieSessionStorage, redirect } from "@remix-run/cloudflare";
 import * as jose from "jose";
 import { createDb } from "./db.server";
-import { users } from "../drizzle/schema";
+import { users, workspaces } from "../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 
 const SESSION_SECRET_KEY = "JWT_KW";
@@ -156,6 +156,13 @@ export async function signup(email: string, password: string, env: any) {
         email,
         password_hash,
     }).returning();
+
+    // 自動為新用戶創建預設 workspace
+    await db.insert(workspaces).values({
+        user_id: newUser.id,
+        title: "我的工作區",
+        sort_order: 0,
+    });
 
     const token = await signJWT({ sub: newUser.id, email: newUser.email }, env);
     return { token, user: newUser };

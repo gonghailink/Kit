@@ -11,7 +11,7 @@ import {
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 
-type ResourceType = "tab" | "folder" | "bookmark";
+type ResourceType = "tab" | "folder" | "bookmark" | "workspace";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -22,6 +22,12 @@ interface DeleteConfirmDialogProps {
 }
 
 const resourceConfig = {
+  workspace: {
+    title: "刪除工作區",
+    description: "確定要刪除這個工作區嗎？",
+    warning: "刪除後，此工作區下的所有 Tabs、資料夾和書籤也會被刪除。",
+    action: "/api/workspaces",
+  },
   tab: {
     title: "刪除 Tab",
     description: "確定要刪除這個 Tab 嗎？",

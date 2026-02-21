@@ -3,11 +3,11 @@ import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/rea
 import { useState, useMemo, useEffect } from "react";
 import { requireAuth, logout, changePassword } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema } from "~/drizzle/schema";
-import { eq, asc } from "drizzle-orm";
+import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema, workspaces as workspacesSchema } from "~/drizzle/schema";
+import { eq, asc, and } from "drizzle-orm";
 import { buildFolderTree } from "~/lib/utils";
 import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown, UserIcon, FolderPlusIcon } from "lucide-react";
+import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown, UserIcon, FolderPlusIcon, MonitorCogIcon, FolderCogIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -36,6 +36,7 @@ import DeleteConfirmDialog from "~/components/dialogs/DeleteConfirmDialog";
 import ShareDialog from "~/components/dialogs/ShareDialog";
 import MoveBookmarkDialog from "~/components/dialogs/MoveBookmarkDialog";
 import ChangePasswordDialog from "~/components/dialogs/ChangePasswordDialog";
+import { Separator } from "~/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,22 +46,49 @@ import {
 import { SortableBookmark } from "~/components/page-ui/dashboard/SortableBookmark";
 import { SortableTabItem } from "~/components/page-ui/dashboard/SortableTabItem";
 import { SortableFolder } from "~/components/page-ui/dashboard/SortableFolder";
+import { DashboardHeader } from "~/components/page-ui/dashboard/DashboardHeader";
+import { OrganizeTabsSheet } from "~/components/page-ui/dashboard/OrganizeTabsSheet";
+import { OrganizeFoldersSheet } from "~/components/page-ui/dashboard/OrganizeFoldersSheet";
+import { OrganizeSubFoldersSheet } from "~/components/page-ui/dashboard/OrganizeSubFoldersSheet";
+import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import CreateWorkspaceDialog from "~/components/dialogs/CreateWorkspaceDialog";
+import EditWorkspaceDialog from "~/components/dialogs/EditWorkspaceDialog";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { getHostname } from "~/lib/utils";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
+import { Button } from "~/components/ui/button";
 
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { user } = await requireAuth(request, context.cloudflare.env);
   const db = createDb(context.cloudflare.env);
 
-  // 取得該使用者的 Tabs (按 sort_order 排序)
-  const allTabs = (await db
+  const url = new URL(request.url);
+  const workspaceParam = url.searchParams.get("workspace");
+
+  // 取得該使用者的所有 Workspaces (按 sort_order 排序)
+  const allWorkspaces = (await db
     .select()
-    .from(tabsSchema)
-    .where(eq(tabsSchema.user_id, user.id))
-    .orderBy(asc(tabsSchema.sort_order))
-    .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
+    .from(workspacesSchema)
+    .where(eq(workspacesSchema.user_id, user.id))
+    .orderBy(asc(workspacesSchema.sort_order))
+    .all()).map(w => ({ ...w, sort_order: w.sort_order ?? 0 }));
+
+  // 確定當前的 workspace（從 URL 參數或使用第一個）
+  const currentWorkspaceId = (workspaceParam && allWorkspaces.find(w => w.id === workspaceParam))
+    ? workspaceParam
+    : allWorkspaces[0]?.id;
+
+  // 取得該使用者在當前 workspace 的 Tabs (按 sort_order 排序)
+  const allTabs = currentWorkspaceId
+    ? (await db
+        .select()
+        .from(tabsSchema)
+        .where(and(eq(tabsSchema.user_id, user.id), eq(tabsSchema.workspace_id, currentWorkspaceId)))
+        .orderBy(asc(tabsSchema.sort_order))
+        .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }))
+    : [];
 
   // 取得該使用者的 Folders
   const allFolders = (await db
@@ -89,7 +117,12 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     ),
   })) as any;
 
-  return json({ tabs: tabsWithFolders, user });
+  return json({
+    tabs: tabsWithFolders,
+    user,
+    workspaces: allWorkspaces,
+    currentWorkspaceId: currentWorkspaceId || null
+  });
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
@@ -137,7 +170,7 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Dashboard() {
-  const { tabs, user } = useLoaderData<typeof loader>();
+  const { tabs, user, workspaces, currentWorkspaceId } = useLoaderData<typeof loader>();
   const [tabsState, setTabs] = useState<TabWithFolders[]>(tabs);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -163,6 +196,19 @@ export default function Dashboard() {
     setTabs(tabs);
   }, [tabs]);
 
+  useEffect(() => {
+    if (activeTabId) {
+      const activeTabElement = document.getElementById(`tab-${activeTabId}`);
+      if (activeTabElement) {
+        activeTabElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }
+  }, [activeTabId]);
+
   const logoutFetcher = useFetcher();
   const reorderTabsFetcher = useFetcher();
   const reorderFoldersFetcher = useFetcher();
@@ -187,7 +233,7 @@ export default function Dashboard() {
   // 刪除 Dialog 狀態
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteResource, setDeleteResource] = useState<{
-    type: "tab" | "folder" | "bookmark";
+    type: "tab" | "folder" | "bookmark" | "workspace";
     id: string;
     title: string;
   } | null>(null);
@@ -203,6 +249,21 @@ export default function Dashboard() {
   const [movingBookmark, setMovingBookmark] = useState<Bookmark | null>(null);
   const [movingBookmarkFolderId, setMovingBookmarkFolderId] = useState<string>("");
 
+  // 整理列表 Sheet 狀態
+  const [showOrganizeTabsSheet, setShowOrganizeTabsSheet] = useState(false);
+
+  // 整理資料夾 Sheet 狀態
+  const [showOrganizeFoldersSheet, setShowOrganizeFoldersSheet] = useState(false);
+
+  // 整理子資料夾 Sheet 狀態
+  const [showOrganizeSubFoldersSheet, setShowOrganizeSubFoldersSheet] = useState(false);
+  const [organizingSubFoldersParent, setOrganizingSubFoldersParent] = useState<FolderWithChildren | null>(null);
+
+  // Workspace Dialog 狀態
+  const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] = useState(false);
+  const [showEditWorkspaceDialog, setShowEditWorkspaceDialog] = useState(false);
+  const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
+
   // Drag and Drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -212,35 +273,24 @@ export default function Dashboard() {
   );
 
   // Handle tab reorder
-  const handleTabDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleTabReorder = (newTabs: TabWithFolders[]) => {
+    setTabs(newTabs);
 
-    if (over && active.id !== over.id) {
-      setTabs((items: TabWithFolders[]) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+    // 提交重新排序到 API
+    const ids = newTabs.map((item) => item.id);
+    const sortOrders = newTabs.map((_, index) => (index + 1) * 1000);
 
-        const newItems = arrayMove(items, oldIndex, newIndex);
-
-        // 提交重新排序到 API
-        const ids = newItems.map((item) => item.id);
-        const sortOrders = newItems.map((_, index) => (index + 1) * 1000);
-
-        reorderTabsFetcher.submit(
-          {
-            intent: "reorder",
-            ids: JSON.stringify(ids),
-            sortOrders: JSON.stringify(sortOrders),
-          },
-          {
-            method: "post",
-            action: "/api/tabs",
-          }
-        );
-
-        return newItems;
-      });
-    }
+    reorderTabsFetcher.submit(
+      {
+        intent: "reorder",
+        ids: JSON.stringify(ids),
+        sortOrders: JSON.stringify(sortOrders),
+      },
+      {
+        method: "post",
+        action: "/api/tabs",
+      }
+    );
   };
 
   // Handle bookmark reorder within a folder
@@ -302,47 +352,76 @@ export default function Dashboard() {
     }
   };
 
-  // Handle top-level folder reorder
-  const handleTopLevelFolderDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  // Handle top-level folder reorder via Sheet
+  const handleTopLevelFolderReorder = (newFolders: FolderWithChildren[]) => {
+    setTabs((prevTabs: TabWithFolders[]) => {
+      return prevTabs.map((tab: TabWithFolders) => {
+        if (tab.id !== activeTabId) return tab;
 
-    if (over && active.id !== over.id) {
-      setTabs((prevTabs: TabWithFolders[]) => {
-        return prevTabs.map((tab: TabWithFolders) => {
-          if (tab.id !== activeTabId) return tab;
+        // 提交到 API
+        const ids = newFolders.map((f: FolderWithChildren) => f.id);
+        const sortOrders = newFolders.map((_: FolderWithChildren, index: number) => (index + 1) * 1000);
 
-          const oldIndex = tab.folders.findIndex((f: FolderWithChildren) => f.id === active.id);
-          const newIndex = tab.folders.findIndex((f: FolderWithChildren) => f.id === over.id);
-
-          if (oldIndex !== -1 && newIndex !== -1) {
-            const newFolders = arrayMove(tab.folders, oldIndex, newIndex);
-
-            // 提交到 API
-            const ids = newFolders.map((f: FolderWithChildren) => f.id);
-            const sortOrders = newFolders.map((_: FolderWithChildren, index: number) => (index + 1) * 1000);
-
-            reorderFoldersFetcher.submit(
-              {
-                intent: "reorder",
-                ids: JSON.stringify(ids),
-                sortOrders: JSON.stringify(sortOrders),
-              },
-              {
-                method: "post",
-                action: "/api/folders",
-              }
-            );
-
-            return {
-              ...tab,
-              folders: newFolders,
-            };
+        reorderFoldersFetcher.submit(
+          {
+            intent: "reorder",
+            ids: JSON.stringify(ids),
+            sortOrders: JSON.stringify(sortOrders),
+          },
+          {
+            method: "post",
+            action: "/api/folders",
           }
+        );
 
-          return tab;
-        });
+        return {
+          ...tab,
+          folders: newFolders,
+        };
       });
-    }
+    });
+  };
+
+  // Handle subfolder reorder via Sheet
+  const handleSubFolderReorder = (parentId: string, newChildren: FolderWithChildren[]) => {
+    setTabs((prevTabs: TabWithFolders[]) => {
+      return prevTabs.map((tab: TabWithFolders) => {
+        if (tab.id !== activeTabId) return tab;
+
+        const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
+          return folders.map((f: FolderWithChildren) => {
+            if (f.id === parentId) {
+              return { ...f, children: newChildren };
+            }
+            if (f.children) {
+              return { ...f, children: updateFolders(f.children) };
+            }
+            return f;
+          });
+        };
+
+        // 提交到 API
+        const ids = newChildren.map((f: FolderWithChildren) => f.id);
+        const sortOrders = newChildren.map((_: FolderWithChildren, index: number) => (index + 1) * 1000);
+
+        reorderFoldersFetcher.submit(
+          {
+            intent: "reorder",
+            ids: JSON.stringify(ids),
+            sortOrders: JSON.stringify(sortOrders),
+          },
+          {
+            method: "post",
+            action: "/api/folders",
+          }
+        );
+
+        return {
+          ...tab,
+          folders: updateFolders(tab.folders),
+        };
+      });
+    });
   };
 
   // Handle nested folder reorder
@@ -413,122 +492,63 @@ export default function Dashboard() {
   return (
     <div className="h-screen flex flex-col bg-transparent">
       {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-border px-6 pt-4 pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
-                <img src="/favicon-re.svg" alt="Kit" className="h-full w-full object-contain rounded-xl" />
-              </div>
-              <h1 className="text-xl font-semibold text-primary">
-                Kit
-              </h1>
-            </div>
-          </div>
+      <DashboardHeader
+        userEmail={user.email}
+        onShare={() => setShowShareDialog(true)}
+        onChangePassword={() => setShowChangePasswordDialog(true)}
+      />
 
-          <div className="flex items-center gap-0">
-            {activeTabId && (
-              <button
-                onClick={() => {
-                  setParentFolderId(null);
-                  setShowCreateFolderDialog(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 mr-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-              >
-                <FolderPlusIcon className="w-4 h-4" />
-                新增資料夾
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowShareDialog(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
-            >
-              <Share2 className="w-4 h-4" />
-              分享
-            </button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors">
-                  <UserIcon className="w-4 h-4" />
-                  <ChevronDown className="w-4 h-4 opacity-50" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel asChild>
-                  <div className="grid grid-cols-1 gap-2 px-3 pt-1.5 pb-2 -mx-1 mb-1 border-b border-border">
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => setShowChangePasswordDialog(true)}
-                  className="w-full flex items-center gap-2 cursor-pointer"
-                >
-                  <Edit className="w-4 h-4" />
-                  修改密碼
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Form method="post" className="w-full">
-                    <input type="hidden" name="intent" value="logout" />
-                    <button
-                      type="submit"
-                      className="w-full flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      登出
-                    </button>
-                  </Form>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+      {/* Workspace Switcher and Tabs Bar */}
+      <div className="flex flex-col bg-card/70 backdrop-blur-sm border-b border-border">
+        {/* Workspace Switcher */}
+        <div className="flex items-center gap-4 px-6 pt-3 pb-2">
+          <WorkspaceSwitcher
+            workspaces={workspaces}
+            currentWorkspaceId={currentWorkspaceId || ""}
+            onWorkspaceChange={(workspaceId) => {
+              setSearchParams({ workspace: workspaceId }, { preventScrollReset: true });
+            }}
+            onCreateWorkspace={() => setShowCreateWorkspaceDialog(true)}
+            onEditWorkspace={(workspace) => {
+              setEditingWorkspace(workspace);
+              setShowEditWorkspaceDialog(true);
+            }}
+            onDeleteWorkspace={(workspace) => {
+              setDeleteResource({ type: "workspace", id: workspace.id, title: workspace.title });
+              setShowDeleteDialog(true);
+            }}
+          />
         </div>
-      </header>
 
-      {/* Tabs Bar */}
-      <div className="bg-card/70 backdrop-blur-sm border-b border-border">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleTabDragEnd}
-        >
-          <ScrollArea className="w-full">
-            <div className="flex items-center gap-0 px-6">
-              <SortableContext
-                items={tabsState.map((t) => t.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                {tabsState.map((tab: TabWithFolders) => (
-                  <SortableTabItem
-                    key={tab.id}
-                    tab={tab}
-                    isActive={activeTabId === tab.id}
-                    onSelect={() => setSearchParams({ tab: tab.id }, { preventScrollReset: true })}
-                    onEdit={() => {
-                      setEditingTab(tab);
-                      setShowEditTabDialog(true);
-                    }}
-                    onDelete={() => {
-                      setDeleteResource({ type: "tab", id: tab.id, title: tab.title });
-                      setShowDeleteDialog(true);
-                    }}
-                  />
-                ))}
-              </SortableContext>
-
-              <button
-                onClick={() => setShowCreateTabDialog(true)}
-                className="px-4 py-3 text-muted-foreground hover:text-foreground"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+        {/* Tabs Bar */}
+        <div className="flex ps-6">
+        {/* Tab 管理按鈕 */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowOrganizeTabsSheet(true)}
+            className="flex items-center gap-1.5 px-3 py-2  text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
+          >
+            <MonitorCogIcon className="w-4 h-4" />
+            <span>管理 Tabs</span>
+          </button>
+          <div className="h-4 w-[1px] bg-muted-foreground/20 mr-2"></div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <ScrollArea className="w-full pt-2 pb-3 pr-6">
+            <div className="flex items-center gap-0">
+              {tabsState.map((tab: TabWithFolders) => (
+                <SortableTabItem
+                  key={tab.id}
+                  tab={tab}
+                  isActive={activeTabId === tab.id}
+                  onSelect={() => setSearchParams({ tab: tab.id }, { preventScrollReset: true })}
+                />
+              ))}
             </div>
-            <ScrollBar orientation="horizontal" />
           </ScrollArea>
-        </DndContext>
+        </div>
       </div>
-
+      </div>
       {/* Main Content */}
       <main className="flex-1 relative min-h-0 bg-transparent">
         <ScrollArea className="h-full w-full">
@@ -571,155 +591,152 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div>
-                    {/* Top-level Folders with Drag and Drop */}
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleTopLevelFolderDragEnd}
-                    >
-                      <SortableContext
-                        items={activeTab.folders.map((f) => f.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <div className="grid grid-cols-1 gap-8 pb-12">
-                          {activeTab.folders.map((folder: FolderWithChildren) => (
-                            <SortableFolder
-                              key={folder.id}
-                              folder={folder}
-                              onEdit={() => {
-                                setEditingFolder(folder);
-                                setShowEditFolderDialog(true);
-                              }}
-                              onDelete={() => {
-                                setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
-                                setShowDeleteDialog(true);
-                              }}
-                              onCreateSubfolder={() => {
-                                setParentFolderId(folder.id);
-                                setShowCreateFolderDialog(true);
-                              }}
-                              onCreateBookmark={() => {
-                                setSelectedFolderId(folder.id);
-                                setSelectedFolderName(folder.title);
-                                setShowCreateBookmarkDialog(true);
-                              }}
+                    {/* Top-level Folders */}
+                    <div className="grid grid-cols-1 gap-8 pb-16">
+                      {activeTab.folders.map((folder: FolderWithChildren) => (
+                        <SortableFolder
+                          key={folder.id}
+                          folder={folder}
+                          onEdit={() => {
+                            setEditingFolder(folder);
+                            setShowEditFolderDialog(true);
+                          }}
+                          onDelete={() => {
+                            setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
+                            setShowDeleteDialog(true);
+                          }}
+                          onCreateSubfolder={() => {
+                            setParentFolderId(folder.id);
+                            setShowCreateFolderDialog(true);
+                          }}
+                          onCreateBookmark={() => {
+                            setSelectedFolderId(folder.id);
+                            setSelectedFolderName(folder.title);
+                            setShowCreateBookmarkDialog(true);
+                          }}
+                          onOrganizeSubfolders={() => {
+                            setOrganizingSubFoldersParent(folder);
+                            setShowOrganizeSubFoldersSheet(true);
+                          }}
+                        >
+                          {/* Folder Bookmarks */}
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleBookmarkDragEnd(folder.id)}
+                          >
+                            <SortableContext
+                              items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
+                              strategy={verticalListSortingStrategy}
                             >
-                              {/* Folder Bookmarks */}
-                              <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleBookmarkDragEnd(folder.id)}
-                              >
-                                <SortableContext
-                                  items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
-                                  strategy={verticalListSortingStrategy}
-                                >
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
-                                    {folder.bookmarks?.map((bookmark: Bookmark) => (
-                                      <SortableBookmark
-                                        key={bookmark.id}
-                                        bookmark={bookmark}
-                                        onEdit={() => {
-                                          setEditingBookmark(bookmark);
-                                          setShowEditBookmarkDialog(true);
-                                        }}
-                                        onDelete={() => {
-                                          setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                          setShowDeleteDialog(true);
-                                        }}
-                                        onMove={() => {
-                                          setMovingBookmark(bookmark);
-                                          setMovingBookmarkFolderId(bookmark.folder_id);
-                                          setShowMoveBookmarkDialog(true);
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </SortableContext>
-                              </DndContext>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
+                                {folder.bookmarks?.map((bookmark: Bookmark) => (
+                                  <SortableBookmark
+                                    key={bookmark.id}
+                                    bookmark={bookmark}
+                                    onEdit={() => {
+                                      setEditingBookmark(bookmark);
+                                      setShowEditBookmarkDialog(true);
+                                    }}
+                                    onDelete={() => {
+                                      setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+                                      setShowDeleteDialog(true);
+                                    }}
+                                    onMove={() => {
+                                      setMovingBookmark(bookmark);
+                                      setMovingBookmarkFolderId(bookmark.folder_id);
+                                      setShowMoveBookmarkDialog(true);
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
 
-                              {/* Nested Folders */}
-                              {folder.children && folder.children.length > 0 && (
-                                <>
-                                  <hr className="mt-8" />
-                                  <div className="mt-4 -mr-4">
-                                    <DndContext
-                                      sensors={sensors}
-                                      collisionDetection={closestCenter}
-                                      onDragEnd={handleNestedFolderDragEnd(folder.id)}
-                                    >
-                                      <SortableContext
-                                        items={folder.children.map((f: FolderWithChildren) => f.id)}
-                                        strategy={verticalListSortingStrategy}
-                                      >
-                                        {folder.children.map((childFolder: FolderWithChildren) => (
-                                          <div key={childFolder.id}>
-                                            <SortableFolder
-                                              folder={childFolder}
-                                              isNested={true}
-                                              onEdit={() => {
-                                                setEditingFolder(childFolder);
-                                                setShowEditFolderDialog(true);
-                                              }}
-                                              onDelete={() => {
-                                                setDeleteResource({ type: "folder", id: childFolder.id, title: childFolder.title });
-                                                setShowDeleteDialog(true);
-                                              }}
-                                              onCreateSubfolder={() => {
-                                                setParentFolderId(childFolder.id);
-                                                setShowCreateFolderDialog(true);
-                                              }}
-                                              onCreateBookmark={() => {
-                                                setSelectedFolderId(childFolder.id);
-                                                setSelectedFolderName(childFolder.title);
-                                                setShowCreateBookmarkDialog(true);
-                                              }}
+                          {/* Nested Folders */}
+                          {folder.children && folder.children.length > 0 && (
+                            <>
+                              <hr className="mt-8" />
+                              <div className="mt-4 -mr-4">
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  onDragEnd={handleNestedFolderDragEnd(folder.id)}
+                                >
+                                  <SortableContext
+                                    items={folder.children.map((f: FolderWithChildren) => f.id)}
+                                    strategy={verticalListSortingStrategy}
+                                  >
+                                    {folder.children.map((childFolder: FolderWithChildren) => (
+                                      <div key={childFolder.id}>
+                                        <SortableFolder
+                                          folder={childFolder}
+                                          isNested={true}
+                                          onEdit={() => {
+                                            setEditingFolder(childFolder);
+                                            setShowEditFolderDialog(true);
+                                          }}
+                                          onDelete={() => {
+                                            setDeleteResource({ type: "folder", id: childFolder.id, title: childFolder.title });
+                                            setShowDeleteDialog(true);
+                                          }}
+                                          onCreateSubfolder={() => {
+                                            setParentFolderId(childFolder.id);
+                                            setShowCreateFolderDialog(true);
+                                          }}
+                                          onCreateBookmark={() => {
+                                            setSelectedFolderId(childFolder.id);
+                                            setSelectedFolderName(childFolder.title);
+                                            setShowCreateBookmarkDialog(true);
+                                          }}
+                                          onOrganizeSubfolders={() => {
+                                            setOrganizingSubFoldersParent(childFolder);
+                                            setShowOrganizeSubFoldersSheet(true);
+                                          }}
+                                        >
+                                          <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={handleBookmarkDragEnd(childFolder.id)}
+                                          >
+                                            <SortableContext
+                                              items={childFolder.bookmarks?.map((b: Bookmark) => b.id) || []}
+                                              strategy={verticalListSortingStrategy}
                                             >
-                                              <DndContext
-                                                sensors={sensors}
-                                                collisionDetection={closestCenter}
-                                                onDragEnd={handleBookmarkDragEnd(childFolder.id)}
-                                              >
-                                                <SortableContext
-                                                  items={childFolder.bookmarks?.map((b: Bookmark) => b.id) || []}
-                                                  strategy={verticalListSortingStrategy}
-                                                >
-                                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                    {childFolder.bookmarks?.map((bookmark: Bookmark) => (
-                                                      <SortableBookmark
-                                                        key={bookmark.id}
-                                                        bookmark={bookmark}
-                                                        onEdit={() => {
-                                                          setEditingBookmark(bookmark);
-                                                          setShowEditBookmarkDialog(true);
-                                                        }}
-                                                        onDelete={() => {
-                                                          setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                                          setShowDeleteDialog(true);
-                                                        }}
-                                                        onMove={() => {
-                                                          setMovingBookmark(bookmark);
-                                                          setMovingBookmarkFolderId(bookmark.folder_id);
-                                                          setShowMoveBookmarkDialog(true);
-                                                        }}
-                                                      />
-                                                    ))}
-                                                  </div>
-                                                </SortableContext>
-                                              </DndContext>
-                                            </SortableFolder>
-                                          </div>
-                                        ))}
-                                      </SortableContext>
-                                    </DndContext>
-                                  </div>
-                                </>
-                              )}
-                            </SortableFolder>
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
+                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                                {childFolder.bookmarks?.map((bookmark: Bookmark) => (
+                                                  <SortableBookmark
+                                                    key={bookmark.id}
+                                                    bookmark={bookmark}
+                                                    onEdit={() => {
+                                                      setEditingBookmark(bookmark);
+                                                      setShowEditBookmarkDialog(true);
+                                                    }}
+                                                    onDelete={() => {
+                                                      setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+                                                      setShowDeleteDialog(true);
+                                                    }}
+                                                    onMove={() => {
+                                                      setMovingBookmark(bookmark);
+                                                      setMovingBookmarkFolderId(bookmark.folder_id);
+                                                      setShowMoveBookmarkDialog(true);
+                                                    }}
+                                                  />
+                                                ))}
+                                              </div>
+                                            </SortableContext>
+                                          </DndContext>
+                                        </SortableFolder>
+                                      </div>
+                                    ))}
+                                  </SortableContext>
+                                </DndContext>
+                              </div>
+                            </>
+                          )}
+                        </SortableFolder>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -728,10 +745,45 @@ export default function Dashboard() {
         </ScrollArea>
       </main>
 
+      {/* Floating Action Buttons */}
+      {activeTabId && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+          <button
+            onClick={() => setShowOrganizeFoldersSheet(true)}
+            className="flex items-center justify-center w-12 h-12 bg-card/90 hover:bg-card text-foreground rounded-full shadow-lg border border-border transition-colors"
+            title="排序資料夾"
+          >
+            <FolderCogIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setParentFolderId(null);
+              setShowCreateFolderDialog(true);
+            }}
+            className="flex items-center justify-center w-12 h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors"
+            title="新增資料夾"
+          >
+            <FolderPlusIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
       {/* Dialogs */}
+      <CreateWorkspaceDialog
+        open={showCreateWorkspaceDialog}
+        onOpenChange={setShowCreateWorkspaceDialog}
+      />
+      {editingWorkspace && (
+        <EditWorkspaceDialog
+          open={showEditWorkspaceDialog}
+          onOpenChange={setShowEditWorkspaceDialog}
+          workspace={editingWorkspace}
+        />
+      )}
       <CreateTabDialog
         open={showCreateTabDialog}
         onOpenChange={setShowCreateTabDialog}
+        workspaceId={currentWorkspaceId || ""}
       />
       <CreateFolderDialog
         open={showCreateFolderDialog}
@@ -787,6 +839,33 @@ export default function Dashboard() {
       <ChangePasswordDialog
         open={showChangePasswordDialog}
         onOpenChange={setShowChangePasswordDialog}
+      />
+      <OrganizeTabsSheet
+        open={showOrganizeTabsSheet}
+        onOpenChange={setShowOrganizeTabsSheet}
+        tabs={tabsState}
+        onReorder={handleTabReorder}
+        onAddTab={() => setShowCreateTabDialog(true)}
+        onEditTab={(tab) => {
+          setEditingTab(tab);
+          setShowEditTabDialog(true);
+        }}
+        onDeleteTab={(tab) => {
+          setDeleteResource({ type: "tab", id: tab.id, title: tab.title });
+          setShowDeleteDialog(true);
+        }}
+      />
+      <OrganizeFoldersSheet
+        open={showOrganizeFoldersSheet}
+        onOpenChange={setShowOrganizeFoldersSheet}
+        folders={activeTab?.folders || []}
+        onReorder={handleTopLevelFolderReorder}
+      />
+      <OrganizeSubFoldersSheet
+        open={showOrganizeSubFoldersSheet}
+        onOpenChange={setShowOrganizeSubFoldersSheet}
+        parentFolder={organizingSubFoldersParent}
+        onReorder={handleSubFolderReorder}
       />
     </div>
   );

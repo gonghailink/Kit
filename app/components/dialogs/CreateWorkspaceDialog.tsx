@@ -13,24 +13,31 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
-interface CreateTabDialogProps {
+interface CreateWorkspaceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspaceId: string;
 }
 
 type FetcherData =
   | { error: string; success?: never }
   | { success: true; error?: never };
 
-export default function CreateTabDialog({ open, onOpenChange, workspaceId }: CreateTabDialogProps) {
+export default function CreateWorkspaceDialog({
+  open,
+  onOpenChange,
+}: CreateWorkspaceDialogProps) {
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const isSubmitting = fetcher.state === "submitting";
 
   // 成功後關閉對話框並重置
   useEffect(() => {
-    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
+    if (
+      fetcher.data &&
+      "success" in fetcher.data &&
+      fetcher.data.success &&
+      !isSubmitting
+    ) {
       setTitle("");
       onOpenChange(false);
       // 重新載入頁面以更新資料
@@ -40,52 +47,46 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !workspaceId) return;
+    if (!title.trim()) return;
 
     fetcher.submit(
       {
         intent: "create",
         title: title.trim(),
-        workspace_id: workspaceId,
       },
       {
         method: "post",
-        action: "/api/tabs",
+        action: "/api/workspaces",
       }
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>建立新 Tab</DialogTitle>
+          <DialogTitle>新增工作區</DialogTitle>
           <DialogDescription>
-            建立一個新的 Tab 來組織您的書籤
+            建立一個新的工作區來組織您的書籤
           </DialogDescription>
         </DialogHeader>
-
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2 p-4 mb-4 bg-card/80 rounded-lg">
-              <Label htmlFor="tab-title">Tab 名稱</Label>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">工作區名稱</Label>
               <Input
-                id="tab-title"
-                placeholder="例如：工作、學習、娛樂"
+                id="title"
+                placeholder="例如：工作、個人、學習..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
                 autoFocus
               />
             </div>
-
-            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
-              <div className="text-sm text-destructive">
-                {fetcher.data.error}
-              </div>
+            {fetcher.data && "error" in fetcher.data && (
+              <p className="text-sm text-destructive">{fetcher.data.error}</p>
             )}
           </div>
-
           <DialogFooter>
             <Button
               type="button"
@@ -98,7 +99,7 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   建立中...
                 </>
               ) : (
