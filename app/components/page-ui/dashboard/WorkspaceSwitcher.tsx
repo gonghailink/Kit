@@ -42,7 +42,7 @@ export function WorkspaceSwitcher({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="flex items-center gap-2 min-w-[200px] justify-between bg-card/70 hover:bg-card/90 border-border rounded-full"
+          className="flex items-center gap-2 w-full md:min-w-[200px] justify-between bg-card/70 hover:bg-card/90 border-border rounded-full"
         >
           <div className="flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
@@ -53,7 +53,7 @@ export function WorkspaceSwitcher({
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[280px]">
+      <DropdownMenuContent align="start" className="w-[calc(100vw-3rem)] md:w-[280px]">
         <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
           工作區
         </DropdownMenuLabel>

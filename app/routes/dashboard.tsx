@@ -525,7 +525,13 @@ export default function Dashboard() {
             workspaces={workspaces}
             currentWorkspaceId={currentWorkspaceId || ""}
             onWorkspaceChange={(workspaceId) => {
-              setSearchParams({ workspace: workspaceId }, { preventScrollReset: true });
+              setSearchParams((prev) => {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("workspace", workspaceId);
+                // 當切換 workspace 時，清除 tab 參數讓它自動選擇第一個 tab
+                newParams.delete("tab");
+                return newParams;
+              }, { preventScrollReset: true });
             }}
             onManageWorkspaces={() => setShowOrganizeWorkspacesSheet(true)}
             allowEdit={true}
@@ -555,7 +561,11 @@ export default function Dashboard() {
                   key={tab.id}
                   tab={tab}
                   isActive={activeTabId === tab.id}
-                  onSelect={() => setSearchParams({ tab: tab.id }, { preventScrollReset: true })}
+                  onSelect={() => setSearchParams((prev) => {
+                    const newParams = new URLSearchParams(prev);
+                    newParams.set("tab", tab.id);
+                    return newParams;
+                  }, { preventScrollReset: true })}
                 />
               ))}
             </div>

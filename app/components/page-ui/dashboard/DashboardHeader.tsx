@@ -23,6 +23,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
     return (
         <header className="bg-card/80 backdrop-blur-sm border-border px-6 pt-4 pb-2">
+            {/* First row: Logo, workspace switcher (desktop), and action buttons */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
@@ -33,8 +34,9 @@ export function DashboardHeader({
                             Kit
                         </h1>
                     </div>
+                    {/* Workspace switcher on desktop (hidden on mobile) */}
                     {workspaceSwitcher && (
-                        <div className="ml-2">
+                        <div className="hidden md:block ml-2">
                             {workspaceSwitcher}
                         </div>
                     )}
@@ -85,6 +87,13 @@ export function DashboardHeader({
                     </DropdownMenu>
                 </div>
             </div>
+
+            {/* Second row: Full width workspace switcher on mobile only */}
+            {workspaceSwitcher && (
+                <div className="mt-4 md:hidden">
+                    {workspaceSwitcher}
+                </div>
+            )}
         </header>
     );
 }

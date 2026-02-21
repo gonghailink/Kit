@@ -209,10 +209,10 @@ export default function ShareDialog({
             </div>
           ) : (
             // 顯示建立按鈕
-            <div className="px-2 space-y-4">
-              <div className="text-center flex justify-center items-center gap-4 pb-4">
+            <div className="space-y-6 my-6">
+              <div className="text-center flex flex-col md:flex-row justify-center items-center gap-4">
                 <MonitorOffIcon className="w-16 h-16 text-background p-4 rounded-lg bg-primary/90" />
-                <div className="text-left">
+                <div className="text-center md:text-left">
                   <p className="text-muted-foreground mb-2">
                     您尚未建立分享連結
                   </p>
