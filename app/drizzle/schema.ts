@@ -9,9 +9,18 @@ export const users = sqliteTable("users", {
     updated_at: text("updated_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
 
+export const workspaces = sqliteTable("workspaces", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    user_id: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    sort_order: real("sort_order").default(0),
+    created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
+});
+
 export const tabs = sqliteTable("tabs", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    user_id: text("user_id").notNull(), // Supabase Auth ID
+    user_id: text("user_id").notNull(),
+    workspace_id: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     sort_order: real("sort_order").default(0),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),

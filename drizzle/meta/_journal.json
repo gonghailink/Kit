@@ -22,6 +22,13 @@
       "when": 1770313701342,
       "tag": "0002_mature_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771646797354,
+      "tag": "0003_good_sunspot",
+      "breakpoints": true
     }
   ]
 }
