@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { workspaces, tabs } from "~/drizzle/schema";
+import { workspaces } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 type ActionData =
@@ -107,22 +107,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "工作區 ID 是必要的" }, { status: 400 });
         }
 
-        // 檢查這個工作區是否還有 tabs
-        const workspaceTabs = await db
-          .select({ id: tabs.id })
-          .from(tabs)
-          .where(eq(tabs.workspace_id, id))
-          .limit(1)
-          .all();
-
-        if (workspaceTabs && workspaceTabs.length > 0) {
-          return json<ActionData>(
-            { error: "無法刪除含有分頁的工作區，請先刪除或移動所有分頁" },
-            { status: 400 }
-          );
-        }
-
-        // 刪除工作區
+        // 刪除工作區（資料庫 CASCADE 會自動刪除關聯的 tabs、folders、bookmarks）
         await db
           .delete(workspaces)
           .where(and(eq(workspaces.id, id), eq(workspaces.user_id, user.id)))
