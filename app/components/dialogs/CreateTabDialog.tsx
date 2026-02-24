@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, FolderIcon, TagIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { TabType } from "~/lib/types";
 
 interface CreateTabDialogProps {
   open: boolean;
@@ -26,27 +27,31 @@ type FetcherData =
 export default function CreateTabDialog({ open, onOpenChange, workspaceId }: CreateTabDialogProps) {
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
+  const [type, setType] = useState<TabType>("folders");
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
 
   // 成功後關閉對話框並重置
   useEffect(() => {
-    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
+    if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
+      submitted.current = false;
       setTitle("");
+      setType("folders");
       onOpenChange(false);
-      // 重新載入頁面以更新資料
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !workspaceId) return;
 
+    submitted.current = true;
     fetcher.submit(
       {
         intent: "create",
         title: title.trim(),
         workspace_id: workspaceId,
+        type,
       },
       {
         method: "post",
@@ -77,6 +82,55 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
                 disabled={isSubmitting}
                 autoFocus
               />
+            </div>
+
+            {/* Tab 模式選擇 */}
+            <div className="space-y-2">
+              <Label>組織方式</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setType("folders")}
+                  className={`
+                    flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition-all
+                    ${type === "folders"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/50"
+                    }
+                  `}
+                >
+                  <FolderIcon className={`w-6 h-6 ${type === "folders" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div>
+                    <p className={`text-sm font-medium ${type === "folders" ? "text-primary" : "text-foreground"}`}>
+                      資料夾模式
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      用資料夾分類書籤
+                    </p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("tags")}
+                  className={`
+                    flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition-all
+                    ${type === "tags"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/50"
+                    }
+                  `}
+                >
+                  <TagIcon className={`w-6 h-6 ${type === "tags" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div>
+                    <p className={`text-sm font-medium ${type === "tags" ? "text-primary" : "text-foreground"}`}>
+                      標籤模式
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      用標籤分類與篩選
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {fetcher.data && "error" in fetcher.data && fetcher.data.error && (

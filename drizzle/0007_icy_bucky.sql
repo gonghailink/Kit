@@ -1,0 +1,1 @@
+ALTER TABLE `tag_groups` ADD `filter_mode` text DEFAULT 'or' NOT NULL;

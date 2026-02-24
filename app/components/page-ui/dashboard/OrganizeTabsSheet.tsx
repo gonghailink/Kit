@@ -23,16 +23,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Pencil, Trash2 } from "lucide-react";
-import type { TabWithFolders } from "~/lib/types";
+import type { TabData } from "~/lib/types";
 
 interface OrganizeTabsSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    tabs: TabWithFolders[];
-    onReorder: (newTabs: TabWithFolders[]) => void;
+    tabs: TabData[];
+    onReorder: (newTabs: TabData[]) => void;
     onAddTab: () => void;
-    onEditTab: (tab: TabWithFolders) => void;
-    onDeleteTab: (tab: TabWithFolders) => void;
+    onEditTab: (tab: TabData) => void;
+    onDeleteTab: (tab: TabData) => void;
 }
 
 export function OrganizeTabsSheet({
@@ -113,7 +113,7 @@ export function OrganizeTabsSheet({
     );
 }
 
-function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabWithFolders; onEdit: () => void; onDelete: () => void }) {
+function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () => void; onDelete: () => void }) {
     const {
         attributes,
         listeners,

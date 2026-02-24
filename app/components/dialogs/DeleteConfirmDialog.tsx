@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 import {
   Dialog,
@@ -61,16 +61,18 @@ export default function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
   const fetcher = useFetcher<FetcherData>();
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
   const config = resourceConfig[resourceType];
 
   useEffect(() => {
-    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
+    if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
+      submitted.current = false;
       onOpenChange(false);
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleDelete = () => {
+    submitted.current = true;
     fetcher.submit(
       {
         intent: "delete",

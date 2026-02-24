@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { bookmarks, folders } from "~/drizzle/schema";
+import { bookmarks, folders, tabs } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getFaviconUrl, isValidUrl } from "~/lib/utils";
 
@@ -19,13 +19,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
   try {
     switch (intent) {
       case "create": {
-        const folder_id = formData.get("folder_id") as string;
+        const folder_id = formData.get("folder_id") as string | null;
+        const tab_id = formData.get("tab_id") as string | null;
         const title = formData.get("title") as string;
         const url = formData.get("url") as string;
         const memo = formData.get("memo") as string | undefined;
 
-        if (!folder_id) {
-          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400 });
+        if (!folder_id && !tab_id) {
+          return json<ActionData>({ error: "必須指定 folder_id 或 tab_id" }, { status: 400 });
+        }
+
+        if (folder_id && tab_id) {
+          return json<ActionData>({ error: "不能同時指定 folder_id 和 tab_id" }, { status: 400 });
         }
 
         if (!title || title.trim() === "") {
@@ -43,48 +48,94 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "URL 格式不正確" }, { status: 400 });
         }
 
-        // 驗證 folder 是否屬於當前使用者
-        const folder = await db
-          .select({ id: folders.id })
-          .from(folders)
-          .where(and(eq(folders.id, folder_id), eq(folders.user_id, user.id)))
-          .get();
-
-        if (!folder) {
-          return json<ActionData>({ error: "找不到該資料夾" }, { status: 404 });
-        }
-
-        // 取得當前最大的 sort_order
-        const existingBookmarks = await db
-          .select({ sort_order: bookmarks.sort_order })
-          .from(bookmarks)
-          .where(eq(bookmarks.folder_id, folder_id))
-          .orderBy(desc(bookmarks.sort_order))
-          .limit(1)
-          .all();
-
-        const newSortOrder = existingBookmarks && existingBookmarks.length > 0
-          ? (existingBookmarks[0].sort_order || 0) + 1000
-          : 1000;
-
         // 自動取得 favicon
         const favicon_url = getFaviconUrl(trimmedUrl);
 
-        const newBookmark = await db
-          .insert(bookmarks)
-          .values({
-            user_id: user.id,
-            folder_id,
-            title: title.trim(),
-            url: trimmedUrl,
-            favicon_url,
-            memo: memo ? memo.trim() : null,
-            sort_order: newSortOrder,
-          })
-          .returning()
-          .get();
+        if (folder_id) {
+          // Folders 模式
+          const folder = await db
+            .select({ id: folders.id })
+            .from(folders)
+            .where(and(eq(folders.id, folder_id), eq(folders.user_id, user.id)))
+            .get();
 
-        return json({ bookmark: newBookmark, success: true });
+          if (!folder) {
+            return json<ActionData>({ error: "找不到該資料夾" }, { status: 404 });
+          }
+
+          const existingBookmarks = await db
+            .select({ sort_order: bookmarks.sort_order })
+            .from(bookmarks)
+            .where(eq(bookmarks.folder_id, folder_id))
+            .orderBy(desc(bookmarks.sort_order))
+            .limit(1)
+            .all();
+
+          const newSortOrder = existingBookmarks && existingBookmarks.length > 0
+            ? (existingBookmarks[0].sort_order || 0) + 1000
+            : 1000;
+
+          const newBookmark = await db
+            .insert(bookmarks)
+            .values({
+              user_id: user.id,
+              folder_id,
+              tab_id: null,
+              title: title.trim(),
+              url: trimmedUrl,
+              favicon_url,
+              memo: memo ? memo.trim() : null,
+              sort_order: newSortOrder,
+            })
+            .returning()
+            .get();
+
+          return json({ bookmark: newBookmark, success: true });
+        } else {
+          // Tags 模式
+          const tab = await db
+            .select({ id: tabs.id, type: tabs.type })
+            .from(tabs)
+            .where(and(eq(tabs.id, tab_id!), eq(tabs.user_id, user.id)))
+            .get();
+
+          if (!tab) {
+            return json<ActionData>({ error: "找不到該 Tab" }, { status: 404 });
+          }
+
+          if (tab.type !== "tags") {
+            return json<ActionData>({ error: "該 Tab 不是標籤模式" }, { status: 400 });
+          }
+
+          const existingBookmarks = await db
+            .select({ sort_order: bookmarks.sort_order })
+            .from(bookmarks)
+            .where(eq(bookmarks.tab_id, tab_id!))
+            .orderBy(desc(bookmarks.sort_order))
+            .limit(1)
+            .all();
+
+          const newSortOrder = existingBookmarks && existingBookmarks.length > 0
+            ? (existingBookmarks[0].sort_order || 0) + 1000
+            : 1000;
+
+          const newBookmark = await db
+            .insert(bookmarks)
+            .values({
+              user_id: user.id,
+              folder_id: null,
+              tab_id: tab_id!,
+              title: title.trim(),
+              url: trimmedUrl,
+              favicon_url,
+              memo: memo ? memo.trim() : null,
+              sort_order: newSortOrder,
+            })
+            .returning()
+            .get();
+
+          return json({ bookmark: newBookmark, success: true });
+        }
       }
 
       case "update": {

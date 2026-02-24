@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, FolderIcon, TagIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,24 +28,26 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState(tab.title);
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
 
   // 當 tab 改變時更新 title
   useEffect(() => {
     setTitle(tab.title);
   }, [tab.title]);
 
-  // 成功後關閉對話框並重新載入
+  // 成功後關閉對話框
   useEffect(() => {
-    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
+    if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
+      submitted.current = false;
       onOpenChange(false);
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    submitted.current = true;
     fetcher.submit(
       {
         intent: "update",
@@ -81,6 +83,20 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
                 disabled={isSubmitting}
                 autoFocus
               />
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {tab.type === "tags" ? (
+                <>
+                  <TagIcon className="w-4 h-4" />
+                  <span>標籤模式（建立後不可變更）</span>
+                </>
+              ) : (
+                <>
+                  <FolderIcon className="w-4 h-4" />
+                  <span>資料夾模式（建立後不可變更）</span>
+                </>
+              )}
             </div>
 
             {fetcher.data && "error" in fetcher.data && fetcher.data.error && (

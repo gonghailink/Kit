@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -29,26 +29,28 @@ export default function CreateWorkspaceDialog({
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
 
   // 成功後關閉對話框並重置
   useEffect(() => {
     if (
+      submitted.current &&
       fetcher.data &&
       "success" in fetcher.data &&
       fetcher.data.success &&
-      !isSubmitting
+      fetcher.state === "idle"
     ) {
+      submitted.current = false;
       setTitle("");
       onOpenChange(false);
-      // 重新載入頁面以更新資料
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    submitted.current = true;
     fetcher.submit(
       {
         intent: "create",

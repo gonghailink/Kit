@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -28,17 +28,18 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState(folder.title);
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
 
   useEffect(() => {
     setTitle(folder.title);
   }, [folder.title]);
 
   useEffect(() => {
-    if (fetcher.data && "success" in fetcher.data && fetcher.data.success && !isSubmitting) {
+    if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
+      submitted.current = false;
       onOpenChange(false);
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +50,7 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
     formData.append("id", folder.id);
     formData.append("title", title.trim());
 
+    submitted.current = true;
     fetcher.submit(formData, {
       method: "post",
       action: "/api/folders",

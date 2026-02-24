@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { tabs, workspaces } from "~/drizzle/schema";
+import { tags, tagGroups } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 type ActionData =
@@ -18,97 +18,99 @@ export async function action({ request, context }: ActionFunctionArgs) {
   try {
     switch (intent) {
       case "create": {
+        const tag_group_id = formData.get("tag_group_id") as string;
         const title = formData.get("title") as string;
-        const workspace_id = formData.get("workspace_id") as string;
+
+        if (!tag_group_id) {
+          return json<ActionData>({ error: "TagGroup ID 是必要的" }, { status: 400 });
+        }
 
         if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "Tab 名稱不能為空" }, { status: 400 });
+          return json<ActionData>({ error: "標籤名稱不能為空" }, { status: 400 });
         }
 
-        if (!workspace_id) {
-          return json<ActionData>({ error: "Workspace ID 是必要的" }, { status: 400 });
-        }
-
-        // 驗證 workspace 是否屬於當前使用者
-        const workspace = await db
-          .select({ id: workspaces.id })
-          .from(workspaces)
-          .where(and(eq(workspaces.id, workspace_id), eq(workspaces.user_id, user.id)))
+        // 驗證 tag_group 是否屬於當前使用者
+        const tagGroup = await db
+          .select({ id: tagGroups.id })
+          .from(tagGroups)
+          .where(and(eq(tagGroups.id, tag_group_id), eq(tagGroups.user_id, user.id)))
           .get();
 
-        if (!workspace) {
-          return json<ActionData>({ error: "找不到該工作區" }, { status: 404 });
+        if (!tagGroup) {
+          return json<ActionData>({ error: "找不到該標籤群組" }, { status: 404 });
         }
 
-        // 取得當前最大的 sort_order（只在該 workspace 內）
-        const existingTabs = await db
-          .select({ sort_order: tabs.sort_order })
-          .from(tabs)
-          .where(and(eq(tabs.user_id, user.id), eq(tabs.workspace_id, workspace_id)))
-          .orderBy(desc(tabs.sort_order))
+        // 取得當前最大的 sort_order
+        const existing = await db
+          .select({ sort_order: tags.sort_order })
+          .from(tags)
+          .where(eq(tags.tag_group_id, tag_group_id))
+          .orderBy(desc(tags.sort_order))
           .limit(1)
           .all();
 
-        const newSortOrder = existingTabs && existingTabs.length > 0
-          ? (existingTabs[0].sort_order || 0) + 1000
+        const newSortOrder = existing && existing.length > 0
+          ? (existing[0].sort_order || 0) + 1000
           : 1000;
 
-        const type = (formData.get("type") as string) || "folders";
-        if (type !== "folders" && type !== "tags") {
-          return json<ActionData>({ error: "無效的 Tab 類型" }, { status: 400 });
-        }
-
-        const newTab = await db
-          .insert(tabs)
+        const newTag = await db
+          .insert(tags)
           .values({
             user_id: user.id,
-            workspace_id,
+            tag_group_id,
             title: title.trim(),
-            type,
             sort_order: newSortOrder,
           })
           .returning()
           .get();
 
-        return json({ tab: newTab, success: true });
+        return json({ tag: newTag, success: true });
       }
 
       case "update": {
         const id = formData.get("id") as string;
-        const title = formData.get("title") as string;
+        const title = formData.get("title") as string | undefined;
 
         if (!id) {
-          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400 });
+          return json<ActionData>({ error: "Tag ID 是必要的" }, { status: 400 });
         }
 
-        if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "Tab 名稱不能為空" }, { status: 400 });
+        const updates: any = {};
+        if (title !== undefined) {
+          if (title.trim() === "") {
+            return json<ActionData>({ error: "標籤名稱不能為空" }, { status: 400 });
+          }
+          updates.title = title.trim();
         }
 
-        const updatedTab = await db
-          .update(tabs)
-          .set({ title: title.trim() })
-          .where(and(eq(tabs.id, id), eq(tabs.user_id, user.id)))
+        if (Object.keys(updates).length === 0) {
+          return json<ActionData>({ error: "沒有要更新的欄位" }, { status: 400 });
+        }
+
+        const updated = await db
+          .update(tags)
+          .set(updates)
+          .where(and(eq(tags.id, id), eq(tags.user_id, user.id)))
           .returning()
           .get();
 
-        if (!updatedTab) {
+        if (!updated) {
           return json<ActionData>({ error: "更新失敗" }, { status: 400 });
         }
 
-        return json({ tab: updatedTab, success: true });
+        return json({ tag: updated, success: true });
       }
 
       case "delete": {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400 });
+          return json<ActionData>({ error: "Tag ID 是必要的" }, { status: 400 });
         }
 
         await db
-          .delete(tabs)
-          .where(and(eq(tabs.id, id), eq(tabs.user_id, user.id)))
+          .delete(tags)
+          .where(and(eq(tags.id, id), eq(tags.user_id, user.id)))
           .run();
 
         return json<ActionData>({ success: true });
@@ -129,11 +131,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
         }
 
-        // 批次更新
         const statements = ids.map((id, index) =>
-          db.update(tabs)
+          db.update(tags)
             .set({ sort_order: sortOrders[index] })
-            .where(and(eq(tabs.id, id), eq(tabs.user_id, user.id)))
+            .where(and(eq(tags.id, id), eq(tags.user_id, user.id)))
         );
 
         await db.batch(statements as any);

@@ -1,11 +1,11 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
-import { tabs, folders, bookmarks, workspaces as workspacesSchema } from "~/drizzle/schema";
+import { tabs, folders, bookmarks, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
-import type { TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { ChevronDown, ChevronRight, ExternalLink, Bookmark as BookmarkIcon, ArrowUp, LogIn } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
+import { ExternalLink, Bookmark as BookmarkIcon, ArrowUp, LogIn } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
@@ -75,20 +75,67 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
             .orderBy(asc(bookmarks.sort_order))
             .all()).map(b => ({ ...b, sort_order: b.sort_order ?? 0 }));
 
-        // 組織成樹狀結構
-        const tabsWithFolders: TabWithFolders[] = (allTabs || []).map((tab) => ({
-            ...tab,
-            folders: buildFolderTree(
-                (allFolders || []).filter((f) => f.tab_id === tab.id),
-                (allBookmarks || []).filter((b) =>
-                    (allFolders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
-                )
-            ),
-        })) as any;
+        // 取得 tag 相關資料
+        const allTagGroups = (await db
+            .select()
+            .from(tagGroupsSchema)
+            .where(eq(tagGroupsSchema.user_id, user.id))
+            .orderBy(asc(tagGroupsSchema.sort_order))
+            .all()).map(tg => ({ ...tg, sort_order: tg.sort_order ?? 0 }));
+
+        const allTags = (await db
+            .select()
+            .from(tagsSchema)
+            .where(eq(tagsSchema.user_id, user.id))
+            .orderBy(asc(tagsSchema.sort_order))
+            .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
+
+        const allBookmarkTags = await db
+            .select()
+            .from(bookmarkTagsSchema)
+            .all();
+
+        // 組裝結構（依據 tab.type 分支）
+        const tabsData: TabData[] = (allTabs || []).map((tab) => {
+            if (tab.type === "tags") {
+                const tabBookmarks = (allBookmarks || []).filter(b => b.tab_id === tab.id);
+                const tabTagGroups = (allTagGroups || []).filter(tg => tg.tab_id === tab.id);
+
+                const bookmarksWithTags: BookmarkWithTags[] = tabBookmarks.map(b => ({
+                    ...b,
+                    tags: allBookmarkTags
+                        .filter(bt => bt.bookmark_id === b.id)
+                        .map(bt => allTags.find(t => t.id === bt.tag_id))
+                        .filter((t): t is Tag => !!t),
+                }));
+
+                const tagGroupsWithTags: TagGroupWithTags[] = tabTagGroups.map(tg => ({
+                    ...tg,
+                    filter_mode: tg.filter_mode as TagGroupWithTags["filter_mode"],
+                    tags: (allTags || []).filter(t => t.tag_group_id === tg.id),
+                }));
+
+                return {
+                    ...tab,
+                    bookmarks: bookmarksWithTags,
+                    tagGroups: tagGroupsWithTags,
+                } as TabWithTags;
+            } else {
+                return {
+                    ...tab,
+                    folders: buildFolderTree(
+                        (allFolders || []).filter((f) => f.tab_id === tab.id),
+                        (allBookmarks || []).filter((b) =>
+                            (allFolders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
+                        )
+                    ),
+                } as TabWithFolders;
+            }
+        });
 
         return json({
             user,
-            tabs: tabsWithFolders,
+            tabs: tabsData,
             workspaces: allWorkspaces,
             currentWorkspaceId: currentWorkspaceId || null,
             share: {
@@ -96,7 +143,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
                 extra_btn_title: "進入管理後台",
                 extra_btn_url: "/dashboard",
             }
-        },);
+        });
     } catch (error) {
         console.error("Me page error:", error);
         throw new Response("載入內容失敗", { status: 500 });
@@ -145,6 +192,9 @@ export default function MePage() {
     const activeTab = tabsData.find((t: any) => t.id === activeTabId);
     const [searchQuery, setSearchQuery] = useState("");
 
+    // Tags 模式篩選
+    const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
+
     // 當 tabs 變化時，更新 activeTabId
     useEffect(() => {
         if (tabsData.length > 0 && !tabsData.find((t: any) => t.id === activeTabId)) {
@@ -152,6 +202,11 @@ export default function MePage() {
         }
     }, [tabsData, activeTabId]);
 
+    // 切換 tab 時清除篩選
+    useEffect(() => {
+        setSelectedTagIds(new Set());
+        setSearchQuery("");
+    }, [activeTabId]);
 
     const scrollToTop = () => {
         const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -160,11 +215,10 @@ export default function MePage() {
         }
     };
 
-    // 搜尋過濾函數
+    // Folders 模式：搜尋過濾函數
     const filterFolder = (folder: FolderWithChildren, query: string): FolderWithChildren | null => {
         const lowerQuery = query.toLowerCase();
 
-        // 過濾書籤
         const filteredBookmarks = folder.bookmarks?.filter((bookmark) => {
             return (
                 bookmark.title.toLowerCase().includes(lowerQuery) ||
@@ -173,12 +227,10 @@ export default function MePage() {
             );
         });
 
-        // 遞迴過濾子資料夾
         const filteredChildren = folder.children
             ?.map((child) => filterFolder(child, query))
             .filter((child): child is FolderWithChildren => child !== null);
 
-        // 如果有匹配的書籤或子資料夾，保留此資料夾
         if ((filteredBookmarks && filteredBookmarks.length > 0) || (filteredChildren && filteredChildren.length > 0)) {
             return {
                 ...folder,
@@ -190,15 +242,88 @@ export default function MePage() {
         return null;
     };
 
-    // 應用搜尋過濾
-    const filteredTab = activeTab && searchQuery ? {
-        ...activeTab,
-        folders: activeTab.folders
+    // 判斷當前 tab 類型
+    const isActiveTagsTab = activeTab && activeTab.type === "tags";
+    const activeFoldersTab = activeTab && activeTab.type !== "tags" ? activeTab as unknown as TabWithFolders : null;
+    const activeTagsTab = activeTab && activeTab.type === "tags" ? activeTab as unknown as TabWithTags : null;
+
+    // Folders 模式：應用搜尋過濾
+    const filteredFoldersTab = activeFoldersTab && searchQuery ? {
+        ...activeFoldersTab,
+        folders: activeFoldersTab.folders
             .map((folder: FolderWithChildren) => filterFolder(folder, searchQuery))
-            .filter((folder): folder is FolderWithChildren => folder !== null),
-    } : activeTab;
+            .filter((folder: FolderWithChildren | null): folder is FolderWithChildren => folder !== null),
+    } : activeFoldersTab;
 
+    // Tags 模式：篩選書籤
+    const filteredTagsBookmarks = useMemo(() => {
+        if (!activeTagsTab) return [];
+        let result = activeTagsTab.bookmarks;
 
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            result = result.filter((b: BookmarkWithTags) =>
+                b.title.toLowerCase().includes(lowerQuery) ||
+                b.url.toLowerCase().includes(lowerQuery) ||
+                b.memo?.toLowerCase().includes(lowerQuery)
+            );
+        }
+
+        if (selectedTagIds.size > 0) {
+            result = result.filter((b: BookmarkWithTags) =>
+                Array.from(selectedTagIds).every((tagId) =>
+                    b.tags.some((t: Tag) => t.id === tagId)
+                )
+            );
+        }
+
+        return result;
+    }, [activeTagsTab, searchQuery, selectedTagIds]);
+
+    const toggleTag = (tagId: string) => {
+        setSelectedTagIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(tagId)) {
+                next.delete(tagId);
+            } else {
+                next.add(tagId);
+            }
+            return next;
+        });
+    };
+
+    const clearGroupFilters = (tagGroup: TagGroupWithTags) => {
+        setSelectedTagIds((prev) => {
+            const next = new Set(prev);
+            for (const tag of tagGroup.tags) {
+                next.delete(tag.id);
+            }
+            return next;
+        });
+    };
+
+    const hasGroupSelection = (tagGroup: TagGroupWithTags) => {
+        return tagGroup.tags.some((tag) => selectedTagIds.has(tag.id));
+    };
+
+    // TagGroup id -> color 映射 & 排序索引
+    const tagColorMap = useMemo(() => {
+        if (!activeTagsTab) return {};
+        const map: Record<string, string | null> = {};
+        for (const tg of activeTagsTab.tagGroups) {
+            map[tg.id] = tg.color;
+        }
+        return map;
+    }, [activeTagsTab]);
+
+    const tagGroupOrderMap = useMemo(() => {
+        if (!activeTagsTab) return {};
+        const map: Record<string, number> = {};
+        activeTagsTab.tagGroups.forEach((tg, index) => {
+            map[tg.id] = index;
+        });
+        return map;
+    }, [activeTagsTab]);
 
     return (
         <div className="h-screen flex flex-col bg-transparent">
@@ -228,49 +353,189 @@ export default function MePage() {
             />
 
             <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
-                <div className="container mx-auto px-4 py-8">
-                    {/* Content */}
-                    {!filteredTab || filteredTab.folders.length === 0 ? (
-                        <div className="bg-card/85 rounded-lg shadow-sm p-6">
-                            <div className="text-center py-12">
-                                <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                                <p className="text-muted-foreground">
-                                    {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
-                                </p>
-                                {searchQuery && (
-                                    <button
-                                        onClick={() => setSearchQuery("")}
-                                        className="mt-4 text-primary hover:underline"
-                                    >
-                                        清除搜尋
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {searchQuery && (
-                                <div className="mb-4 text-sm text-muted-foreground">
-                                    搜尋結果：共找到 {filteredTab.folders.reduce((count: number, folder: FolderWithChildren) => {
-                                        const countBookmarks = (f: FolderWithChildren): number => {
-                                            const bookmarkCount = f.bookmarks?.length || 0;
-                                            const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
-                                            return bookmarkCount + childrenCount;
-                                        };
-                                        return count + countBookmarks(folder);
-                                    }, 0)} 個書籤
+                <div className="container mx-auto px-4 py-8 flex flex-col">
+                    {/* Tags 模式 */}
+                    {isActiveTagsTab && activeTagsTab ? (
+                        <div className="max-w-7xl min-h-[80vh] mx-auto">
+                            {/* Tag Filter Bar */}
+                            {activeTagsTab.tagGroups.length > 0 && (
+                                <div className="mb-6 bg-card/85 rounded-lg border-none p-4 space-y-3">
+                                    {activeTagsTab.tagGroups.map((tagGroup: TagGroupWithTags) => {
+                                        const groupColor = tagGroup.color;
+                                        return (
+                                            <div key={tagGroup.id} className="space-y-1.5">
+                                                <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                                                    {tagGroup.title}
+                                                    <span className="text-[10px] font-bold uppercase opacity-50">
+                                                        {tagGroup.filter_mode === "and" ? "AND" : "OR"}
+                                                    </span>
+                                                </span>
+                                                <div className="flex gap-1.5 flex-wrap">
+                                                    <button
+                                                        onClick={() => clearGroupFilters(tagGroup)}
+                                                        className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
+                                                        style={{
+                                                            backgroundColor: !hasGroupSelection(tagGroup)
+                                                                ? (groupColor || "hsl(var(--foreground))")
+                                                                : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
+                                                            color: !hasGroupSelection(tagGroup)
+                                                                ? "white"
+                                                                : (groupColor || "hsl(var(--foreground))"),
+                                                            opacity: !hasGroupSelection(tagGroup) ? 1 : 0.7,
+                                                        }}
+                                                    >
+                                                        全部
+                                                    </button>
+                                                    {tagGroup.tags.map((tag: Tag) => (
+                                                        <button
+                                                            key={tag.id}
+                                                            onClick={() => toggleTag(tag.id)}
+                                                            className="px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100"
+                                                            style={{
+                                                                backgroundColor: selectedTagIds.has(tag.id)
+                                                                    ? (groupColor || "hsl(var(--foreground))")
+                                                                    : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
+                                                                color: selectedTagIds.has(tag.id)
+                                                                    ? "white"
+                                                                    : (groupColor || "hsl(var(--foreground))"),
+                                                                opacity: selectedTagIds.has(tag.id) ? 1 : 0.7,
+                                                            }}
+                                                        >
+                                                            {tag.title}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {selectedTagIds.size > 0 && (
+                                        <button
+                                            onClick={() => setSelectedTagIds(new Set())}
+                                            className="pl-2 pr-2.5 pt-1 pb-1.5 text-primary hover:bg-primary/10 rounded-full text-sm italic underline underline-offset-4"
+                                        >
+                                            清除篩選
+                                        </button>
+                                    )}
                                 </div>
                             )}
-                            <div className="space-y-6">
-                                {filteredTab.folders.map((folder: FolderWithChildren) => (
-                                    <FolderCard key={folder.id} folder={folder} />
-                                ))}
-                            </div>
+
+                            {/* Bookmarks Grid */}
+                            {filteredTagsBookmarks.length === 0 ? (
+                                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                                    <div className="text-center py-12">
+                                        <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                                        <p className="text-muted-foreground">
+                                            {searchQuery || selectedTagIds.size > 0
+                                                ? "沒有符合條件的書籤"
+                                                : "此 Tab 尚無書籤"}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {filteredTagsBookmarks.map((bookmark: BookmarkWithTags) => (
+                                        <a
+                                            key={bookmark.id}
+                                            href={bookmark.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                {bookmark.favicon_url ? (
+                                                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
+                                                        <img
+                                                            src={bookmark.favicon_url}
+                                                            alt=""
+                                                            className="w-5 h-5 flex-shrink-0 rounded-sm"
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-medium truncate group-hover:text-primary transition-colors">
+                                                        {bookmark.title}
+                                                    </h4>
+                                                    {bookmark.memo && (
+                                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                                            {bookmark.memo}
+                                                        </p>
+                                                    )}
+                                                    {bookmark.tags.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {[...bookmark.tags].sort((a, b) => (tagGroupOrderMap[a.tag_group_id] ?? 999) - (tagGroupOrderMap[b.tag_group_id] ?? 999)).map((tag: Tag) => {
+                                                                const color = tagColorMap[tag.tag_group_id] || null;
+                                                                return (
+                                                                    <span
+                                                                        key={tag.id}
+                                                                        className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                                                                        style={{
+                                                                            backgroundColor: color ? `${color}20` : "hsl(var(--secondary))",
+                                                                            color: color || "hsl(var(--foreground))",
+                                                                        }}
+                                                                    >
+                                                                        {tag.title}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Folders 模式 */
+                        <>
+                            {!filteredFoldersTab || filteredFoldersTab.folders.length === 0 ? (
+                                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                                    <div className="text-center py-12">
+                                        <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                                        <p className="text-muted-foreground">
+                                            {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
+                                        </p>
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery("")}
+                                                className="mt-4 text-primary hover:underline"
+                                            >
+                                                清除搜尋
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {searchQuery && (
+                                        <div className="mb-4 text-sm text-muted-foreground">
+                                            搜尋結果：共找到 {filteredFoldersTab.folders.reduce((count: number, folder: FolderWithChildren) => {
+                                                const countBookmarks = (f: FolderWithChildren): number => {
+                                                    const bookmarkCount = f.bookmarks?.length || 0;
+                                                    const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
+                                                    return bookmarkCount + childrenCount;
+                                                };
+                                                return count + countBookmarks(folder);
+                                            }, 0)} 個書籤
+                                        </div>
+                                    )}
+                                    <div className="space-y-6">
+                                        {filteredFoldersTab.folders.map((folder: FolderWithChildren) => (
+                                            <FolderCard key={folder.id} folder={folder} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
 
                     {/* Footer */}
-                    <div className="flex flex-col items-center justify-center gap-4">
+                    <div className="flex flex-col items-center justify-center gap-4 mt-auto">
                         <p className="text-center mt-8 text-sm text-muted-foreground">
                             由{" "}
                             <Link to="/intro" className="text-primary hover:underline">

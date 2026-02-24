@@ -36,6 +36,27 @@
       "when": 1771654836954,
       "tag": "0004_bright_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1771914137837,
+      "tag": "0005_mushy_richard_fisk",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771915705900,
+      "tag": "0006_aspiring_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771920573675,
+      "tag": "0007_icy_bucky",
+      "breakpoints": true
     }
   ]
 }

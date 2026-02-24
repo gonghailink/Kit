@@ -3,11 +3,12 @@ import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/rea
 import { useState, useMemo, useEffect } from "react";
 import { requireAuth, logout, changePassword } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
-import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema, workspaces as workspacesSchema } from "~/drizzle/schema";
+import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { buildFolderTree } from "~/lib/utils";
-import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren } from "~/lib/types";
-import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown, UserIcon, FolderPlusIcon, MonitorCogIcon, FolderCogIcon } from "lucide-react";
+import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
+import { isTagsTab, isFoldersTab } from "~/lib/types";
+import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown, UserIcon, FolderPlusIcon, MonitorCogIcon, FolderCogIcon, TagIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -51,6 +52,8 @@ import { OrganizeTabsSheet } from "~/components/page-ui/dashboard/OrganizeTabsSh
 import { OrganizeFoldersSheet } from "~/components/page-ui/dashboard/OrganizeFoldersSheet";
 import { OrganizeSubFoldersSheet } from "~/components/page-ui/dashboard/OrganizeSubFoldersSheet";
 import { OrganizeWorkspacesSheet } from "~/components/page-ui/dashboard/OrganizeWorkspacesSheet";
+import { TagsTabContent } from "~/components/page-ui/dashboard/TagsTabContent";
+import { ManageTagGroupsSheet } from "~/components/page-ui/dashboard/ManageTagGroupsSheet";
 import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 import CreateWorkspaceDialog from "~/components/dialogs/CreateWorkspaceDialog";
@@ -107,19 +110,69 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     .orderBy(asc(bookmarksSchema.sort_order))
     .all()).map(b => ({ ...b, sort_order: b.sort_order ?? 0 }));
 
-  // 組裝樹狀結構
-  const tabsWithFolders: TabWithFolders[] = (allTabs || []).map((tab) => ({
-    ...tab,
-    folders: buildFolderTree(
-      (allFolders || []).filter((f) => f.tab_id === tab.id),
-      (allBookmarks || []).filter((b) =>
-        (allFolders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
-      )
-    ),
-  })) as any;
+  // 取得 tag 相關資料
+  const allTagGroups = (await db
+    .select()
+    .from(tagGroupsSchema)
+    .where(eq(tagGroupsSchema.user_id, user.id))
+    .orderBy(asc(tagGroupsSchema.sort_order))
+    .all()).map(tg => ({ ...tg, sort_order: tg.sort_order ?? 0 }));
+
+  const allTags = (await db
+    .select()
+    .from(tagsSchema)
+    .where(eq(tagsSchema.user_id, user.id))
+    .orderBy(asc(tagsSchema.sort_order))
+    .all()).map(t => ({ ...t, sort_order: t.sort_order ?? 0 }));
+
+  const allBookmarkTags = await db
+    .select()
+    .from(bookmarkTagsSchema)
+    .all();
+
+  // 組裝樹狀結構（依據 tab.type 分支）
+  const tabsData: TabData[] = (allTabs || []).map((tab) => {
+    if (tab.type === "tags") {
+      // Tags 模式：書籤直接屬於 tab
+      const tabBookmarks = (allBookmarks || []).filter(b => b.tab_id === tab.id);
+      const tabTagGroups = (allTagGroups || []).filter(tg => tg.tab_id === tab.id);
+      const tabTagGroupIds = new Set(tabTagGroups.map(tg => tg.id));
+
+      const bookmarksWithTags: BookmarkWithTags[] = tabBookmarks.map(b => ({
+        ...b,
+        tags: allBookmarkTags
+          .filter(bt => bt.bookmark_id === b.id)
+          .map(bt => allTags.find(t => t.id === bt.tag_id))
+          .filter((t): t is Tag => !!t),
+      }));
+
+      const tagGroupsWithTags: TagGroupWithTags[] = tabTagGroups.map(tg => ({
+        ...tg,
+        filter_mode: tg.filter_mode as TagGroupWithTags["filter_mode"],
+        tags: (allTags || []).filter(t => t.tag_group_id === tg.id),
+      }));
+
+      return {
+        ...tab,
+        bookmarks: bookmarksWithTags,
+        tagGroups: tagGroupsWithTags,
+      } as TabWithTags;
+    } else {
+      // Folders 模式：現有邏輯
+      return {
+        ...tab,
+        folders: buildFolderTree(
+          (allFolders || []).filter((f) => f.tab_id === tab.id),
+          (allBookmarks || []).filter((b) =>
+            (allFolders || []).some((f) => f.id === b.folder_id && f.tab_id === tab.id)
+          )
+        ),
+      } as TabWithFolders;
+    }
+  });
 
   return json({
-    tabs: tabsWithFolders,
+    tabs: tabsData,
     user,
     workspaces: allWorkspaces,
     currentWorkspaceId: currentWorkspaceId || null
@@ -172,7 +225,7 @@ export const meta: MetaFunction = () => {
 
 export default function Dashboard() {
   const { tabs, user, workspaces, currentWorkspaceId } = useLoaderData<typeof loader>();
-  const [tabsState, setTabs] = useState<TabWithFolders[]>(tabs);
+  const [tabsState, setTabs] = useState<TabData[]>(tabs as unknown as TabData[]);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const paramTabId = searchParams.get("tab");
@@ -194,7 +247,7 @@ export default function Dashboard() {
 
   // 確保 tabs 數據更新時同步（例如拖曳排序後）
   useEffect(() => {
-    setTabs(tabs);
+    setTabs(tabs as unknown as TabData[]);
   }, [tabs]);
 
   useEffect(() => {
@@ -269,6 +322,9 @@ export default function Dashboard() {
   // 整理工作區 Sheet 狀態
   const [showOrganizeWorkspacesSheet, setShowOrganizeWorkspacesSheet] = useState(false);
 
+  // 管理標籤群組 Sheet 狀態（Tags 模式）
+  const [showManageTagGroupsSheet, setShowManageTagGroupsSheet] = useState(false);
+
   // Drag and Drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -297,7 +353,7 @@ export default function Dashboard() {
   };
 
   // Handle tab reorder
-  const handleTabReorder = (newTabs: TabWithFolders[]) => {
+  const handleTabReorder = (newTabs: TabData[]) => {
     setTabs(newTabs);
 
     // 提交重新排序到 API
@@ -322,9 +378,9 @@ export default function Dashboard() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setTabs((prevTabs: TabWithFolders[]) => {
-        return prevTabs.map((tab: TabWithFolders) => {
-          if (tab.id !== activeTabId) return tab;
+      setTabs((prevTabs: TabData[]) => {
+        return prevTabs.map((tab: TabData) => {
+          if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
 
           const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
             // 找到包含這些 bookmarks 的資料夾
@@ -378,9 +434,9 @@ export default function Dashboard() {
 
   // Handle top-level folder reorder via Sheet
   const handleTopLevelFolderReorder = (newFolders: FolderWithChildren[]) => {
-    setTabs((prevTabs: TabWithFolders[]) => {
-      return prevTabs.map((tab: TabWithFolders) => {
-        if (tab.id !== activeTabId) return tab;
+    setTabs((prevTabs: TabData[]) => {
+      return prevTabs.map((tab: TabData) => {
+        if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
 
         // 提交到 API
         const ids = newFolders.map((f: FolderWithChildren) => f.id);
@@ -408,9 +464,9 @@ export default function Dashboard() {
 
   // Handle subfolder reorder via Sheet
   const handleSubFolderReorder = (parentId: string, newChildren: FolderWithChildren[]) => {
-    setTabs((prevTabs: TabWithFolders[]) => {
-      return prevTabs.map((tab: TabWithFolders) => {
-        if (tab.id !== activeTabId) return tab;
+    setTabs((prevTabs: TabData[]) => {
+      return prevTabs.map((tab: TabData) => {
+        if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
 
         const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
           return folders.map((f: FolderWithChildren) => {
@@ -453,9 +509,9 @@ export default function Dashboard() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setTabs((prevTabs: TabWithFolders[]) => {
-        return prevTabs.map((tab: TabWithFolders) => {
-          if (tab.id !== activeTabId) return tab;
+      setTabs((prevTabs: TabData[]) => {
+        return prevTabs.map((tab: TabData) => {
+          if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
 
           const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
             const parentFolder = folders.find((f: FolderWithChildren) => f.id === parentId);
@@ -507,11 +563,13 @@ export default function Dashboard() {
   };
 
   const activeTab = tabsState.find((t) => t.id === activeTabId);
+  const activeFoldersTab = activeTab && isFoldersTab(activeTab) ? activeTab : null;
+  const activeTagsTab = activeTab && isTagsTab(activeTab) ? activeTab : null;
 
   // 獲取所有可用的資料夾（用於移動書籤）
   const allFoldersForMove = useMemo(() => {
-    return activeTab?.folders || [];
-  }, [activeTab]);
+    return activeFoldersTab?.folders || [];
+  }, [activeFoldersTab]);
 
   return (
     <div className="h-screen flex flex-col bg-transparent">
@@ -556,7 +614,7 @@ export default function Dashboard() {
           <div className="flex-1 min-w-0">
             <ScrollArea className="w-full pt-2 pb-3 pr-6">
               <div className="flex items-center gap-0">
-                {tabsState.map((tab: TabWithFolders) => (
+                {tabsState.map((tab: TabData) => (
                   <SortableTabItem
                     key={tab.id}
                     tab={tab}
@@ -595,10 +653,10 @@ export default function Dashboard() {
                   新增 Tab
                 </button>
               </div>
-            ) : activeTab ? (
-              // 顯示資料夾和書籤
-              <div className="max-w-7xl mx-auto">
-                {activeTab?.folders.length === 0 ? (
+            ) : activeTab && activeFoldersTab ? (
+              // Folders 模式：顯示資料夾和書籤
+              <div className="max-w-7xl min-h-[80vh] mx-auto">
+                {activeFoldersTab.folders.length === 0 ? (
                   <div className="text-center py-12">
                     <div>
                       <p className="text-muted-foreground mb-4">
@@ -617,7 +675,7 @@ export default function Dashboard() {
                   <div>
                     {/* Top-level Folders */}
                     <div className="grid grid-cols-1 gap-8 pb-16">
-                      {activeTab.folders.map((folder: FolderWithChildren) => (
+                      {activeFoldersTab.folders.map((folder: FolderWithChildren) => (
                         <SortableFolder
                           key={folder.id}
                           folder={folder}
@@ -668,7 +726,7 @@ export default function Dashboard() {
                                     }}
                                     onMove={() => {
                                       setMovingBookmark(bookmark);
-                                      setMovingBookmarkFolderId(bookmark.folder_id);
+                                      setMovingBookmarkFolderId(bookmark.folder_id || "");
                                       setShowMoveBookmarkDialog(true);
                                     }}
                                   />
@@ -742,7 +800,7 @@ export default function Dashboard() {
                                                     }}
                                                     onMove={() => {
                                                       setMovingBookmark(bookmark);
-                                                      setMovingBookmarkFolderId(bookmark.folder_id);
+                                                      setMovingBookmarkFolderId(bookmark.folder_id || "");
                                                       setShowMoveBookmarkDialog(true);
                                                     }}
                                                   />
@@ -764,13 +822,29 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+            ) : activeTab && activeTagsTab ? (
+              // Tags 模式：顯示書籤和標籤
+              <TagsTabContent
+                tab={activeTagsTab}
+                onCreateBookmark={() => {
+                  setShowCreateBookmarkDialog(true);
+                }}
+                onEditBookmark={(bookmark: Bookmark) => {
+                  setEditingBookmark(bookmark);
+                  setShowEditBookmarkDialog(true);
+                }}
+                onDeleteBookmark={(bookmark: Bookmark) => {
+                  setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+                  setShowDeleteDialog(true);
+                }}
+              />
             ) : null}
           </div>
         </ScrollArea>
       </main>
 
       {/* Floating Action Buttons */}
-      {activeTabId && (
+      {activeTabId && activeFoldersTab && (
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
           <button
             onClick={() => setShowOrganizeFoldersSheet(true)}
@@ -788,6 +862,24 @@ export default function Dashboard() {
             title="新增資料夾"
           >
             <FolderPlusIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {activeTabId && activeTagsTab && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+          <button
+            onClick={() => setShowManageTagGroupsSheet(true)}
+            className="flex items-center justify-center w-12 h-12 bg-card/90 hover:bg-card text-foreground rounded-full shadow-lg border border-border transition-colors"
+            title="管理標籤"
+          >
+            <TagIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setShowCreateBookmarkDialog(true)}
+            className="flex items-center justify-center w-12 h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors"
+            title="新增書籤"
+          >
+            <Plus className="w-5 h-5" />
           </button>
         </div>
       )}
@@ -818,8 +910,11 @@ export default function Dashboard() {
       <CreateBookmarkDialog
         open={showCreateBookmarkDialog}
         onOpenChange={setShowCreateBookmarkDialog}
-        folderId={selectedFolderId || ""}
+        folderId={selectedFolderId || undefined}
         folderName={selectedFolderName}
+        tabId={activeTagsTab ? activeTagsTab.id : undefined}
+        tabName={activeTagsTab ? activeTagsTab.title : undefined}
+        tagGroups={activeTagsTab ? activeTagsTab.tagGroups : undefined}
       />
       {editingTab && (
         <EditTabDialog
@@ -840,6 +935,12 @@ export default function Dashboard() {
           open={showEditBookmarkDialog}
           onOpenChange={setShowEditBookmarkDialog}
           bookmark={editingBookmark}
+          tagGroups={activeTagsTab ? activeTagsTab.tagGroups : undefined}
+          bookmarkTagIds={
+            activeTagsTab
+              ? (activeTagsTab.bookmarks.find((b) => b.id === editingBookmark.id) as BookmarkWithTags | undefined)?.tags.map((t) => t.id)
+              : undefined
+          }
         />
       )}
       <DeleteConfirmDialog
@@ -883,7 +984,7 @@ export default function Dashboard() {
       <OrganizeFoldersSheet
         open={showOrganizeFoldersSheet}
         onOpenChange={setShowOrganizeFoldersSheet}
-        folders={activeTab?.folders || []}
+        folders={activeFoldersTab?.folders || []}
         onReorder={handleTopLevelFolderReorder}
       />
       <OrganizeSubFoldersSheet
@@ -907,6 +1008,14 @@ export default function Dashboard() {
           setShowDeleteDialog(true);
         }}
       />
+      {activeTagsTab && (
+        <ManageTagGroupsSheet
+          open={showManageTagGroupsSheet}
+          onOpenChange={setShowManageTagGroupsSheet}
+          tabId={activeTagsTab.id}
+          tagGroups={activeTagsTab.tagGroups}
+        />
+      )}
     </div>
   );
 }

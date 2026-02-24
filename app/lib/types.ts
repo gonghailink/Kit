@@ -1,8 +1,11 @@
 // 資料庫表格型別
+export type TabType = "folders" | "tags";
+
 export interface Tab {
   id: string;
   user_id: string;
   title: string;
+  type: TabType;
   sort_order: number;
   created_at: string;
 }
@@ -21,7 +24,8 @@ export interface Folder {
 export interface Bookmark {
   id: string;
   user_id: string;
-  folder_id: string;
+  folder_id: string | null;
+  tab_id: string | null;
   title: string;
   url: string;
   favicon_url: string | null;
@@ -41,6 +45,28 @@ export interface Share {
   created_at: string;
 }
 
+export type FilterMode = "and" | "or" | "single";
+
+export interface TagGroup {
+  id: string;
+  user_id: string;
+  tab_id: string;
+  title: string;
+  color: string | null;
+  filter_mode: FilterMode;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Tag {
+  id: string;
+  user_id: string;
+  tag_group_id: string;
+  title: string;
+  sort_order: number;
+  created_at: string;
+}
+
 // UI 用的巢狀結構型別
 export interface FolderWithChildren extends Folder {
   children?: FolderWithChildren[];
@@ -51,9 +77,35 @@ export interface TabWithFolders extends Tab {
   folders: FolderWithChildren[];
 }
 
+export interface TagGroupWithTags extends TagGroup {
+  tags: Tag[];
+}
+
+export interface BookmarkWithTags extends Bookmark {
+  tags: Tag[];
+}
+
+export interface TabWithTags extends Tab {
+  bookmarks: BookmarkWithTags[];
+  tagGroups: TagGroupWithTags[];
+}
+
+// Type guards
+export function isTagsTab(tab: TabWithFolders | TabWithTags): tab is TabWithTags {
+  return tab.type === "tags";
+}
+
+export function isFoldersTab(tab: TabWithFolders | TabWithTags): tab is TabWithFolders {
+  return tab.type === "folders";
+}
+
+// 聯合型別
+export type TabData = TabWithFolders | TabWithTags;
+
 // API 請求/回應型別
 export interface CreateTabInput {
   title: string;
+  type?: TabType;
   sort_order?: number;
 }
 
@@ -65,7 +117,8 @@ export interface CreateFolderInput {
 }
 
 export interface CreateBookmarkInput {
-  folder_id: string;
+  folder_id?: string;
+  tab_id?: string;
   title: string;
   url: string;
   favicon_url?: string | null;

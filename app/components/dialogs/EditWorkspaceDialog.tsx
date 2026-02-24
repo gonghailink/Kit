@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -32,6 +32,7 @@ export default function EditWorkspaceDialog({
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const isSubmitting = fetcher.state === "submitting";
+  const submitted = useRef(false);
 
   // 當工作區改變時更新標題
   useEffect(() => {
@@ -43,21 +44,22 @@ export default function EditWorkspaceDialog({
   // 成功後關閉對話框
   useEffect(() => {
     if (
+      submitted.current &&
       fetcher.data &&
       "success" in fetcher.data &&
       fetcher.data.success &&
-      !isSubmitting
+      fetcher.state === "idle"
     ) {
+      submitted.current = false;
       onOpenChange(false);
-      // 重新載入頁面以更新資料
-      window.location.reload();
     }
-  }, [fetcher.data, isSubmitting, onOpenChange]);
+  }, [fetcher.data, fetcher.state, onOpenChange]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !workspace) return;
 
+    submitted.current = true;
     fetcher.submit(
       {
         intent: "update",

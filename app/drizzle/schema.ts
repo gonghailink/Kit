@@ -22,6 +22,7 @@ export const tabs = sqliteTable("tabs", {
     user_id: text("user_id").notNull(),
     workspace_id: text("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
+    type: text("type").notNull().default("folders"), // "folders" | "tags"
     sort_order: real("sort_order").default(0),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
@@ -40,13 +41,40 @@ export const folders = sqliteTable("folders", {
 export const bookmarks = sqliteTable("bookmarks", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     user_id: text("user_id").notNull(),
-    folder_id: text("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
+    folder_id: text("folder_id").references(() => folders.id, { onDelete: "cascade" }), // nullable for tags mode
+    tab_id: text("tab_id").references(() => tabs.id, { onDelete: "cascade" }), // for tags mode
     title: text("title").notNull(),
     url: text("url").notNull(),
     favicon_url: text("favicon_url"),
-    memo: text("memo"), // Added based on recent changes
+    memo: text("memo"),
     sort_order: real("sort_order").default(0),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
+});
+
+export const tagGroups = sqliteTable("tag_groups", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    user_id: text("user_id").notNull(),
+    tab_id: text("tab_id").notNull().references(() => tabs.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    color: text("color"),
+    filter_mode: text("filter_mode").notNull().default("or"), // "and" | "or" | "single"
+    sort_order: real("sort_order").default(0),
+    created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
+});
+
+export const tags = sqliteTable("tags", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    user_id: text("user_id").notNull(),
+    tag_group_id: text("tag_group_id").notNull().references(() => tagGroups.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    sort_order: real("sort_order").default(0),
+    created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
+});
+
+export const bookmarkTags = sqliteTable("bookmark_tags", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    bookmark_id: text("bookmark_id").notNull().references(() => bookmarks.id, { onDelete: "cascade" }),
+    tag_id: text("tag_id").notNull().references(() => tags.id, { onDelete: "cascade" }),
 });
 
 export const shares = sqliteTable("shares", {

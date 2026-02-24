@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
-import type { TabWithFolders } from "~/lib/types";
+import type { TabData } from "~/lib/types";
 
 interface ViewHeaderProps {
     title: string;
@@ -14,7 +14,7 @@ interface ViewHeaderProps {
         url: string;
         isLink?: boolean;
     };
-    tabs: TabWithFolders[];
+    tabs: TabData[];
     activeTabId: string | undefined;
     setActiveTabId: (id: string) => void;
     workspaceSwitcher?: React.ReactNode;
