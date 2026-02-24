@@ -1,11 +1,11 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 import { BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
@@ -149,7 +149,18 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
 
 export default function SharePage() {
   const { tabs: tabsData, share } = useLoaderData<typeof loader>();
-  const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramTabId = searchParams.get("tab");
+  const activeTabId = (paramTabId && tabsData.find((t) => t.id === paramTabId))
+    ? paramTabId
+    : tabsData[0]?.id;
+  const setActiveTabId = useCallback((tabId: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tabId);
+      return next;
+    }, { preventScrollReset: true });
+  }, [setSearchParams]);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
