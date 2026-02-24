@@ -1,17 +1,19 @@
 import { ArrowSquareOut, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
-import type { Bookmark } from "~/lib/types";
+import type { Bookmark, Tag } from "~/lib/types";
 
 interface BookmarkItemProps {
     bookmark: Bookmark;
+    tags?: Tag[];
+    tagColorMap?: Record<string, string | null>;
 }
 
-export function BookmarkItem({ bookmark }: BookmarkItemProps) {
+export function BookmarkItem({ bookmark, tags, tagColorMap }: BookmarkItemProps) {
     return (
         <a
             href={bookmark.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all group"
+            className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all"
         >
             <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (
@@ -36,6 +38,25 @@ export function BookmarkItem({ bookmark }: BookmarkItemProps) {
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                             {bookmark.memo}
                         </p>
+                    )}
+                    {tags && tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {tags.map((tag) => {
+                                const color = tagColorMap?.[tag.tag_group_id] || null;
+                                return (
+                                    <span
+                                        key={tag.id}
+                                        className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                                        style={{
+                                            backgroundColor: color ? `${color}20` : "hsl(var(--secondary))",
+                                            color: color || "hsl(var(--muted-foreground))",
+                                        }}
+                                    >
+                                        {tag.title}
+                                    </span>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
                 <ArrowSquareOut className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />

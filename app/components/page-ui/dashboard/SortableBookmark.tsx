@@ -48,7 +48,7 @@ export const SortableBookmark = memo(function SortableBookmark({
         <div
             ref={setNodeRef}
             style={style}
-            className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all group"
+            className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all"
         >
             <button
                 {...attributes}

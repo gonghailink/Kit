@@ -14,6 +14,7 @@ import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
 import { getUser } from "~/lib/auth.server";
 import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import { TagFilterBar } from "~/components/page-ui/shared/TagFilterBar";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
     const title = "我的書籤 · Kit";
@@ -377,68 +378,15 @@ export default function MePage() {
                 <div className="container mx-auto px-4 py-8 flex flex-col">
                     {/* Tags 模式 */}
                     {isActiveTagsTab && activeTagsTab ? (
-                        <div className="max-w-7xl min-h-[80vh] mx-auto">
-                            {/* Tag Filter Bar */}
-                            {activeTagsTab.tagGroups.length > 0 && (
-                                <div className="mb-6 bg-card/85 rounded-lg border-none p-4 space-y-3">
-                                    {activeTagsTab.tagGroups.map((tagGroup: TagGroupWithTags) => {
-                                        const groupColor = tagGroup.color;
-                                        return (
-                                            <div key={tagGroup.id} className="space-y-1.5">
-                                                <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                                                    {tagGroup.title}
-                                                    <span className="text-[10px] font-bold uppercase opacity-50">
-                                                        {tagGroup.filter_mode === "and" ? "AND" : tagGroup.filter_mode === "single" ? "單選" : "OR"}
-                                                    </span>
-                                                </span>
-                                                <div className="flex gap-1.5 flex-wrap">
-                                                    <button
-                                                        onClick={() => clearGroupFilters(tagGroup)}
-                                                        className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                                                        style={{
-                                                            backgroundColor: !hasGroupSelection(tagGroup)
-                                                                ? (groupColor || "hsl(var(--foreground))")
-                                                                : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
-                                                            color: !hasGroupSelection(tagGroup)
-                                                                ? "white"
-                                                                : (groupColor || "hsl(var(--foreground))"),
-                                                            opacity: !hasGroupSelection(tagGroup) ? 1 : 0.7,
-                                                        }}
-                                                    >
-                                                        全部
-                                                    </button>
-                                                    {tagGroup.tags.map((tag: Tag) => (
-                                                        <button
-                                                            key={tag.id}
-                                                            onClick={() => toggleTag(tag.id)}
-                                                            className="px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100"
-                                                            style={{
-                                                                backgroundColor: selectedTagIds.has(tag.id)
-                                                                    ? (groupColor || "hsl(var(--foreground))")
-                                                                    : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
-                                                                color: selectedTagIds.has(tag.id)
-                                                                    ? "white"
-                                                                    : (groupColor || "hsl(var(--foreground))"),
-                                                                opacity: selectedTagIds.has(tag.id) ? 1 : 0.7,
-                                                            }}
-                                                        >
-                                                            {tag.title}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    {selectedTagIds.size > 0 && (
-                                        <button
-                                            onClick={() => setSelectedTagIds(new Set())}
-                                            className="pl-2 pr-2.5 pt-1 pb-1.5 text-primary hover:bg-primary/10 rounded-full text-sm italic underline underline-offset-4"
-                                        >
-                                            清除篩選
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                        <>
+                            <TagFilterBar
+                                tagGroups={activeTagsTab.tagGroups}
+                                selectedTagIds={selectedTagIds}
+                                onToggleTag={toggleTag}
+                                onClearGroupFilters={clearGroupFilters}
+                                onClearAllFilters={() => setSelectedTagIds(new Set())}
+                                hasGroupSelection={hasGroupSelection}
+                            />
 
                             {/* Bookmarks Grid */}
                             {filteredTagsBookmarks.length === 0 ? (
@@ -510,7 +458,7 @@ export default function MePage() {
                                     ))}
                                 </div>
                             )}
-                        </div>
+                        </>
                     ) : (
                         /* Folders 模式 */
                         <>

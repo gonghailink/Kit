@@ -14,7 +14,7 @@ export const BookmarkCard = memo(function BookmarkCard({
     tagColorMap,
 }: BookmarkCardProps) {
     return (
-        <div className="bg-secondary/50 rounded-lg p-4 border border-primary/70 shadow-lg">
+        <div className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all">
             <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (
                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
@@ -28,7 +28,7 @@ export const BookmarkCard = memo(function BookmarkCard({
                     <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
                 )}
                 <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">
+                    <h4 className="font-medium truncate group-hover:text-primary transition-colors">
                         {bookmark.title}
                     </h4>
                     {bookmark.memo && (

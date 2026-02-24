@@ -4,13 +4,15 @@ import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
-import { ArrowSquareOut as ExternalLink, BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
+import { BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { FolderCard } from "~/components/page-ui/view/FolderCard";
 import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
+import { BookmarkItem } from "~/components/page-ui/view/BookmarkItem";
+import { TagFilterBar } from "~/components/page-ui/shared/TagFilterBar";
 
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -337,68 +339,15 @@ export default function SharePage() {
         <div className="container mx-auto px-4 py-8">
           {/* Tags 模式 */}
           {isActiveTagsTab && activeTagsTab ? (
-            <div className="max-w-7xl min-h-[80vh] mx-auto">
-              {/* Tag Filter Bar */}
-              {activeTagsTab.tagGroups.length > 0 && (
-                <div className="mb-6 bg-card/85 rounded-lg border-none p-4 space-y-3">
-                  {activeTagsTab.tagGroups.map((tagGroup: TagGroupWithTags) => {
-                    const groupColor = tagGroup.color;
-                    return (
-                      <div key={tagGroup.id} className="space-y-1.5">
-                        <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                          {tagGroup.title}
-                          <span className="text-[10px] font-bold uppercase opacity-50">
-                            {tagGroup.filter_mode === "and" ? "AND" : tagGroup.filter_mode === "single" ? "單選" : "OR"}
-                          </span>
-                        </span>
-                        <div className="flex gap-1.5 flex-wrap">
-                          <button
-                            onClick={() => clearGroupFilters(tagGroup)}
-                            className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                            style={{
-                              backgroundColor: !hasGroupSelection(tagGroup)
-                                ? (groupColor || "hsl(var(--foreground))")
-                                : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
-                              color: !hasGroupSelection(tagGroup)
-                                ? "white"
-                                : (groupColor || "hsl(var(--foreground))"),
-                              opacity: !hasGroupSelection(tagGroup) ? 1 : 0.7,
-                            }}
-                          >
-                            全部
-                          </button>
-                          {tagGroup.tags.map((tag: Tag) => (
-                            <button
-                              key={tag.id}
-                              onClick={() => toggleTag(tag.id)}
-                              className="px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100"
-                              style={{
-                                backgroundColor: selectedTagIds.has(tag.id)
-                                  ? (groupColor || "hsl(var(--foreground))")
-                                  : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
-                                color: selectedTagIds.has(tag.id)
-                                  ? "white"
-                                  : (groupColor || "hsl(var(--foreground))"),
-                                opacity: selectedTagIds.has(tag.id) ? 1 : 0.7,
-                              }}
-                            >
-                              {tag.title}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {selectedTagIds.size > 0 && (
-                    <button
-                      onClick={() => setSelectedTagIds(new Set())}
-                      className="pl-2 pr-2.5 pt-1 pb-1.5 text-primary hover:bg-primary/10 rounded-full text-sm italic underline underline-offset-4"
-                    >
-                      清除篩選
-                    </button>
-                  )}
-                </div>
-              )}
+            <>
+              <TagFilterBar
+                tagGroups={activeTagsTab.tagGroups}
+                selectedTagIds={selectedTagIds}
+                onToggleTag={toggleTag}
+                onClearGroupFilters={clearGroupFilters}
+                onClearAllFilters={() => setSelectedTagIds(new Set())}
+                hasGroupSelection={hasGroupSelection}
+              />
 
               {/* Bookmarks Grid */}
               {filteredTagsBookmarks.length === 0 ? (
@@ -415,62 +364,16 @@ export default function SharePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredTagsBookmarks.map((bookmark: BookmarkWithTags) => (
-                    <a
+                    <BookmarkItem
                       key={bookmark.id}
-                      href={bookmark.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group bg-card/85 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all"
-                    >
-                      <div className="flex items-start gap-3">
-                        {bookmark.favicon_url ? (
-                          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">
-                            <img
-                              src={bookmark.favicon_url}
-                              alt=""
-                              className="w-5 h-5 flex-shrink-0 rounded-sm"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                            />
-                          </div>
-                        ) : (
-                          <BookmarkIcon className="w-5 h-5 flex-shrink-0 text-muted-foreground mt-0.5" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate group-hover:text-primary transition-colors">
-                            {bookmark.title}
-                          </h4>
-                          {bookmark.memo && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                              {bookmark.memo}
-                            </p>
-                          )}
-                          {bookmark.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {[...bookmark.tags].sort((a, b) => (tagGroupOrderMap[a.tag_group_id] ?? 999) - (tagGroupOrderMap[b.tag_group_id] ?? 999)).map((tag: Tag) => {
-                                const color = tagColorMap[tag.tag_group_id] || null;
-                                return (
-                                  <span
-                                    key={tag.id}
-                                    className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
-                                    style={{
-                                      backgroundColor: color ? `${color}20` : "hsl(var(--secondary))",
-                                      color: color || "hsl(var(--foreground))",
-                                    }}
-                                  >
-                                    {tag.title}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                      </div>
-                    </a>
+                      bookmark={bookmark}
+                      tags={[...bookmark.tags].sort((a, b) => (tagGroupOrderMap[a.tag_group_id] ?? 999) - (tagGroupOrderMap[b.tag_group_id] ?? 999))}
+                      tagColorMap={tagColorMap}
+                    />
                   ))}
                 </div>
               )}
-            </div>
+            </>
           ) : (
             /* Folders 模式 */
             <>
