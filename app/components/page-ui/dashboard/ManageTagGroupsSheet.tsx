@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useFetcher, useRevalidator } from "@remix-run/react";
 import {
   Plus,
-  Trash2,
-  Edit,
-  ChevronDown,
-  ChevronRight,
-  GripVertical,
-} from "lucide-react";
+  Trash,
+  PencilSimple,
+  CaretDown,
+  CaretRight,
+  DotsSixVertical,
+} from "@phosphor-icons/react";
 import {
   DndContext,
   closestCenter,
@@ -64,9 +64,9 @@ function ColorSelect({
 }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="h-9 w-10 px-0 justify-center flex-shrink-0 [&>svg]:hidden">
+      <SelectTrigger className="w-9 px-0 justify-center flex-shrink-0 [&>svg]:hidden rounded-full">
         <div
-          className="w-5 h-5 rounded-full"
+          className="w-6 h-6 rounded-full"
           style={{ backgroundColor: value }}
         />
       </SelectTrigger>
@@ -340,12 +340,12 @@ export function ManageTagGroupsSheet({
                 value={newGroupTitle}
                 onChange={(e) => setNewGroupTitle(e.target.value)}
                 placeholder="新增標籤群組名稱..."
-                className="h-9 text-sm"
+                className="h-9 text-sm rounded-full"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddGroup();
                 }}
               />
-              <Button size="sm" onClick={handleAddGroup} disabled={!newGroupTitle.trim()}>
+              <Button onClick={handleAddGroup} disabled={!newGroupTitle.trim()} className="rounded-full">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -452,14 +452,14 @@ function SortableTagGroup({
           {...listeners}
           className="p-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground flex-shrink-0"
         >
-          <GripVertical className="w-4 h-4" />
+          <DotsSixVertical className="w-4 h-4" />
         </button>
 
         <button onClick={onToggle} className="text-muted-foreground flex-shrink-0">
           {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
+            <CaretDown className="w-4 h-4" />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <CaretRight className="w-4 h-4" />
           )}
         </button>
 
@@ -542,13 +542,13 @@ function SortableTagGroup({
               }}
               className="p-1 text-muted-foreground hover:text-foreground"
             >
-              <Edit className="w-3.5 h-3.5" />
+              <PencilSimple className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDeleteGroup(tagGroup.id)}
               className="p-1 text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash className="w-3.5 h-3.5" />
             </button>
           </>
         )}
@@ -689,7 +689,7 @@ function SortableTag({
         {...listeners}
         className="p-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground flex-shrink-0"
       >
-        <GripVertical className="w-3 h-3" />
+        <DotsSixVertical className="w-3 h-3" />
       </button>
       <span
         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer hover:opacity-80"

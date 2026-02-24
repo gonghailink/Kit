@@ -1,5 +1,5 @@
 import { Form } from "@remix-run/react";
-import { LogOut, Edit, Share2, UserIcon, ChevronDown, EyeIcon } from "lucide-react";
+import { SignOut, PencilSimple, ShareNetwork, User as UserIcon, CaretDown, Eye as EyeIcon } from "@phosphor-icons/react";
 import { Button } from "~/components/ui/button";
 import {
     DropdownMenu,
@@ -50,14 +50,14 @@ export function DashboardHeader({
                         </Button>
                     </a>
                     <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">
-                        <Share2 className="w-4 h-4" />
+                        <ShareNetwork className="w-4 h-4" />
                         <span className="hidden md:block text-xs">分享</span>
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">
                                 <UserIcon className="w-4 h-4" />
-                                <ChevronDown className="w-4 h-4 opacity-50" />
+                                <CaretDown className="w-4 h-4 opacity-50" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -68,7 +68,7 @@ export function DashboardHeader({
                                 onClick={onChangePassword}
                                 className="w-full flex items-center gap-2 cursor-pointer"
                             >
-                                <Edit className="w-4 h-4" />
+                                <PencilSimple className="w-4 h-4" />
                                 修改密碼
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -78,7 +78,7 @@ export function DashboardHeader({
                                         type="submit"
                                         className="w-full flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
                                     >
-                                        <LogOut className="w-4 h-4" />
+                                        <SignOut className="w-4 h-4" />
                                         登出
                                     </button>
                                 </Form>

@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -75,8 +75,8 @@ export default function CreateFolderDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2 p-4 mb-4 bg-card/80 rounded-lg">
+          <div className="space-y-4 pt-4 pb-6 mt-2 border-t">
+            <div className="space-y-2">
               <Label htmlFor="folder-title">資料夾名稱</Label>
               <Input
                 id="folder-title"
@@ -107,7 +107,7 @@ export default function CreateFolderDialog({
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch className="w-4 h-4 animate-spin" />
                   建立中...
                 </>
               ) : (

@@ -1,4 +1,4 @@
-import { Plus, MoreVertical, Edit, Trash2, CornerDownRightIcon, ArrowUpDown } from "lucide-react";
+import { Plus, DotsThreeVertical, PencilSimple, Trash, ArrowBendDownRight, ArrowsDownUp } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
 import {
     DropdownMenu,
@@ -35,7 +35,7 @@ export function SortableFolder({
                 <div className="flex items-center gap-2">
                     <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>
                         {
-                            isNested && <CornerDownRightIcon className="w-4 h-4" />
+                            isNested && <ArrowBendDownRight className="w-4 h-4" />
                         }
                         {folder.title}
                     </h2>
@@ -53,7 +53,7 @@ export function SortableFolder({
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="text-muted-foreground hover:text-foreground">
-                                <MoreVertical className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                                <DotsThreeVertical className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -63,7 +63,7 @@ export function SortableFolder({
                             </DropdownMenuItem>
                             {hasSubfolders && onOrganizeSubfolders && (
                                 <DropdownMenuItem onClick={onOrganizeSubfolders}>
-                                    <ArrowUpDown className="w-4 h-4" />
+                                    <ArrowsDownUp className="w-4 h-4" />
                                     排序子資料夾
                                 </DropdownMenuItem>
                             )}
@@ -74,14 +74,14 @@ export function SortableFolder({
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={onEdit}>
-                                <Edit className="w-4 h-4" />
+                                <PencilSimple className="w-4 h-4" />
                                 編輯
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={onDelete}
                                 className="text-destructive focus:text-destructive"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash className="w-4 h-4" />
                                 刪除
                             </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef } from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { CircleNotch, Warning } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -90,7 +90,7 @@ export default function DeleteConfirmDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <Warning className="w-5 h-5 text-destructive" />
             {config.title}
           </DialogTitle>
           <DialogDescription>
@@ -108,7 +108,7 @@ export default function DeleteConfirmDialog({
 
           <div className="text-sm text-muted-foreground">
             <p className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <Warning className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span>{config.warning}</span>
             </p>
           </div>
@@ -137,7 +137,7 @@ export default function DeleteConfirmDialog({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <CircleNotch className="w-4 h-4 animate-spin" />
                 刪除中...
               </>
             ) : (

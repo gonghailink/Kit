@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -100,7 +100,7 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch className="w-4 h-4 animate-spin" />
                   儲存中...
                 </>
               ) : (

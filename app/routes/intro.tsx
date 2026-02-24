@@ -2,13 +2,13 @@ import type { MetaFunction } from "@remix-run/cloudflare";
 import { Link } from "@remix-run/react";
 import {
   ArrowRight,
-  CloudIcon,
-  FolderTreeIcon,
-  GithubIcon,
-  MonitorUpIcon,
+  Cloud as CloudIcon,
+  TreeStructure as FolderTreeIcon,
+  GithubLogo as GithubIcon,
+  Monitor as MonitorUpIcon,
   Rocket,
-  ShieldCheckIcon,
-} from "lucide-react";
+  ShieldCheck as ShieldCheckIcon,
+} from "@phosphor-icons/react";
 
 const features = [
   {

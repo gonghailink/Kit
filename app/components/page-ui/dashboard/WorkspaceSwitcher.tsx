@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Settings, LayoutDashboard } from "lucide-react";
+import { CaretDown, GearSix, SquaresFour } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,12 +45,12 @@ export function WorkspaceSwitcher({
           className="flex items-center gap-2 w-full md:min-w-[200px] justify-between bg-card/70 hover:bg-card/90 border-0 shadow-none rounded-full"
         >
           <div className="flex items-center gap-2">
-            <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+            <SquaresFour className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium truncate">
               {currentWorkspace?.title || "選擇工作區"}
             </span>
           </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <CaretDown className="w-4 h-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[calc(100vw-3rem)] md:w-[280px] space-y-0.5">
@@ -71,7 +71,7 @@ export function WorkspaceSwitcher({
               setOpen(false);
             }}
           >
-            <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+            <SquaresFour className="w-4 h-4 text-muted-foreground" />
             <span className="truncate">{workspace.title}</span>
           </DropdownMenuItem>
         ))}
@@ -86,7 +86,7 @@ export function WorkspaceSwitcher({
               }}
               className="mt-2 cursor-pointer text-primary hover:text-primary hover:font-bold"
             >
-              <Settings className="w-4 h-4" />
+              <GearSix className="w-4 h-4" />
               <span>管理工作區</span>
             </DropdownMenuItem>
           </>

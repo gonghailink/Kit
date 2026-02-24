@@ -4,7 +4,7 @@ import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
-import { ExternalLink, Bookmark as BookmarkIcon, ArrowUp } from "lucide-react";
+import { ArrowSquareOut as ExternalLink, BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";

@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, FolderIcon, TagIcon } from "lucide-react";
+import { CircleNotch, Folder as FolderIcon, Tag as TagIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -118,7 +118,7 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch className="w-4 h-4 animate-spin" />
                   儲存中...
                 </>
               ) : (

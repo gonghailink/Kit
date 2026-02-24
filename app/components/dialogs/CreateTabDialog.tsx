@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, FolderIcon, TagIcon } from "lucide-react";
+import { CircleNotch, Folder as FolderIcon, Tag as TagIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -71,8 +71,8 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2 p-4 mb-4 bg-card/80 rounded-lg">
+          <div className="space-y-4 py-4 border-t">
+            <div className="space-y-2">
               <Label htmlFor="tab-title">Tab 名稱</Label>
               <Input
                 id="tab-title"
@@ -152,7 +152,7 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch className="w-4 h-4 animate-spin" />
                   建立中...
                 </>
               ) : (

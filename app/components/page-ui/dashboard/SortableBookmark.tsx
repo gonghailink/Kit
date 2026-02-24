@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MoreVertical, Edit, FolderOpen, Trash2, TagIcon, ExternalLink, Bookmark as BookmarkIcon } from "lucide-react";
+import { DotsSixVertical, DotsThreeVertical, PencilSimple, FolderOpen, Trash, Tag as TagIcon, ArrowSquareOut, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
 import {
     DropdownMenu,
@@ -13,13 +14,13 @@ interface SortableBookmarkProps {
     bookmark: Bookmark;
     tags?: Tag[];
     tagColorMap?: Record<string, string | null>;
-    onEdit: () => void;
-    onDelete: () => void;
-    onMove?: () => void;
-    onManageTags?: () => void;
+    onEdit: (bookmarkId: string) => void;
+    onDelete: (bookmarkId: string) => void;
+    onMove?: (bookmarkId: string) => void;
+    onManageTags?: (bookmarkId: string) => void;
 }
 
-export function SortableBookmark({
+export const SortableBookmark = memo(function SortableBookmark({
     bookmark,
     tags,
     tagColorMap,
@@ -54,7 +55,7 @@ export function SortableBookmark({
                 {...listeners}
                 className="absolute top-2 left-2 p-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
             >
-                <GripVertical className="w-3 h-3" />
+                <DotsSixVertical className="w-3 h-3" />
             </button>
             <a
                 href={bookmark.url}
@@ -116,31 +117,31 @@ export function SortableBookmark({
                             onClick={(e) => e.preventDefault()}
                             className="p-1 rounded hover:bg-secondary/90"
                         >
-                            <MoreVertical className="w-3 h-3 text-muted-foreground" />
+                            <DotsThreeVertical className="w-3 h-3 text-muted-foreground" />
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={onEdit}>
-                            <Edit className="w-4 h-4" />
+                        <DropdownMenuItem onClick={() => onEdit(bookmark.id)}>
+                            <PencilSimple className="w-4 h-4" />
                             編輯
                         </DropdownMenuItem>
                         {onMove && (
-                            <DropdownMenuItem onClick={onMove}>
+                            <DropdownMenuItem onClick={() => onMove(bookmark.id)}>
                                 <FolderOpen className="w-4 h-4" />
                                 移動到資料夾
                             </DropdownMenuItem>
                         )}
                         {onManageTags && (
-                            <DropdownMenuItem onClick={onManageTags}>
+                            <DropdownMenuItem onClick={() => onManageTags(bookmark.id)}>
                                 <TagIcon className="w-4 h-4" />
                                 管理標籤
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
-                            onClick={onDelete}
+                            onClick={() => onDelete(bookmark.id)}
                             className="text-destructive focus:text-destructive"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash className="w-4 h-4" />
                             刪除
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -148,4 +149,19 @@ export function SortableBookmark({
             </div>
         </div>
     );
-}
+}, (prevProps, nextProps) => {
+    return (
+        prevProps.bookmark.id === nextProps.bookmark.id &&
+        prevProps.bookmark.title === nextProps.bookmark.title &&
+        prevProps.bookmark.url === nextProps.bookmark.url &&
+        prevProps.bookmark.favicon_url === nextProps.bookmark.favicon_url &&
+        prevProps.bookmark.memo === nextProps.bookmark.memo &&
+        prevProps.bookmark.sort_order === nextProps.bookmark.sort_order &&
+        prevProps.tags === nextProps.tags &&
+        prevProps.tagColorMap === nextProps.tagColorMap &&
+        prevProps.onEdit === nextProps.onEdit &&
+        prevProps.onDelete === nextProps.onDelete &&
+        prevProps.onMove === nextProps.onMove &&
+        prevProps.onManageTags === nextProps.onManageTags
+    );
+});

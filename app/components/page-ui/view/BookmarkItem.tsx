@@ -1,4 +1,4 @@
-import { ExternalLink, Bookmark as BookmarkIcon } from "lucide-react";
+import { ArrowSquareOut, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark } from "~/lib/types";
 
 interface BookmarkItemProps {
@@ -38,7 +38,7 @@ export function BookmarkItem({ bookmark }: BookmarkItemProps) {
                         </p>
                     )}
                 </div>
-                <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ArrowSquareOut className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
         </a>
     );

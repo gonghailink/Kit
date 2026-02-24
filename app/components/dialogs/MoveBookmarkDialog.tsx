@@ -1,7 +1,7 @@
 import { useFetcher } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "~/components/ui/dialog";
-import { Folder, ChevronRight, ChevronDown } from "lucide-react";
+import { Folder, CaretRight, CaretDown } from "@phosphor-icons/react";
 import type { FolderWithChildren, Bookmark } from "~/lib/types";
 
 interface MoveBookmarkDialogProps {
@@ -89,9 +89,9 @@ export default function MoveBookmarkDialog({
                 className="flex-shrink-0 p-0.5 hover:bg-foreground/10 rounded"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <CaretDown className="w-4 h-4" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <CaretRight className="w-4 h-4" />
                 )}
               </button>
             ) : (

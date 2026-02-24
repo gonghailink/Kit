@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import {
     Dialog,
     DialogContent,
@@ -84,7 +84,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="space-y-4 p-4 mb-4 bg-card/80 rounded-lg">
+                    <div className="space-y-4 pb-6">
                         <div className="space-y-2">
                             <Label htmlFor="old-password">目前的密碼</Label>
                             <Input
@@ -143,7 +143,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    <CircleNotch className="w-4 h-4 animate-spin mr-2" />
                                     處理中...
                                 </>
                             ) : (

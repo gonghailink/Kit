@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
 import { BookmarkItem } from "./BookmarkItem";
 
@@ -27,9 +27,9 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
                 className="flex items-center gap-2 text-md font-medium text-muted-foreground mb-3 hover:text-primary transition-colors"
             >
                 {isOpen ? (
-                    <ChevronDown className="w-4 h-4" />
+                    <CaretDown className="w-4 h-4" />
                 ) : (
-                    <ChevronRight className="w-4 h-4" />
+                    <CaretRight className="w-4 h-4" />
                 )}
                 {folder.title}
             </button>

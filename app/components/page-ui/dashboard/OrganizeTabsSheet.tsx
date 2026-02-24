@@ -22,7 +22,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Pencil, Trash2 } from "lucide-react";
+import { DotsSixVertical, Plus, Pencil, Trash } from "@phosphor-icons/react";
 import type { TabData } from "~/lib/types";
 
 interface OrganizeTabsSheetProps {
@@ -143,7 +143,7 @@ function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () =>
                 {...listeners}
                 className="p-2 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
             >
-                <GripVertical className="w-6 h-6" />
+                <DotsSixVertical className="w-6 h-6" />
             </button>
             <span className="flex-1 text-lg font-medium text-foreground">{tab.title}</span>
             <button
@@ -156,7 +156,7 @@ function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () =>
                 onClick={onDelete}
                 className="p-2 text-destructive hover:text-destructive/80 transition-colors"
             >
-                <Trash2 className="w-5 h-5" />
+                <Trash className="w-5 h-5" />
             </button>
         </div>
     );

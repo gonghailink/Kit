@@ -22,7 +22,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { DotsSixVertical } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
 
 interface OrganizeFoldersSheetProps {
@@ -124,7 +124,7 @@ function SortableFolderRow({ folder }: { folder: FolderWithChildren }) {
                 {...listeners}
                 className="p-2 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
             >
-                <GripVertical className="w-6 h-6" />
+                <DotsSixVertical className="w-6 h-6" />
             </button>
         </div>
     );

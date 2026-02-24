@@ -2,7 +2,7 @@ import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 import { getUser, login, signup, getSessionStorage } from "~/lib/auth.server";
-import { Bookmark, Loader2 } from "lucide-react";
+import { BookmarkSimple as Bookmark, CircleNotch as Loader2 } from "@phosphor-icons/react";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { user } = await getUser(request, context.cloudflare.env);

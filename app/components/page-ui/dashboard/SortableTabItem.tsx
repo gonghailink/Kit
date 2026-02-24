@@ -1,4 +1,4 @@
-import { TagIcon } from "lucide-react";
+import { Tag as TagIcon } from "@phosphor-icons/react";
 import type { Tab } from "~/lib/types";
 
 interface SortableTabItemProps {

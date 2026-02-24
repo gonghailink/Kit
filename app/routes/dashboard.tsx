@@ -1,6 +1,6 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { requireAuth, logout, changePassword } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
@@ -8,14 +8,16 @@ import { eq, asc, and } from "drizzle-orm";
 import { buildFolderTree } from "~/lib/utils";
 import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 import { isTagsTab, isFoldersTab } from "~/lib/types";
-import { Bookmark as BookmarkIcon, Plus, LogOut, MoreVertical, Edit, Trash2, GripVertical, Share2, FolderOpen, ChevronDown, UserIcon, FolderPlusIcon, MonitorCogIcon, FolderCogIcon, TagIcon } from "lucide-react";
+import { BookmarkSimple as BookmarkIcon, Plus, SignOut as LogOut, DotsThreeVertical as MoreVertical, PencilSimple as Edit, Trash, DotsSixVertical as GripVertical, ShareNetwork as Share2, FolderOpen, CaretDown as ChevronDown, User as UserIcon, FolderPlus as FolderPlusIcon, GearSix as MonitorCogIcon, Gear as FolderCogIcon, Tag as TagIcon } from "@phosphor-icons/react";
 import {
   DndContext,
+  DragOverlay,
   closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -45,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { SortableBookmark } from "~/components/page-ui/dashboard/SortableBookmark";
+import { BookmarkCard } from "~/components/page-ui/dashboard/BookmarkCard";
 import { SortableTabItem } from "~/components/page-ui/dashboard/SortableTabItem";
 import { SortableFolder } from "~/components/page-ui/dashboard/SortableFolder";
 import { DashboardHeader } from "~/components/page-ui/dashboard/DashboardHeader";
@@ -245,11 +248,6 @@ export default function Dashboard() {
     }
   }, [tabsState, paramTabId, setSearchParams]);
 
-  // 確保 tabs 數據更新時同步（例如拖曳排序後）
-  useEffect(() => {
-    setTabs(tabs as unknown as TabData[]);
-  }, [tabs]);
-
   useEffect(() => {
     if (activeTabId) {
       const activeTabElement = document.getElementById(`tab-${activeTabId}`);
@@ -268,6 +266,17 @@ export default function Dashboard() {
   const reorderFoldersFetcher = useFetcher();
   const reorderBookmarksFetcher = useFetcher();
   const reorderWorkspacesFetcher = useFetcher();
+
+  // 確保 tabs 數據更新時同步，但排序進行中時跳過（避免覆蓋 optimistic update）
+  const isReordering =
+    reorderBookmarksFetcher.state !== "idle" ||
+    reorderFoldersFetcher.state !== "idle" ||
+    reorderTabsFetcher.state !== "idle";
+  useEffect(() => {
+    if (!isReordering) {
+      setTabs(tabs as unknown as TabData[]);
+    }
+  }, [tabs, isReordering]);
 
   // Dialog 狀態
   const [showCreateTabDialog, setShowCreateTabDialog] = useState(false);
@@ -303,6 +312,9 @@ export default function Dashboard() {
   const [showMoveBookmarkDialog, setShowMoveBookmarkDialog] = useState(false);
   const [movingBookmark, setMovingBookmark] = useState<Bookmark | null>(null);
   const [movingBookmarkFolderId, setMovingBookmarkFolderId] = useState<string>("");
+
+  // DragOverlay 狀態（folders 模式書籤拖動）
+  const [activeDragBookmarkId, setActiveDragBookmarkId] = useState<string | null>(null);
 
   // 整理列表 Sheet 狀態
   const [showOrganizeTabsSheet, setShowOrganizeTabsSheet] = useState(false);
@@ -373,64 +385,158 @@ export default function Dashboard() {
     );
   };
 
-  // Handle bookmark reorder within a folder
-  const handleBookmarkDragEnd = (folderId: string) => (event: DragEndEvent) => {
-    const { active, over } = event;
+  // DragOverlay 回調
+  const handleBookmarkDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragBookmarkId(event.active.id as string);
+  }, []);
 
-    if (over && active.id !== over.id) {
-      setTabs((prevTabs: TabData[]) => {
-        return prevTabs.map((tab: TabData) => {
-          if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
+  const handleBookmarkDragCancel = useCallback(() => {
+    setActiveDragBookmarkId(null);
+  }, []);
 
-          const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
-            // 找到包含這些 bookmarks 的資料夾
-            const targetFolder = folders.find((f: FolderWithChildren) => f.id === folderId);
-            if (targetFolder && targetFolder.bookmarks) {
-              const oldIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === active.id);
-              const newIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === over.id);
-
-              if (oldIndex !== -1 && newIndex !== -1) {
-                const newBookmarks = arrayMove(targetFolder.bookmarks, oldIndex, newIndex);
-
-                // 提交到 API
-                const ids = newBookmarks.map((b: Bookmark) => b.id);
-                const sortOrders = newBookmarks.map((_: Bookmark, index: number) => (index + 1) * 1000);
-
-                reorderBookmarksFetcher.submit(
-                  {
-                    intent: "reorder",
-                    ids: JSON.stringify(ids),
-                    sortOrders: JSON.stringify(sortOrders),
-                  },
-                  {
-                    method: "post",
-                    action: "/api/bookmarks",
-                  }
-                );
-
-                return folders.map((f: FolderWithChildren) =>
-                  f.id === folderId
-                    ? { ...f, bookmarks: newBookmarks }
-                    : { ...f, children: f.children ? updateFolders(f.children) : [] }
-                );
-              }
+  const activeDragBookmark = activeDragBookmarkId
+    ? (() => {
+        const tab = tabsState.find((t: TabData) => t.id === activeTabId);
+        if (tab && isFoldersTab(tab)) {
+          const find = (folders: FolderWithChildren[]): Bookmark | undefined => {
+            for (const f of folders) {
+              const b = f.bookmarks?.find((b: Bookmark) => b.id === activeDragBookmarkId);
+              if (b) return b;
+              if (f.children) { const c = find(f.children); if (c) return c; }
             }
-
-            // 遞迴處理子資料夾
-            return folders.map((f: FolderWithChildren) => ({
-              ...f,
-              children: f.children ? updateFolders(f.children) : [],
-            }));
+            return undefined;
           };
+          return find(tab.folders);
+        }
+        return undefined;
+      })()
+    : undefined;
 
-          return {
-            ...tab,
-            folders: updateFolders(tab.folders),
-          };
-        });
-      });
+  // 穩定的書籤操作回調（避免 inline arrow 導致 SortableBookmark memo 失效）
+  const findBookmarkInFolders = useCallback((folders: FolderWithChildren[], id: string): Bookmark | undefined => {
+    for (const folder of folders) {
+      const found = folder.bookmarks?.find((b: Bookmark) => b.id === id);
+      if (found) return found;
+      if (folder.children) {
+        const childFound = findBookmarkInFolders(folder.children, id);
+        if (childFound) return childFound;
+      }
     }
-  };
+    return undefined;
+  }, []);
+
+  const handleEditBookmark = useCallback((bookmarkId: string) => {
+    const tab = tabsState.find((t: TabData) => t.id === activeTabId);
+    if (!tab) return;
+    let bookmark: Bookmark | undefined;
+    if (isFoldersTab(tab)) {
+      bookmark = findBookmarkInFolders(tab.folders, bookmarkId);
+    } else if (isTagsTab(tab)) {
+      bookmark = tab.bookmarks.find((b: BookmarkWithTags) => b.id === bookmarkId);
+    }
+    if (bookmark) {
+      setEditingBookmark(bookmark);
+      setShowEditBookmarkDialog(true);
+    }
+  }, [tabsState, activeTabId, findBookmarkInFolders]);
+
+  const handleDeleteBookmark = useCallback((bookmarkId: string) => {
+    const tab = tabsState.find((t: TabData) => t.id === activeTabId);
+    if (!tab) return;
+    let bookmark: Bookmark | undefined;
+    if (isFoldersTab(tab)) {
+      bookmark = findBookmarkInFolders(tab.folders, bookmarkId);
+    } else if (isTagsTab(tab)) {
+      bookmark = tab.bookmarks.find((b: BookmarkWithTags) => b.id === bookmarkId);
+    }
+    if (bookmark) {
+      setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
+      setShowDeleteDialog(true);
+    }
+  }, [tabsState, activeTabId, findBookmarkInFolders]);
+
+  const handleMoveBookmark = useCallback((bookmarkId: string) => {
+    const tab = tabsState.find((t: TabData) => t.id === activeTabId);
+    if (!tab) return;
+    let bookmark: Bookmark | undefined;
+    if (isFoldersTab(tab)) {
+      bookmark = findBookmarkInFolders(tab.folders, bookmarkId);
+    }
+    if (bookmark) {
+      setMovingBookmark(bookmark);
+      setMovingBookmarkFolderId(bookmark.folder_id || "");
+      setShowMoveBookmarkDialog(true);
+    }
+  }, [tabsState, activeTabId, findBookmarkInFolders]);
+
+  // Handle bookmark reorder within a folder（穩定引用，避免每次 render 建新函式）
+  const activeTabIdRef = useRef(activeTabId);
+  activeTabIdRef.current = activeTabId;
+
+  const bookmarkDragEndHandlers = useRef(new Map<string, (event: DragEndEvent) => void>());
+
+  const getBookmarkDragEndHandler = useCallback((folderId: string) => {
+    let handler = bookmarkDragEndHandlers.current.get(folderId);
+    if (handler) return handler;
+
+    handler = (event: DragEndEvent) => {
+      setActiveDragBookmarkId(null);
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        setTabs((prevTabs: TabData[]) => {
+          return prevTabs.map((tab: TabData) => {
+            if (tab.id !== activeTabIdRef.current || !isFoldersTab(tab)) return tab;
+
+            const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
+              const targetFolder = folders.find((f: FolderWithChildren) => f.id === folderId);
+              if (targetFolder && targetFolder.bookmarks) {
+                const oldIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === active.id);
+                const newIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === over.id);
+
+                if (oldIndex !== -1 && newIndex !== -1) {
+                  const newBookmarks = arrayMove(targetFolder.bookmarks, oldIndex, newIndex);
+
+                  const ids = newBookmarks.map((b: Bookmark) => b.id);
+                  const sortOrders = newBookmarks.map((_: Bookmark, index: number) => (index + 1) * 1000);
+
+                  reorderBookmarksFetcher.submit(
+                    {
+                      intent: "reorder",
+                      ids: JSON.stringify(ids),
+                      sortOrders: JSON.stringify(sortOrders),
+                    },
+                    {
+                      method: "post",
+                      action: "/api/bookmarks",
+                    }
+                  );
+
+                  return folders.map((f: FolderWithChildren) =>
+                    f.id === folderId
+                      ? { ...f, bookmarks: newBookmarks }
+                      : { ...f, children: f.children ? updateFolders(f.children) : [] }
+                  );
+                }
+              }
+
+              return folders.map((f: FolderWithChildren) => ({
+                ...f,
+                children: f.children ? updateFolders(f.children) : [],
+              }));
+            };
+
+            return {
+              ...tab,
+              folders: updateFolders(tab.folders),
+            };
+          });
+        });
+      }
+    };
+    bookmarkDragEndHandlers.current.set(folderId, handler);
+    return handler;
+  }, [reorderBookmarksFetcher]);
 
   // Handle top-level folder reorder via Sheet
   const handleTopLevelFolderReorder = (newFolders: FolderWithChildren[]) => {
@@ -705,7 +811,9 @@ export default function Dashboard() {
                           <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
-                            onDragEnd={handleBookmarkDragEnd(folder.id)}
+                            onDragStart={handleBookmarkDragStart}
+                            onDragEnd={getBookmarkDragEndHandler(folder.id)}
+                            onDragCancel={handleBookmarkDragCancel}
                           >
                             <SortableContext
                               items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
@@ -716,23 +824,18 @@ export default function Dashboard() {
                                   <SortableBookmark
                                     key={bookmark.id}
                                     bookmark={bookmark}
-                                    onEdit={() => {
-                                      setEditingBookmark(bookmark);
-                                      setShowEditBookmarkDialog(true);
-                                    }}
-                                    onDelete={() => {
-                                      setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                      setShowDeleteDialog(true);
-                                    }}
-                                    onMove={() => {
-                                      setMovingBookmark(bookmark);
-                                      setMovingBookmarkFolderId(bookmark.folder_id || "");
-                                      setShowMoveBookmarkDialog(true);
-                                    }}
+                                    onEdit={handleEditBookmark}
+                                    onDelete={handleDeleteBookmark}
+                                    onMove={handleMoveBookmark}
                                   />
                                 ))}
                               </div>
                             </SortableContext>
+                            <DragOverlay>
+                              {activeDragBookmark ? (
+                                <BookmarkCard bookmark={activeDragBookmark} />
+                              ) : null}
+                            </DragOverlay>
                           </DndContext>
 
                           {/* Nested Folders */}
@@ -779,7 +882,9 @@ export default function Dashboard() {
                                           <DndContext
                                             sensors={sensors}
                                             collisionDetection={closestCenter}
-                                            onDragEnd={handleBookmarkDragEnd(childFolder.id)}
+                                            onDragStart={handleBookmarkDragStart}
+                                            onDragEnd={getBookmarkDragEndHandler(childFolder.id)}
+                                            onDragCancel={handleBookmarkDragCancel}
                                           >
                                             <SortableContext
                                               items={childFolder.bookmarks?.map((b: Bookmark) => b.id) || []}
@@ -790,23 +895,18 @@ export default function Dashboard() {
                                                   <SortableBookmark
                                                     key={bookmark.id}
                                                     bookmark={bookmark}
-                                                    onEdit={() => {
-                                                      setEditingBookmark(bookmark);
-                                                      setShowEditBookmarkDialog(true);
-                                                    }}
-                                                    onDelete={() => {
-                                                      setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                                                      setShowDeleteDialog(true);
-                                                    }}
-                                                    onMove={() => {
-                                                      setMovingBookmark(bookmark);
-                                                      setMovingBookmarkFolderId(bookmark.folder_id || "");
-                                                      setShowMoveBookmarkDialog(true);
-                                                    }}
+                                                    onEdit={handleEditBookmark}
+                                                    onDelete={handleDeleteBookmark}
+                                                    onMove={handleMoveBookmark}
                                                   />
                                                 ))}
                                               </div>
                                             </SortableContext>
+                                            <DragOverlay>
+                                              {activeDragBookmark ? (
+                                                <BookmarkCard bookmark={activeDragBookmark} />
+                                              ) : null}
+                                            </DragOverlay>
                                           </DndContext>
                                         </SortableFolder>
                                       </div>
@@ -829,14 +929,8 @@ export default function Dashboard() {
                 onCreateBookmark={() => {
                   setShowCreateBookmarkDialog(true);
                 }}
-                onEditBookmark={(bookmark: Bookmark) => {
-                  setEditingBookmark(bookmark);
-                  setShowEditBookmarkDialog(true);
-                }}
-                onDeleteBookmark={(bookmark: Bookmark) => {
-                  setDeleteResource({ type: "bookmark", id: bookmark.id, title: bookmark.title });
-                  setShowDeleteDialog(true);
-                }}
+                onEditBookmark={handleEditBookmark}
+                onDeleteBookmark={handleDeleteBookmark}
               />
             ) : null}
           </div>
