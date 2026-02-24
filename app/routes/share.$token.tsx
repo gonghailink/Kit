@@ -239,13 +239,24 @@ export default function SharePage() {
       );
     }
 
-    // Tag 篩選
-    if (selectedTagIds.size > 0) {
-      result = result.filter((b: BookmarkWithTags) =>
-        Array.from(selectedTagIds).every((tagId) =>
-          b.tags.some((t: Tag) => t.id === tagId)
-        )
-      );
+    // Tag 篩選：各 group 內依 filter_mode (and/or/single)，group 之間為 AND
+    if (selectedTagIds.size > 0 && activeTagsTab.tagGroups) {
+      const groupSelections = activeTagsTab.tagGroups
+        .map((group: TagGroupWithTags) => ({
+          filterMode: group.filter_mode,
+          tagIds: group.tags.map((t: Tag) => t.id).filter((id: string) => selectedTagIds.has(id)),
+        }))
+        .filter((g: { filterMode: string; tagIds: string[] }) => g.tagIds.length > 0);
+
+      result = result.filter((b: BookmarkWithTags) => {
+        const bookmarkTagIds = new Set(b.tags.map((t: Tag) => t.id));
+        return groupSelections.every((group: { filterMode: string; tagIds: string[] }) => {
+          if (group.filterMode === "and") {
+            return group.tagIds.every((id: string) => bookmarkTagIds.has(id));
+          }
+          return group.tagIds.some((id: string) => bookmarkTagIds.has(id));
+        });
+      });
     }
 
     return result;

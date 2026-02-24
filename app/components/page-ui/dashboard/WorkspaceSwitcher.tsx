@@ -53,7 +53,7 @@ export function WorkspaceSwitcher({
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[calc(100vw-3rem)] md:w-[280px]">
+      <DropdownMenuContent align="start" className="w-[calc(100vw-3rem)] md:w-[280px] space-y-0.5">
         <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
           工作區
         </DropdownMenuLabel>
@@ -62,9 +62,9 @@ export function WorkspaceSwitcher({
         {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
-            className={`cursor-pointer ${workspace.id === currentWorkspaceId
-              ? "bg-primary/20 text-accent-foreground"
-              : ""
+            className={`cursor-pointer rounded-2xl ps-3 ${workspace.id === currentWorkspaceId
+              ? "bg-primary/20 text-foreground"
+              : "hover:bg-primary/10"
               }`}
             onClick={() => {
               onWorkspaceChange(workspace.id);

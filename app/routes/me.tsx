@@ -269,23 +269,44 @@ export default function MePage() {
             );
         }
 
-        if (selectedTagIds.size > 0) {
-            result = result.filter((b: BookmarkWithTags) =>
-                Array.from(selectedTagIds).every((tagId) =>
-                    b.tags.some((t: Tag) => t.id === tagId)
-                )
-            );
+        if (selectedTagIds.size > 0 && activeTagsTab.tagGroups) {
+            // 按 tagGroup 分組已選取的 tagIds
+            const groupSelections = activeTagsTab.tagGroups
+                .map((group: TagGroupWithTags) => ({
+                    filterMode: group.filter_mode,
+                    tagIds: group.tags.map((t: Tag) => t.id).filter((id: string) => selectedTagIds.has(id)),
+                }))
+                .filter((g: { filterMode: string; tagIds: string[] }) => g.tagIds.length > 0);
+
+            result = result.filter((b: BookmarkWithTags) => {
+                const bookmarkTagIds = new Set(b.tags.map((t: Tag) => t.id));
+                return groupSelections.every((group: { filterMode: string; tagIds: string[] }) => {
+                    if (group.filterMode === "and") {
+                        return group.tagIds.every((id: string) => bookmarkTagIds.has(id));
+                    }
+                    return group.tagIds.some((id: string) => bookmarkTagIds.has(id));
+                });
+            });
         }
 
         return result;
     }, [activeTagsTab, searchQuery, selectedTagIds]);
 
     const toggleTag = (tagId: string) => {
+        const group = activeTagsTab?.tagGroups.find((g: TagGroupWithTags) =>
+            g.tags.some((t: Tag) => t.id === tagId)
+        );
         setSelectedTagIds((prev) => {
             const next = new Set(prev);
             if (next.has(tagId)) {
                 next.delete(tagId);
             } else {
+                // single 模式：先清除同 group 內的其他選取
+                if (group?.filter_mode === "single") {
+                    for (const t of group.tags) {
+                        next.delete(t.id);
+                    }
+                }
                 next.add(tagId);
             }
             return next;
@@ -367,7 +388,7 @@ export default function MePage() {
                                                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
                                                     {tagGroup.title}
                                                     <span className="text-[10px] font-bold uppercase opacity-50">
-                                                        {tagGroup.filter_mode === "and" ? "AND" : "OR"}
+                                                        {tagGroup.filter_mode === "and" ? "AND" : tagGroup.filter_mode === "single" ? "單選" : "OR"}
                                                     </span>
                                                 </span>
                                                 <div className="flex gap-1.5 flex-wrap">
