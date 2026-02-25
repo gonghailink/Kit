@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
 import { tabs, folders, bookmarks, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -28,7 +28,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     const { user } = await getUser(request, context.cloudflare.env);
 
     if (!user) {
-        return json({ user: null, tabs: [], workspaces: [], currentWorkspaceId: null, share: null });
+        return json({ user: null, tabs: [], workspaces: [], currentWorkspaceId: null, share: null, dataHash: null });
     }
 
     const db = createDb(context.cloudflare.env);
@@ -142,12 +142,47 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
                 name: "我的所有書籤",
                 extra_btn_title: "進入管理後台",
                 extra_btn_url: "/dashboard",
-            }
+            },
+            dataHash: user.data_hash,
         });
     } catch (error) {
         console.error("Me page error:", error);
         throw new Response("載入內容失敗", { status: 500 });
     }
+}
+
+export async function clientLoader({ request, serverLoader }: ClientLoaderFunctionArgs) {
+    const { getCacheKey, getCache, setCache, fetchDataHash } = await import("~/lib/cache.client");
+
+    const url = new URL(request.url);
+    const workspaceId = url.searchParams.get("workspace") || "default";
+    const cacheKey = getCacheKey("me", { workspace: workspaceId });
+
+    const cached = getCache<any>(cacheKey);
+
+    if (cached) {
+        const serverHash = await fetchDataHash();
+        if (serverHash && serverHash === cached.hash) {
+            return cached.data;
+        }
+    }
+
+    const serverData = await serverLoader<typeof loader>();
+
+    if (serverData.dataHash && serverData.user) {
+        setCache(cacheKey, serverData.dataHash, serverData);
+    }
+
+    return serverData;
+}
+clientLoader.hydrate = true;
+
+export function HydrateFallback() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-muted-foreground">載入中...</div>
+        </div>
+    );
 }
 
 export default function MePage() {

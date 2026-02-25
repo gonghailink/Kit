@@ -57,6 +57,13 @@
       "when": 1771920573675,
       "tag": "0007_icy_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1772027991523,
+      "tag": "0008_superb_captain_universe",
+      "breakpoints": true
     }
   ]
 }

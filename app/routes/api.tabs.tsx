@@ -3,6 +3,7 @@ import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { tabs, workspaces } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { bumpUserDataHash } from "~/lib/hash.server";
 
 type ActionData =
   | { error: string; success?: never }
@@ -70,6 +71,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .returning()
           .get();
 
+        await bumpUserDataHash(db, user.id);
         return json({ tab: newTab, success: true });
       }
 
@@ -96,6 +98,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "更新失敗" }, { status: 400 });
         }
 
+        await bumpUserDataHash(db, user.id);
         return json({ tab: updatedTab, success: true });
       }
 
@@ -111,6 +114,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .where(and(eq(tabs.id, id), eq(tabs.user_id, user.id)))
           .run();
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 
@@ -138,6 +142,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         await db.batch(statements as any);
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 

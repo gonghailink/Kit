@@ -4,6 +4,7 @@ import { createDb } from "~/lib/db.server";
 import { bookmarks, folders, tabs } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getFaviconUrl, isValidUrl } from "~/lib/utils";
+import { bumpUserDataHash } from "~/lib/hash.server";
 
 type ActionData =
   | { error: string; success?: never }
@@ -90,6 +91,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .returning()
             .get();
 
+          await bumpUserDataHash(db, user.id);
           return json({ bookmark: newBookmark, success: true });
         } else {
           // Tags 模式
@@ -134,6 +136,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .returning()
             .get();
 
+          await bumpUserDataHash(db, user.id);
           return json({ bookmark: newBookmark, success: true });
         }
       }
@@ -188,6 +191,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "更新失敗或權限不足" }, { status: 400 });
         }
 
+        await bumpUserDataHash(db, user.id);
         return json({ bookmark: updatedBookmark, success: true });
       }
 
@@ -203,6 +207,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .where(and(eq(bookmarks.id, id), eq(bookmarks.user_id, user.id)))
           .run();
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 
@@ -230,6 +235,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         await db.batch(statements as any);
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 
@@ -293,6 +299,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "移動失敗" }, { status: 400 });
         }
 
+        await bumpUserDataHash(db, user.id);
         return json({ bookmark: updatedBookmark, success: true });
       }
 

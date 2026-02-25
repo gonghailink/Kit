@@ -3,6 +3,7 @@ import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { folders, tabs } from "~/drizzle/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
+import { bumpUserDataHash } from "~/lib/hash.server";
 
 type ActionData =
   | { error: string; success?: never }
@@ -104,6 +105,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .returning()
           .get();
 
+        await bumpUserDataHash(db, user.id);
         return json({ folder: newFolder, success: true });
       }
 
@@ -142,6 +144,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "更新失敗" }, { status: 400 });
         }
 
+        await bumpUserDataHash(db, user.id);
         return json({ folder: updatedFolder, success: true });
       }
 
@@ -162,6 +165,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .where(and(eq(folders.id, id), eq(folders.user_id, user.id)))
           .run();
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 
@@ -189,6 +193,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         await db.batch(statements as any);
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 

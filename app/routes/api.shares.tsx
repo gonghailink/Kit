@@ -3,6 +3,7 @@ import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { shares } from "~/drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { bumpUserDataHash } from "~/lib/hash.server";
 
 type ActionData =
   | { error: string; success?: never }
@@ -150,6 +151,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .returning()
           .get();
 
+        await bumpUserDataHash(db, user.id);
         return json({ share: newShare, success: true });
       }
 
@@ -170,6 +172,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           ))
           .run();
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 

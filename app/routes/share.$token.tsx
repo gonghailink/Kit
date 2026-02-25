@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
-import { shares, tabs, folders, bookmarks, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
+import { shares, tabs, folders, bookmarks, users, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 import { BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
@@ -129,6 +129,13 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       }
     });
 
+    // 取得擁有者的 data_hash
+    const ownerUser = await db
+      .select({ data_hash: users.data_hash })
+      .from(users)
+      .where(eq(users.id, share.user_id))
+      .get();
+
     return json({
       tabs: tabsData,
       shareToken: token,
@@ -136,7 +143,8 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
         name: share.name,
         extra_btn_title: share.extra_btn_title,
         extra_btn_url: share.extra_btn_url,
-      }
+      },
+      dataHash: ownerUser?.data_hash ?? null,
     });
   } catch (error) {
     console.error("Share page error:", error);
@@ -145,6 +153,40 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     }
     throw new Response("載入分享內容失敗", { status: 500 });
   }
+}
+
+export async function clientLoader({ params, serverLoader }: ClientLoaderFunctionArgs) {
+  const { getCacheKey, getCache, setCache, fetchDataHash } = await import("~/lib/cache.client");
+
+  const shareToken = params.token;
+  if (!shareToken) return serverLoader();
+
+  const cacheKey = getCacheKey("share", { token: shareToken });
+  const cached = getCache<any>(cacheKey);
+
+  if (cached) {
+    const serverHash = await fetchDataHash(shareToken);
+    if (serverHash && serverHash === cached.hash) {
+      return cached.data;
+    }
+  }
+
+  const serverData = await serverLoader<typeof loader>();
+
+  if (serverData.dataHash) {
+    setCache(cacheKey, serverData.dataHash, serverData);
+  }
+
+  return serverData;
+}
+clientLoader.hydrate = true;
+
+export function HydrateFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-muted-foreground">載入中...</div>
+    </div>
+  );
 }
 
 export default function SharePage() {

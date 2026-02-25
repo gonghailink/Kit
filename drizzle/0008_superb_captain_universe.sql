@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `data_hash` text DEFAULT 'initial' NOT NULL;

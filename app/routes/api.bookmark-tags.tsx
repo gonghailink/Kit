@@ -3,6 +3,7 @@ import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { bookmarkTags, bookmarks, tags } from "~/drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { bumpUserDataHash } from "~/lib/hash.server";
 
 type ActionData =
   | { error: string; success?: never }
@@ -68,6 +69,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           }
         }
 
+        await bumpUserDataHash(db, user.id);
         return json<ActionData>({ success: true });
       }
 
