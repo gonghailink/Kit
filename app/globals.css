@@ -63,6 +63,11 @@
 @layer base {
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *:hover {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
   }
   body {
     color: hsl(var(--foreground));

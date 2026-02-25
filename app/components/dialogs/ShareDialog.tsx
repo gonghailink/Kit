@@ -1,6 +1,6 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import { CircleNotch, ShareNetwork, Copy, Check, Trash, ArrowSquareOut, Desktop, Clock, TextT, Link as LinkIcon } from "@phosphor-icons/react";
+import { TextTIcon, ArrowSquareOutIcon, CheckIcon, CopyIcon, DesktopIcon, CircleNotchIcon, ShareNetworkIcon, TrashIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -127,10 +127,10 @@ export default function ShareDialog({
       <DialogContent className="sm:max-w-[600px] max-w-[95vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShareNetwork className="w-5 h-5" />
+            <ShareNetworkIcon className="w-5 h-5" />
             分享我的書籤
           </DialogTitle>
-          <DialogDescription className="pt-3">
+          <DialogDescription>
             建立唯讀分享連結，讓其他人可以瀏覽此工作區的所有書籤（不可編輯）
           </DialogDescription>
         </DialogHeader>
@@ -138,7 +138,7 @@ export default function ShareDialog({
         <div className="space-y-6">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
-              <CircleNotch className="w-6 h-6 animate-spin text-muted-foreground" />
+              <CircleNotchIcon className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : hasShare ? (
             // 顯示現有分享連結
@@ -151,10 +151,9 @@ export default function ShareDialog({
                 return (
                   <div
                     key={share.id}
-                    className="pt-6 mt-2 border-t"
                   >
                     <div className="min-w-0 space-y-4">
-                      <div className="px-4 pt-2 pb-1.5 rounded-full min-w-0 bg-muted-foreground text-background">
+                      <div className="px-4 pt-2 pb-1.5 rounded-full min-w-0 bg-muted/10 text-foreground">
                         <p className="text-sm font-mono break-all">
                           {shareUrl}
                         </p>
@@ -162,12 +161,12 @@ export default function ShareDialog({
                       <div className="grid grid-cols-1 gap-2 pt-2">
                         {share.name && (
                           <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                            <TextT className="w-4 h-4" /> {share.name}
+                            <TextTIcon className="w-4 h-4" /> {share.name}
                           </p>
                         )}
                         {share.extra_btn_title && share.extra_btn_url && (
                           <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                            <ArrowSquareOut className="w-4 h-4" /> {share.extra_btn_title}
+                            <ArrowSquareOutIcon className="w-4 h-4" /> {share.extra_btn_title}
                             <span className="text-muted-foreground/50">({share.extra_btn_url})</span>
                           </p>
                         )}
@@ -180,12 +179,12 @@ export default function ShareDialog({
                       >
                         {copied ? (
                           <>
-                            <Check className="w-4 h-4" />
+                            <CheckIcon className="w-4 h-4" />
                             已複製
                           </>
                         ) : (
                           <>
-                            <Copy className="w-4 h-4" />
+                            <CopyIcon className="w-4 h-4" />
                             複製連結
                           </>
                         )}
@@ -195,14 +194,14 @@ export default function ShareDialog({
                         className="rounded-full"
                         onClick={() => window.open(shareUrl, "_blank")}
                       >
-                        <ArrowSquareOut className="w-4 h-4" />
+                        <ArrowSquareOutIcon className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="destructive"
                         className="rounded-full"
                         onClick={() => handleDelete(share.id)}
                       >
-                        <Trash className="w-4 h-4" />
+                        <TrashIcon className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -213,7 +212,7 @@ export default function ShareDialog({
             // 顯示建立按鈕
             <div className="space-y-6">
               <div className="bg-card/80 p-3 rounded-lg text-center flex flex-col md:flex-row justify-center items-center gap-4 px-6 py-4">
-                <Desktop className="w-16 h-16 text-background p-4 rounded-lg bg-primary/90" />
+                <DesktopIcon className="w-16 h-16 text-background p-4 rounded-lg bg-primary/90" />
                 <div className="text-center md:text-left">
                   <p className="text-muted-foreground mb-2">
                     您尚未建立分享連結
@@ -292,12 +291,12 @@ export default function ShareDialog({
               >
                 {isCreating ? (
                   <>
-                    <CircleNotch className="w-4 h-4 animate-spin" />
+                    <CircleNotchIcon className="w-4 h-4 animate-spin" />
                     建立中...
                   </>
                 ) : (
                   <>
-                    <ShareNetwork className="w-4 h-4" />
+                    <ShareNetworkIcon className="w-4 h-4" />
                     建立分享連結
                   </>
                 )}

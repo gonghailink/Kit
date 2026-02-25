@@ -739,7 +739,7 @@ export default function Dashboard() {
       </div>
       {/* Main Content */}
       <main className="flex-1 relative min-h-0 bg-transparent">
-        <ScrollArea className="h-full w-full">
+        <div className="h-full w-full overflow-auto">
           <div className="p-6">
             {tabsState.length === 0 ? (
               // 空狀態
@@ -934,7 +934,7 @@ export default function Dashboard() {
               />
             ) : null}
           </div>
-        </ScrollArea>
+        </div>
       </main>
 
       {/* Floating Action Buttons */}

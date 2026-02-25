@@ -103,7 +103,7 @@ export function ViewHeader({
                 {/* Tabs Bar */}
                 {tabs.length > 0 && (
                     <ScrollArea className="w-full">
-                        <div className="flex items-center gap-0 pl-4 pr-6 py-2">
+                        <div className="flex items-center gap-0 pl-4 pr-6 pt-2 pb-3">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}

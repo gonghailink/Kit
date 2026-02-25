@@ -22,7 +22,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DotsSixVertical, Plus, Pencil, Trash } from "@phosphor-icons/react";
+import { PencilSimpleIcon, TrashIcon, DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
 import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
 
 interface OrganizeWorkspacesSheetProps {
@@ -82,7 +82,7 @@ export function OrganizeWorkspacesSheet({
                         onClick={onAddWorkspace}
                         className="w-full flex items-center gap-4 p-4 px-6 mb-3 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-card/50 transition-colors"
                     >
-                        <Plus className="w-6 h-6 text-foreground" />
+                        <PlusIcon className="w-6 h-6 text-foreground" />
                         <span className="text-lg font-medium text-foreground">新增工作區</span>
                     </button>
 
@@ -154,21 +154,21 @@ function SortableWorkspaceRow({
                 {...listeners}
                 className="p-2 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
             >
-                <DotsSixVertical className="w-6 h-6" />
+                <DotsSixVerticalIcon className="w-6 h-6" />
             </button>
             <span className="flex-1 text-lg font-medium text-foreground">{workspace.title}</span>
             <button
                 onClick={onEdit}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-                <Pencil className="w-5 h-5" />
+                <PencilSimpleIcon className="w-5 h-5" />
             </button>
             {canDelete && (
                 <button
                     onClick={onDelete}
                     className="p-2 text-destructive hover:text-destructive/80 transition-colors"
                 >
-                    <Trash className="w-5 h-5" />
+                    <TrashIcon className="w-5 h-5" />
                 </button>
             )}
         </div>

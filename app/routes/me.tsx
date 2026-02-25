@@ -8,7 +8,6 @@ import { ArrowSquareOut as ExternalLink, BookmarkSimple as BookmarkIcon, ArrowUp
 import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
-import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { FolderCard } from "~/components/page-ui/view/FolderCard";
 import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
 import { getUser } from "~/lib/auth.server";
@@ -374,7 +373,7 @@ export default function MePage() {
                 }
             />
 
-            <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
+            <div ref={scrollAreaRef} className="flex-1 relative min-h-0 overflow-auto">
                 <div className="container mx-auto px-4 py-8 flex flex-col">
                     {/* Tags 模式 */}
                     {isActiveTagsTab && activeTagsTab ? (
@@ -517,7 +516,7 @@ export default function MePage() {
                         </div>
                     </div>
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* Scroll to Top Button */}
             {showScrollTop && (

@@ -22,7 +22,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DotsSixVertical } from "@phosphor-icons/react";
+import { DotsSixVertical, DotsSixVerticalIcon } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
 
 interface OrganizeSubFoldersSheetProps {
@@ -131,14 +131,14 @@ function SortableSubFolderRow({ folder }: { folder: FolderWithChildren }) {
                 ${isDragging ? "opacity-50" : "opacity-100"}
             `}
         >
-            <span className="text-foreground">{folder.title}</span>
             <button
                 {...attributes}
                 {...listeners}
                 className="p-2 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
             >
-                <DotsSixVertical className="w-6 h-6" />
+                <DotsSixVerticalIcon className="w-6 h-6" />
             </button>
+            <span className="flex-1 text-foreground">{folder.title}</span>
         </div>
     );
 }

@@ -7,6 +7,9 @@ import {
   CaretDown,
   CaretRight,
   DotsSixVertical,
+  DotsSixVerticalIcon,
+  CaretDownIcon,
+  CaretRightIcon,
 } from "@phosphor-icons/react";
 import {
   DndContext,
@@ -443,7 +446,7 @@ function SortableTagGroup({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-xl border border-border bg-card overflow-hidden ${isDragging ? "opacity-50" : ""}`}
+      className={`rounded-xl border border-border overflow-hidden ${isDragging ? "opacity-50" : ""}`}
     >
       {/* TagGroup Header */}
       <div className="flex items-center gap-2 p-3">
@@ -452,14 +455,14 @@ function SortableTagGroup({
           {...listeners}
           className="p-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground flex-shrink-0"
         >
-          <DotsSixVertical className="w-4 h-4" />
+          <DotsSixVerticalIcon className="w-4 h-4" />
         </button>
 
         <button onClick={onToggle} className="text-muted-foreground flex-shrink-0">
           {isExpanded ? (
-            <CaretDown className="w-4 h-4" />
+            <CaretDownIcon className="w-4 h-4" />
           ) : (
-            <CaretRight className="w-4 h-4" />
+            <CaretRightIcon className="w-4 h-4" />
           )}
         </button>
 

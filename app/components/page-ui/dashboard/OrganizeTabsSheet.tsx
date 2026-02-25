@@ -22,7 +22,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { DotsSixVertical, Plus, Pencil, Trash } from "@phosphor-icons/react";
+import { DotsSixVertical, Plus, Pencil, Trash, PencilSimpleIcon } from "@phosphor-icons/react";
 import type { TabData } from "~/lib/types";
 
 interface OrganizeTabsSheetProps {
@@ -150,7 +150,7 @@ function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () =>
                 onClick={onEdit}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-                <Pencil className="w-5 h-5" />
+                <PencilSimpleIcon className="w-5 h-5" />
             </button>
             <button
                 onClick={onDelete}
