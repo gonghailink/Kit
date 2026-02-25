@@ -101,7 +101,7 @@ export default function Login() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-card/85 backdrop-blur-sm border border-border rounded-3xl shadow-xl p-8">
+        <div className="bg-card backdrop-blur-sm border border-border rounded-3xl shadow-xl p-8">
           <Form method="post" className="space-y-6">
             <input type="hidden" name="intent" value={isSignUp ? "signup" : "login"} />
 

@@ -123,7 +123,7 @@ export default function CreateBookmarkDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
+          <div className="space-y-4 py-4 border-t">
             <div className="space-y-2">
               <Label htmlFor="bookmark-title">標題</Label>
               <Input

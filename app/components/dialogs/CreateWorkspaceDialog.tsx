@@ -73,7 +73,7 @@ export default function CreateWorkspaceDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 border-t">
             <div className="grid gap-2">
               <Label htmlFor="title">工作區名稱</Label>
               <Input

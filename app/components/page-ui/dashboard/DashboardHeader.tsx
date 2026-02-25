@@ -1,5 +1,5 @@
 import { Form } from "@remix-run/react";
-import { SignOut, PencilSimple, ShareNetwork, User as UserIcon, CaretDown, Eye as EyeIcon } from "@phosphor-icons/react";
+import { UserIcon, EyeIcon, ShareNetworkIcon, CaretDownIcon, PencilSimpleIcon, SignOutIcon } from "@phosphor-icons/react";
 import { Button } from "~/components/ui/button";
 import {
     DropdownMenu,
@@ -28,7 +28,7 @@ export function DashboardHeader({
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
-                            <img src="/favicon-re.svg" alt="Kit" className="h-full w-full object-contain rounded-xl" />
+                            <img src="/favicon-white.svg" alt="Kit" className="h-full w-full p-[1px] object-contain rounded-xl bg-froeground" />
                         </div>
                         <h1 className="text-xl font-semibold text-primary">
                             Kit
@@ -36,7 +36,7 @@ export function DashboardHeader({
                     </div>
                     {/* Workspace switcher on desktop (hidden on mobile) */}
                     {workspaceSwitcher && (
-                        <div className="hidden md:block ml-2">
+                        <div className="hidden md:block">
                             {workspaceSwitcher}
                         </div>
                     )}
@@ -50,14 +50,14 @@ export function DashboardHeader({
                         </Button>
                     </a>
                     <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">
-                        <ShareNetwork className="w-4 h-4" />
+                        <ShareNetworkIcon className="w-4 h-4" />
                         <span className="hidden md:block text-xs">分享</span>
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">
                                 <UserIcon className="w-4 h-4" />
-                                <CaretDown className="w-4 h-4 opacity-50" />
+                                <CaretDownIcon className="w-4 h-4 opacity-50" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -68,7 +68,7 @@ export function DashboardHeader({
                                 onClick={onChangePassword}
                                 className="w-full flex items-center gap-2 cursor-pointer"
                             >
-                                <PencilSimple className="w-4 h-4" />
+                                <PencilSimpleIcon className="w-4 h-4" />
                                 修改密碼
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -78,7 +78,7 @@ export function DashboardHeader({
                                         type="submit"
                                         className="w-full flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
                                     >
-                                        <SignOut className="w-4 h-4" />
+                                        <SignOutIcon className="w-4 h-4" />
                                         登出
                                     </button>
                                 </Form>

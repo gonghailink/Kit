@@ -15,6 +15,12 @@ export const workspaces = sqliteTable("workspaces", {
     user_id: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     sort_order: real("sort_order").default(0),
+    theme_primary: text("theme_primary"),
+    theme_background: text("theme_background"),
+    theme_card: text("theme_card"),
+    theme_secondary: text("theme_secondary"),
+    theme_foreground: text("theme_foreground"),
+    theme_font: text("theme_font"),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
 

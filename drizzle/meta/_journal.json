@@ -64,6 +64,13 @@
       "when": 1772027991523,
       "tag": "0008_superb_captain_universe",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1772037673531,
+      "tag": "0009_pink_starhawk",
+      "breakpoints": true
     }
   ]
 }

@@ -20,7 +20,7 @@ export function TagFilterBar({
   if (tagGroups.length === 0) return null;
 
   return (
-    <div className="mb-6 bg-card/85 rounded-lg border-none p-4 space-y-4">
+    <div className="mb-6 bg-card rounded-lg border-none p-4 space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold text-foreground">篩選器</h2>
         {selectedTagIds.size > 0 && (

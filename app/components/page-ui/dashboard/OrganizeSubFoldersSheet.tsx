@@ -66,7 +66,7 @@ export function OrganizeSubFoldersSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-[#F9F7F2]">
+            <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-background">
                 <SheetHeader className="p-6 pb-2">
                     <SheetTitle className="text-xl font-bold text-left">
                         排序子資料夾
@@ -127,7 +127,7 @@ function SortableSubFolderRow({ folder }: { folder: FolderWithChildren }) {
             ref={setNodeRef}
             style={style}
             className={`
-                flex items-center justify-between py-2 px-4 rounded-2xl bg-[#EFE9DB] shadow-sm
+                flex items-center justify-between py-2 px-4 rounded-2xl bg-card shadow-sm
                 ${isDragging ? "opacity-50" : "opacity-100"}
             `}
         >

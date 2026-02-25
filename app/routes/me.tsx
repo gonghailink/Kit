@@ -7,6 +7,7 @@ import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, Bookmark
 import { ArrowSquareOut as ExternalLink, BookmarkSimple as BookmarkIcon, ArrowUp, SignIn as LogIn } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
+import { generateThemeStyle } from "~/lib/theme";
 import { Input } from "~/components/ui/input";
 import { FolderCard } from "~/components/page-ui/view/FolderCard";
 import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
@@ -220,6 +221,8 @@ export default function MePage() {
     }
 
     const { tabs: tabsData, share, workspaces, currentWorkspaceId } = data;
+    const currentWorkspace = workspaces.find((w: any) => w.id === currentWorkspaceId);
+    const themeStyle = generateThemeStyle(currentWorkspace);
     const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -382,7 +385,7 @@ export default function MePage() {
     }, [activeTagsTab]);
 
     return (
-        <div className="h-screen flex flex-col bg-transparent">
+        <div style={themeStyle} className="h-screen flex flex-col bg-transparent">
             <ViewHeader
                 title={share?.name || "我的書籤"}
                 searchQuery={searchQuery}
@@ -424,7 +427,7 @@ export default function MePage() {
 
                             {/* Bookmarks Grid */}
                             {filteredTagsBookmarks.length === 0 ? (
-                                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                                <div className="bg-card rounded-lg shadow-sm p-6">
                                     <div className="text-center py-12">
                                         <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                                         <p className="text-muted-foreground">
@@ -497,7 +500,7 @@ export default function MePage() {
                         /* Folders 模式 */
                         <>
                             {!filteredFoldersTab || filteredFoldersTab.folders.length === 0 ? (
-                                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                                <div className="bg-card rounded-lg shadow-sm p-6">
                                     <div className="text-center py-12">
                                         <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                                         <p className="text-muted-foreground">

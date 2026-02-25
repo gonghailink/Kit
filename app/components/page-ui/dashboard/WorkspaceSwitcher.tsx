@@ -15,6 +15,12 @@ export interface Workspace {
   title: string;
   user_id: string;
   sort_order: number | null;
+  theme_primary: string | null;
+  theme_background: string | null;
+  theme_card: string | null;
+  theme_secondary: string | null;
+  theme_foreground: string | null;
+  theme_font: string | null;
   created_at: string;
 }
 
@@ -63,7 +69,7 @@ export function WorkspaceSwitcher({
           <DropdownMenuItem
             key={workspace.id}
             className={`cursor-pointer rounded-2xl ps-3 ${workspace.id === currentWorkspaceId
-              ? "bg-primary/20 text-foreground"
+              ? "font-bold"
               : "hover:bg-primary/10"
               }`}
             onClick={() => {
@@ -84,7 +90,7 @@ export function WorkspaceSwitcher({
                 onManageWorkspaces();
                 setOpen(false);
               }}
-              className="mt-2 cursor-pointer text-primary hover:text-primary hover:font-bold"
+              className="mt-2 ps-3 cursor-pointer text-primary hover:text-primary"
             >
               <GearSix className="w-4 h-4" />
               <span>管理工作區</span>

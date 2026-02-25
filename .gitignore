@@ -11,3 +11,4 @@ node_modules
 
 # Scripts (development tools)
 /scripts
+!/scripts/setup.mjs

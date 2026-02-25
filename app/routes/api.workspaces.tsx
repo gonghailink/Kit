@@ -88,9 +88,24 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return json<ActionData>({ error: "工作區名稱不能為空" }, { status: 400 });
         }
 
+        // 主題欄位（空字串視為清除）
+        const themeFields = ["theme_primary", "theme_background", "theme_card", "theme_secondary", "theme_foreground", "theme_font"] as const;
+        const themeUpdate: Record<string, string | null> = {};
+        for (const field of themeFields) {
+          const value = formData.get(field) as string | null;
+          if (value !== null) {
+            themeUpdate[field] = value === "" ? null : value;
+          }
+        }
+
+        // 驗證 theme_font 值
+        if (themeUpdate.theme_font && !["serif", "sans", "mono"].includes(themeUpdate.theme_font)) {
+          return json<ActionData>({ error: "無效的字體設定" }, { status: 400 });
+        }
+
         const updatedWorkspace = await db
           .update(workspaces)
-          .set({ title: title.trim() })
+          .set({ title: title.trim(), ...themeUpdate })
           .where(and(eq(workspaces.id, id), eq(workspaces.user_id, user.id)))
           .returning()
           .get();

@@ -8,7 +8,7 @@ interface FolderCardProps {
 
 export function FolderCard({ folder }: FolderCardProps) {
     return (
-        <div className="bg-card/85 rounded-xl p-6 shadow-sm">
+        <div className="bg-card rounded-xl p-6 shadow-sm">
             {/* 資料夾標題 */}
             <h2 className="text-lg font-semibold text-foreground mb-4">
                 {folder.title}

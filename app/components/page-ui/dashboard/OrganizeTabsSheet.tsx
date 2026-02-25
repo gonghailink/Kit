@@ -72,7 +72,7 @@ export function OrganizeTabsSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-[#F9F7F2]">
+            <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-background">
                 <SheetHeader className="p-6 pb-2">
                     <SheetTitle className="text-2xl font-bold text-left px-2">Tab 管理</SheetTitle>
                 </SheetHeader>
@@ -134,7 +134,7 @@ function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () =>
             ref={setNodeRef}
             style={style}
             className={`
-                flex items-center gap-2 p-4 px-4 rounded-2xl bg-[#EFE9DB] shadow-sm
+                flex items-center gap-2 p-4 px-4 rounded-2xl bg-card shadow-sm
                 ${isDragging ? "opacity-50" : "opacity-100"}
             `}
         >

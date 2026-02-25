@@ -30,7 +30,7 @@ export function SortableFolder({
 }: SortableFolderProps) {
     const hasSubfolders = folder.children && folder.children.length > 0;
     return (
-        <div className="px-6 py-4 bg-card/85 rounded-xl">
+        <div className="px-6 py-4 bg-card rounded-xl">
             <div className="group flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>

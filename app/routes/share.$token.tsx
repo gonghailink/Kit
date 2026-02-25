@@ -1,12 +1,13 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "@remix-run/react";
 import { createDb } from "~/lib/db.server";
-import { shares, tabs, folders, bookmarks, users, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
+import { shares, tabs, folders, bookmarks, users, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 import { BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { buildFolderTree } from "~/lib/utils";
+import { generateThemeStyle } from "~/lib/theme";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { FolderCard } from "~/components/page-ui/view/FolderCard";
@@ -46,6 +47,20 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     if (!share) {
       throw new Response("找不到分享連結", { status: 404 });
     }
+
+    // 取得工作區主題設定
+    const workspace = await db
+      .select({
+        theme_primary: workspacesSchema.theme_primary,
+        theme_background: workspacesSchema.theme_background,
+        theme_card: workspacesSchema.theme_card,
+        theme_secondary: workspacesSchema.theme_secondary,
+        theme_foreground: workspacesSchema.theme_foreground,
+        theme_font: workspacesSchema.theme_font,
+      })
+      .from(workspacesSchema)
+      .where(eq(workspacesSchema.id, share.workspace_id))
+      .get();
 
     // 取得該工作區的所有 Tabs
     const allTabs = (await db
@@ -144,6 +159,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
         extra_btn_title: share.extra_btn_title,
         extra_btn_url: share.extra_btn_url,
       },
+      workspace: workspace ?? null,
       dataHash: ownerUser?.data_hash ?? null,
     });
   } catch (error) {
@@ -190,7 +206,8 @@ export function HydrateFallback() {
 }
 
 export default function SharePage() {
-  const { tabs: tabsData, share } = useLoaderData<typeof loader>();
+  const { tabs: tabsData, share, workspace } = useLoaderData<typeof loader>();
+  const themeStyle = generateThemeStyle(workspace);
   const [searchParams, setSearchParams] = useSearchParams();
   const paramTabId = searchParams.get("tab");
   const activeTabId = (paramTabId && tabsData.find((t) => t.id === paramTabId))
@@ -372,7 +389,7 @@ export default function SharePage() {
   }, [activeTagsTab]);
 
   return (
-    <div className="h-screen flex flex-col bg-transparent">
+    <div style={themeStyle} className="h-screen flex flex-col bg-transparent">
       {/* Header */}
       <ViewHeader
         title={share.name ? `${share.name}` : "精選書籤"}
@@ -404,7 +421,7 @@ export default function SharePage() {
 
               {/* Bookmarks Grid */}
               {filteredTagsBookmarks.length === 0 ? (
-                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                <div className="bg-card rounded-lg shadow-sm p-6">
                   <div className="text-center py-12">
                     <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">
@@ -431,7 +448,7 @@ export default function SharePage() {
             /* Folders 模式 */
             <>
               {!filteredFoldersTab || filteredFoldersTab.folders.length === 0 ? (
-                <div className="bg-card/85 rounded-lg shadow-sm p-6">
+                <div className="bg-card rounded-lg shadow-sm p-6">
                   <div className="text-center py-12">
                     <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">
