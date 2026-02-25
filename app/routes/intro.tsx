@@ -141,7 +141,7 @@ export default function IntroPage() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/gahgah147/BookmarksRemix"
+              href="https://github.com/tony13382/Personal-BookmarksRemix"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden items-center gap-2 rounded-full border border-border/50 bg-background/40 px-5 py-2 text-sm font-medium text-foreground backdrop-blur-md shadow-sm transition hover:bg-background/80 hover:border-border sm:inline-flex"
@@ -208,7 +208,7 @@ export default function IntroPage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] transition-transform duration-1000 group-hover:translate-x-[100%]" />
                 </Link>
                 <a
-                  href="https://github.com/gahgah147/BookmarksRemix"
+                  href="https://github.com/tony13382/Personal-BookmarksRemix"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 backdrop-blur-md px-8 py-4 text-base font-medium text-foreground transition-all hover:bg-accent/10 hover:border-accent/30"
@@ -356,7 +356,7 @@ export default function IntroPage() {
               <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
                 包含 SQL schema 初始化腳本、環境參數詳解，請參閱{" "}
                 <a
-                  href="https://github.com/gahgah147/BookmarksRemix"
+                  href="https://github.com/tony13382/Personal-BookmarksRemix"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-blue-500 hover:text-blue-600 underline underline-offset-4"
@@ -405,7 +405,7 @@ export default function IntroPage() {
           </p>
           <div className="flex gap-6">
             <a
-              href="https://github.com/gahgah147/BookmarksRemix"
+              href="https://github.com/tony13382/Personal-BookmarksRemix"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
