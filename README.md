@@ -1,77 +1,100 @@
-# 📚 Kit (Bookmarks Clip)
+# Kit (Bookmarks Clip)
 
-基於 **Remix + Cloudflare Pages + Supabase** 的現代化書籤管理系統。
+基於 **Remix + Cloudflare Pages + D1** 的現代化書籤管理系統。
 
-## ✨ 功能特色
+## 功能特色
 
-- 🎯 **多層級組織**：Tabs → Folders → Folders (巢狀) → Bookmarks
-- 🔐 **使用者認證**：Supabase Auth (Email + 未來可擴展 OAuth)
-- 🎨 **現代化 UI**：shadcn/ui + Tailwind CSS
-- 🚀 **免費部署**：Cloudflare Pages (免費方案)
-- 📱 **響應式設計**：完美支援桌面和行動裝置
-- 🌙 **深色模式**：（待實作）
+- **多層級組織**：Workspaces → Tabs → Folders (無限巢狀) → Bookmarks
+- **標籤系統**：標籤群組 + 多種篩選模式（AND / OR / 單選）
+- **拖放排序**：透過 @dnd-kit 支援書籤、資料夾、分頁拖放排序
+- **公開分享**：產生分享連結 / 短網址，支援標籤篩選
+- **使用者認證**：JWT Cookie Session（Email + 密碼）
+- **現代化 UI**：shadcn/ui + Tailwind CSS + Phosphor Icons
+- **免費部署**：Cloudflare Pages + D1（免費方案即可運行）
+- **響應式設計**：支援桌面和行動裝置
 
-## 🏗️ 技術架構
+## 技術架構
 
 ### 前端
-- **框架**：Remix (React Router)
-- **UI 元件庫**：shadcn/ui
+
+- **框架**：Remix v2 (React 18)
+- **UI 元件庫**：shadcn/ui (Radix UI)
 - **樣式**：Tailwind CSS
-- **圖示**：Lucide React
-- **拖放**：@dnd-kit（待實作）
+- **圖示**：Phosphor Icons
+- **拖放**：@dnd-kit
 
 ### 後端
-- **資料庫**：Supabase (PostgreSQL)
-- **認證**：Supabase Auth
+
+- **資料庫**：Cloudflare D1 (SQLite)
+- **ORM**：Drizzle ORM
+- **認證**：JWT (jose) + Cookie Session
 - **部署**：Cloudflare Pages
 
-## 📦 專案結構
+## 專案結構
 
 ```
 app/
-├── functions/[[path]].ts    # Cloudflare Pages Functions 入口
-├── app/
-│   ├── routes/
-│   │   ├── _index.tsx          # 首頁重定向
-│   │   ├── login.tsx            # 登入/註冊頁面
-│   │   ├── auth.callback.tsx   # Auth 回調
-│   │   └── dashboard.tsx        # 主要書籤管理頁面
-│   │
-│   ├── lib/
-│   │   ├── types.ts             # TypeScript 型別定義
-│   │   ├── utils.ts             # 工具函數
-│   │   ├── supabase.server.ts  # Supabase 伺服器端
-│   │   └── supabase.client.ts  # Supabase 客戶端
-│   │
-│   ├── globals.css              # 全域樣式
-│   ├── root.tsx                 # Root Layout
-│   └── entry.{client,server}.tsx
+├── routes/
+│   ├── _index.tsx              # 首頁
+│   ├── intro.tsx               # 介紹頁面
+│   ├── login.tsx               # 登入 / 註冊
+│   ├── dashboard.tsx           # 主要書籤管理介面
+│   ├── me.tsx                  # 使用者公開頁面
+│   ├── share.$token.tsx        # 分享頁面（以 token 存取）
+│   ├── s.$shortLink.tsx        # 短網址重導向
+│   ├── api.bookmarks.tsx       # Bookmark CRUD API
+│   ├── api.folders.tsx         # Folder CRUD API
+│   ├── api.tabs.tsx            # Tab CRUD API
+│   ├── api.workspaces.tsx      # Workspace CRUD API
+│   ├── api.shares.tsx          # Share 管理 API
+│   ├── api.tags.tsx            # Tag CRUD API
+│   ├── api.tag-groups.tsx      # Tag Group CRUD API
+│   └── api.bookmark-tags.tsx   # Bookmark-Tag 關聯 API
 │
-├── public/                      # 靜態資源
-├── wrangler.toml                # Cloudflare 配置
-├── tailwind.config.ts           # Tailwind 配置
-├── components.json              # shadcn/ui 配置
-└── package.json
+├── components/
+│   ├── dialogs/                # 對話框元件
+│   ├── page-ui/
+│   │   ├── dashboard/          # Dashboard 頁面元件
+│   │   ├── view/               # 分享檢視元件
+│   │   └── shared/             # 共用元件（TagFilterBar 等）
+│   └── ui/                     # 基礎 UI 元件（shadcn/ui）
+│
+├── drizzle/
+│   └── schema.ts               # 資料庫 Schema（Drizzle ORM）
+│
+├── lib/
+│   ├── auth.server.ts          # JWT 認證邏輯
+│   ├── db.server.ts            # Drizzle DB 初始化
+│   ├── types.ts                # TypeScript 型別定義
+│   └── utils.ts                # 工具函數
+│
+├── globals.css                 # 全域樣式（含深色模式）
+├── root.tsx                    # Root Layout
+└── entry.{client,server}.tsx
+
+drizzle/                        # D1 Migration 檔案
+wrangler.toml                   # Cloudflare 配置
+drizzle.config.ts               # Drizzle ORM 配置
+tailwind.config.ts              # Tailwind 配置
 ```
 
-## 🚀 快速開始
+## 快速開始
 
 ### 1. 安裝依賴
 
 ```bash
-cd app
 npm install
 ```
 
 ### 2. 環境變數設定
 
-1. 複製 `.env.example` 為 `.dev.vars`（本地開發用）
+複製 `.env.example` 為 `.dev.vars`（本地開發用）：
 
 ```bash
 cp .env.example .dev.vars
 ```
 
-2. 填入以下環境變數：
+填入以下環境變數：
 
 ```env
 # JWT Secret - 請改為你自己的安全金鑰
@@ -89,7 +112,19 @@ REGISTRATION_WHITELIST=
 - **限制特定人員**：`REGISTRATION_WHITELIST=alice@example.com,bob@example.com`
 - **僅限自己使用**：`REGISTRATION_WHITELIST=your@email.com`
 
-### 3. 本地開發
+### 3. 資料庫設定
+
+建立 D1 資料庫並執行 Migration：
+
+```bash
+# 本地開發用 Migration
+npm run db:migrate
+
+# 遠端正式環境 Migration
+npm run db:migrate:remote
+```
+
+### 4. 本地開發
 
 ```bash
 npm run dev
@@ -97,7 +132,7 @@ npm run dev
 
 開啟 [http://localhost:5173](http://localhost:5173)
 
-### 4. 建置與部署
+### 5. 建置與部署
 
 ```bash
 # 建置
@@ -110,83 +145,25 @@ npm start
 npm run deploy
 ```
 
-## 🗄️ 資料庫設定
+## 資料庫架構
 
-在 Supabase SQL Editor 執行以下 SQL：
+使用 Cloudflare D1 (SQLite) + Drizzle ORM，共 8 張表：
 
-```sql
--- 1. Tabs 表：最頂層的分頁
-create table public.tabs (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  title text not null,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+| 資料表 | 說明 |
+|--------|------|
+| `users` | 使用者帳號（Email + 密碼雜湊） |
+| `workspaces` | 工作區，每位使用者可建立多個 |
+| `tabs` | 分頁，支援 `folders` 和 `tags` 兩種類型 |
+| `folders` | 資料夾，支援無限巢狀（self-reference） |
+| `bookmarks` | 書籤項目 |
+| `tag_groups` | 標籤群組，含篩選模式（and / or / single） |
+| `tags` | 標籤 |
+| `bookmark_tags` | 書籤與標籤的多對多關聯 |
+| `shares` | 公開分享連結（token + 短網址） |
 
--- 2. Folders 表：支援無限層級嵌套
-create table public.folders (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  tab_id uuid references public.tabs on delete cascade not null,
-  parent_id uuid references public.folders on delete cascade,
-  title text not null,
-  is_collapsed boolean default false,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+Schema 定義位於 [app/drizzle/schema.ts](app/drizzle/schema.ts)。
 
--- 3. Bookmarks 表：實際的書籤
-create table public.bookmarks (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  folder_id uuid references public.folders on delete cascade not null,
-  title text not null,
-  url text not null,
-  favicon_url text,
-  memo text,
-  sort_order float default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 4. Shares 表：分享連結
-create table public.shares (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  share_token text not null unique,
-  short_link text,
-  extra_btn_title text,
-  extra_btn_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 為 short_link 新增唯一索引（null 值不受影響）
-create unique index shares_short_link_unique on public.shares (short_link)
-  where short_link is not null;
-
--- 5. 設定 RLS (Row Level Security)
-alter table public.tabs enable row level security;
-alter table public.folders enable row level security;
-alter table public.bookmarks enable row level security;
-alter table public.shares enable row level security;
-
-create policy "Users can CRUD their own tabs" on public.tabs
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own folders" on public.folders
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own bookmarks" on public.bookmarks
-  for all using (auth.uid() = user_id);
-
-create policy "Users can CRUD their own shares" on public.shares
-  for all using (auth.uid() = user_id);
-
-create policy "Anyone can read shares by token" on public.shares
-  for select using (true);
-```
-
-## 🔧 Cloudflare Pages 部署設定
+## Cloudflare Pages 部署設定
 
 ### 方式一：透過 Git 自動部署（推薦）
 
@@ -197,7 +174,10 @@ create policy "Anyone can read shares by token" on public.shares
    - **Framework preset**: Remix
    - **Build command**: `npm run build`
    - **Build output directory**: `build/client`
-5. 環境變數（Settings → Environment variables）：
+5. 綁定 D1 資料庫（Settings → Functions → D1 database bindings）：
+   - Variable name: `DB`
+   - D1 database: 選擇你的資料庫
+6. 環境變數（Settings → Environment variables）：
    - `JWT_KW` - JWT 簽名密鑰
    - `REGISTRATION_WHITELIST` - 註冊白名單（選填，留空表示開放註冊）
 
@@ -207,39 +187,25 @@ create policy "Anyone can read shares by token" on public.shares
 npm run deploy
 ```
 
-## 📝 待實作功能
+## 待實作功能
 
-### Phase 1（基礎 CRUD）
-- [ ] 新增/編輯/刪除 Tab
-- [ ] 新增/編輯/刪除 Folder
-- [ ] 新增/編輯/刪除 Bookmark
-- [ ] Favicon 自動抓取
-
-### Phase 2（進階功能）
-- [ ] 拖放排序（dnd-kit）
-- [ ] Folder 展開/收合
-- [ ] 搜尋與過濾
+- [ ] 深色模式切換 UI（CSS 已支援，需加入切換按鈕）
+- [ ] 批量匯入書籤（Chrome / Firefox）
+- [ ] 匯出書籤（JSON / HTML）
 - [ ] 右鍵選單
-
-### Phase 3（優化）
-- [ ] 深色模式切換
-- [ ] 批量匯入書籤（Chrome/Firefox）
-- [ ] 匯出書籤（JSON/HTML）
 - [ ] 效能優化（虛擬滾動）
 - [ ] 多語系支援
 
-## 🤝 貢獻
-
-歡迎提交 Issue 和 Pull Request！
-
-## 📄 授權
+## 授權
 
 MIT License
 
-## 🙏 致謝
+## 致謝
 
 - [Remix](https://remix.run)
-- [Supabase](https://supabase.com)
 - [Cloudflare Pages](https://pages.cloudflare.com)
+- [Cloudflare D1](https://developers.cloudflare.com/d1/)
+- [Drizzle ORM](https://orm.drizzle.team)
 - [shadcn/ui](https://ui.shadcn.com)
-- [Lucide Icons](https://lucide.dev)
+- [Phosphor Icons](https://phosphoricons.com)
+- [dnd kit](https://dndkit.com)
