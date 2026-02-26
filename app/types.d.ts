@@ -1,6 +1,6 @@
-import type { AppLoadContext } from "@remix-run/cloudflare";
+import "react-router";
 
-declare module "@remix-run/cloudflare" {
+declare module "react-router" {
   interface AppLoadContext {
     cloudflare: {
       env: Record<string, string>;

@@ -1,6 +1,6 @@
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { CircleNotch } from "@phosphor-icons/react";
+import { CircleNotch, Folder as FolderIcon, Tag as TagIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -12,36 +12,33 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import type { Tab } from "~/lib/types";
 
-interface CreateWorkspaceDialogProps {
+interface EditTabDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  tab: Tab;
 }
 
 type FetcherData =
   | { error: string; success?: never }
   | { success: true; error?: never };
 
-export default function CreateWorkspaceDialog({
-  open,
-  onOpenChange,
-}: CreateWorkspaceDialogProps) {
+export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialogProps) {
   const fetcher = useFetcher<FetcherData>();
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(tab.title);
   const isSubmitting = fetcher.state === "submitting";
   const submitted = useRef(false);
 
-  // 成功後關閉對話框並重置
+  // 當 tab 改變時更新 title
   useEffect(() => {
-    if (
-      submitted.current &&
-      fetcher.data &&
-      "success" in fetcher.data &&
-      fetcher.data.success &&
-      fetcher.state === "idle"
-    ) {
+    setTitle(tab.title);
+  }, [tab.title]);
+
+  // 成功後關閉對話框
+  useEffect(() => {
+    if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
       submitted.current = false;
-      setTitle("");
       onOpenChange(false);
     }
   }, [fetcher.data, fetcher.state, onOpenChange]);
@@ -53,42 +50,62 @@ export default function CreateWorkspaceDialog({
     submitted.current = true;
     fetcher.submit(
       {
-        intent: "create",
+        intent: "update",
+        id: tab.id,
         title: title.trim(),
       },
       {
         method: "post",
-        action: "/api/workspaces",
+        action: "/api/tabs",
       }
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>新增工作區</DialogTitle>
+          <DialogTitle>編輯 Tab</DialogTitle>
           <DialogDescription>
-            建立一個新的工作區來組織您的書籤
+            修改 Tab 的名稱
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4 border-t">
-            <div className="grid gap-2">
-              <Label htmlFor="title">工作區名稱</Label>
+          <div className="space-y-4 pb-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-tab-title">Tab 名稱</Label>
               <Input
-                id="title"
-                placeholder="例如：工作、個人、學習..."
+                id="edit-tab-title"
+                placeholder="例如：工作、學習、娛樂"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
                 autoFocus
               />
             </div>
-            {fetcher.data && "error" in fetcher.data && (
-              <p className="text-sm text-destructive">{fetcher.data.error}</p>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {tab.type === "tags" ? (
+                <>
+                  <TagIcon className="w-4 h-4" />
+                  <span>標籤模式（建立後不可變更）</span>
+                </>
+              ) : (
+                <>
+                  <FolderIcon className="w-4 h-4" />
+                  <span>資料夾模式（建立後不可變更）</span>
+                </>
+              )}
+            </div>
+
+            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
+              <div className="text-sm text-destructive">
+                {fetcher.data.error}
+              </div>
             )}
           </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -101,11 +118,11 @@ export default function CreateWorkspaceDialog({
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <CircleNotch className="mr-2 h-4 w-4 animate-spin" />
-                  建立中...
+                  <CircleNotch className="w-4 h-4 animate-spin" />
+                  儲存中...
                 </>
               ) : (
-                "建立"
+                "儲存"
               )}
             </Button>
           </DialogFooter>

@@ -1,5 +1,5 @@
-import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Form, useActionData, useNavigation } from "@remix-run/react";
+import { data, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { Form, useActionData, useNavigation } from "react-router";
 import { useState } from "react";
 import { getUser, login, signup, getSessionStorage } from "~/lib/auth.server";
 import { BookmarkSimple as Bookmark, CircleNotch as Loader2 } from "@phosphor-icons/react";
@@ -12,7 +12,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     return redirect("/dashboard");
   }
 
-  return json({});
+  return {};
 }
 
 type ActionData = { error?: string; success?: string };
@@ -26,7 +26,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      return json<ActionData>(
+      return data(
         { error: "請輸入 Email 和密碼" },
         { status: 400 }
       );
@@ -37,7 +37,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const result = await login(email, password, env);
 
       if ("error" in result) {
-        return json<ActionData>({ error: result.error }, { status: 400 });
+        return data({ error: result.error }, { status: 400 });
       }
 
       const storage = getSessionStorage(env);
@@ -54,7 +54,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       const result = await signup(email, password, env);
 
       if ("error" in result) {
-        return json<ActionData>({ error: result.error }, { status: 400 });
+        return data({ error: result.error }, { status: 400 });
       }
 
       const storage = getSessionStorage(env);
@@ -68,10 +68,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
       });
     }
 
-    return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+    return data({ error: "無效的操作" }, { status: 400 });
   } catch (error) {
     console.error("Login action error:", error);
-    return json<ActionData>(
+    return data(
       { error: error instanceof Error ? error.message : "登入時發生錯誤" },
       { status: 500 }
     );

@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
+import { data, type ActionFunctionArgs } from "react-router";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { bookmarkTags, bookmarks, tags } from "~/drizzle/schema";
@@ -23,7 +23,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const tag_ids_json = formData.get("tag_ids") as string;
 
         if (!bookmark_id) {
-          return json<ActionData>({ error: "Bookmark ID 是必要的" }, { status: 400 });
+          return data({ error: "Bookmark ID 是必要的" }, { status: 400 });
         }
 
         // 驗證書籤屬於當前使用者
@@ -34,7 +34,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!bookmark) {
-          return json<ActionData>({ error: "找不到該書籤" }, { status: 404 });
+          return data({ error: "找不到該書籤" }, { status: 404 });
         }
 
         const tagIds: string[] = tag_ids_json ? JSON.parse(tag_ids_json) : [];
@@ -70,15 +70,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       default:
-        return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+        return data({ error: "無效的操作" }, { status: 400 });
     }
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );

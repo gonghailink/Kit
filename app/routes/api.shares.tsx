@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { data, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { shares } from "~/drizzle/schema";
@@ -18,21 +18,21 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   const workspaceId = url.searchParams.get("workspace_id");
 
   if (!workspaceId) {
-    return json({ error: "缺少 workspace_id 參數" }, { status: 400 });
+    return data({ error: "缺少 workspace_id 參數" }, { status: 400 });
   }
 
   try {
-    const data = await db
+    const shareData = await db
       .select()
       .from(shares)
       .where(and(eq(shares.user_id, user.id), eq(shares.workspace_id, workspaceId)))
       .orderBy(desc(shares.created_at))
       .all();
 
-    return json({ shares: data });
+    return { shares: shareData };
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );
@@ -54,7 +54,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const workspaceId = formData.get("workspace_id") as string;
 
         if (!workspaceId) {
-          return json<ActionData>({ error: "缺少 workspace_id 參數" }, { status: 400 });
+          return data({ error: "缺少 workspace_id 參數" }, { status: 400 });
         }
 
         // 檢查該 workspace 是否已經有分享連結
@@ -66,7 +66,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         // 如果已有分享連結，返回錯誤
         if (existingShares && existingShares.length > 0) {
-          return json<ActionData>({ error: "此工作區已經建立過分享連結" }, { status: 400 });
+          return data({ error: "此工作區已經建立過分享連結" }, { status: 400 });
         }
 
         // 取得顯示名稱
@@ -84,7 +84,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           // 只允許英數字、底線和連字號
           const shortLinkRegex = /^[a-zA-Z0-9_-]+$/;
           if (!shortLinkRegex.test(shortLink)) {
-            return json<ActionData>(
+            return data(
               { error: "短網址只能包含英數字、底線和連字號" },
               { status: 400 }
             );
@@ -92,7 +92,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
           // 檢查長度
           if (shortLink.length < 3 || shortLink.length > 50) {
-            return json<ActionData>(
+            return data(
               { error: "短網址長度必須在 3-50 個字元之間" },
               { status: 400 }
             );
@@ -106,7 +106,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .get();
 
           if (existingShortLink) {
-            return json<ActionData>(
+            return data(
               { error: "這個短網址已被使用，請換一個" },
               { status: 400 }
             );
@@ -115,7 +115,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         // 驗證附加按鈕（兩個都填或兩個都不填）
         if ((extraBtnTitle && !extraBtnUrl) || (!extraBtnTitle && extraBtnUrl)) {
-          return json<ActionData>(
+          return data(
             { error: "附加按鈕的標題和網址必須同時填寫或同時留空" },
             { status: 400 }
           );
@@ -126,7 +126,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           try {
             new URL(extraBtnUrl);
           } catch {
-            return json<ActionData>(
+            return data(
               { error: "附加按鈕的網址格式不正確" },
               { status: 400 }
             );
@@ -152,7 +152,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         await bumpUserDataHash(db, user.id);
-        return json({ share: newShare, success: true });
+        return { share: newShare, success: true };
       }
 
       case "delete": {
@@ -160,7 +160,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const workspaceId = formData.get("workspace_id") as string;
 
         if (!id || !workspaceId) {
-          return json<ActionData>({ error: "缺少必要參數" }, { status: 400 });
+          return data({ error: "缺少必要參數" }, { status: 400 });
         }
 
         await db
@@ -173,15 +173,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .run();
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       default:
-        return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+        return data({ error: "無效的操作" }, { status: 400 });
     }
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );

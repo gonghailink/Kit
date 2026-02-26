@@ -1,3 +1,17 @@
+export interface Workspace {
+  id: string;
+  title: string;
+  user_id: string;
+  sort_order: number | null;
+  theme_primary: string | null;
+  theme_background: string | null;
+  theme_card: string | null;
+  theme_secondary: string | null;
+  theme_foreground: string | null;
+  theme_font: string | null;
+  created_at: string;
+}
+
 // 資料庫表格型別
 export type TabType = "folders" | "tags";
 

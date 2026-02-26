@@ -1,4 +1,4 @@
-import { redirect, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { redirect, type LoaderFunctionArgs } from "react-router";
 import { getUser } from "~/lib/auth.server";
 
 // 首頁：已登入則跳轉到 dashboard，未登入則跳轉到 login

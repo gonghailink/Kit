@@ -23,7 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PencilSimpleIcon, TrashIcon, DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
-import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import type { Workspace } from "~/lib/types";
 
 interface OrganizeWorkspacesSheetProps {
     open: boolean;

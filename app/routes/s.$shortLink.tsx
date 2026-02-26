@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { type LoaderFunctionArgs, redirect } from "react-router";
 import { createDb } from "~/lib/db.server";
 import { shares } from "~/drizzle/schema";
 import { eq } from "drizzle-orm";

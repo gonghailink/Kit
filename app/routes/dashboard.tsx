@@ -1,12 +1,12 @@
-import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, useFetcher, Form, useSearchParams } from "@remix-run/react";
+import { data, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, useFetcher, Form, useSearchParams } from "react-router";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { requireAuth, logout, changePassword } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { tabs as tabsSchema, folders as foldersSchema, bookmarks as bookmarksSchema, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, asc, and } from "drizzle-orm";
 import { buildFolderTree } from "~/lib/utils";
-import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
+import type { Tab, Folder, Bookmark, TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag, Workspace } from "~/lib/types";
 import { isTagsTab, isFoldersTab } from "~/lib/types";
 import { BookmarkSimple as BookmarkIcon, Plus, SignOut as LogOut, DotsThreeVertical as MoreVertical, PencilSimple as Edit, Trash, DotsSixVertical as GripVertical, ShareNetwork as Share2, FolderOpen, CaretDown as ChevronDown, User as UserIcon, FolderPlus as FolderPlusIcon, GearSix as MonitorCogIcon, Gear as FolderCogIcon, Tag as TagIcon } from "@phosphor-icons/react";
 import {
@@ -29,16 +29,16 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import CreateTabDialog from "~/components/dialogs/CreateTabDialog";
-import CreateFolderDialog from "~/components/dialogs/CreateFolderDialog";
-import CreateBookmarkDialog from "~/components/dialogs/CreateBookmarkDialog";
-import EditTabDialog from "~/components/dialogs/EditTabDialog";
-import EditFolderDialog from "~/components/dialogs/EditFolderDialog";
-import EditBookmarkDialog from "~/components/dialogs/EditBookmarkDialog";
-import DeleteConfirmDialog from "~/components/dialogs/DeleteConfirmDialog";
-import ShareDialog from "~/components/dialogs/ShareDialog";
-import MoveBookmarkDialog from "~/components/dialogs/MoveBookmarkDialog";
-import ChangePasswordDialog from "~/components/dialogs/ChangePasswordDialog";
+import CreateTabDialog from "~/components/tabs/CreateTabDialog";
+import CreateFolderDialog from "~/components/folders/CreateFolderDialog";
+import CreateBookmarkDialog from "~/components/bookmarks/CreateBookmarkDialog";
+import EditTabDialog from "~/components/tabs/EditTabDialog";
+import EditFolderDialog from "~/components/folders/EditFolderDialog";
+import EditBookmarkDialog from "~/components/bookmarks/EditBookmarkDialog";
+import DeleteConfirmDialog from "~/components/shared/DeleteConfirmDialog";
+import ShareDialog from "~/components/workspaces/ShareDialog";
+import MoveBookmarkDialog from "~/components/bookmarks/MoveBookmarkDialog";
+import ChangePasswordDialog from "~/components/shared/ChangePasswordDialog";
 import { Separator } from "~/components/ui/separator";
 import {
   DropdownMenu,
@@ -46,21 +46,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { SortableBookmark } from "~/components/page-ui/dashboard/SortableBookmark";
-import { BookmarkCard } from "~/components/page-ui/dashboard/BookmarkCard";
-import { SortableTabItem } from "~/components/page-ui/dashboard/SortableTabItem";
-import { SortableFolder } from "~/components/page-ui/dashboard/SortableFolder";
-import { DashboardHeader } from "~/components/page-ui/dashboard/DashboardHeader";
-import { OrganizeTabsSheet } from "~/components/page-ui/dashboard/OrganizeTabsSheet";
-import { OrganizeFoldersSheet } from "~/components/page-ui/dashboard/OrganizeFoldersSheet";
-import { OrganizeSubFoldersSheet } from "~/components/page-ui/dashboard/OrganizeSubFoldersSheet";
-import { OrganizeWorkspacesSheet } from "~/components/page-ui/dashboard/OrganizeWorkspacesSheet";
-import { TagsTabContent } from "~/components/page-ui/dashboard/TagsTabContent";
-import { ManageTagGroupsSheet } from "~/components/page-ui/dashboard/ManageTagGroupsSheet";
-import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
-import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
-import CreateWorkspaceDialog from "~/components/dialogs/CreateWorkspaceDialog";
-import EditWorkspaceDialog from "~/components/dialogs/EditWorkspaceDialog";
+import { SortableBookmark } from "~/components/bookmarks/SortableBookmark";
+import { BookmarkCard } from "~/components/bookmarks/BookmarkCard";
+import { SortableTabItem } from "~/components/tabs/SortableTabItem";
+import { SortableFolder } from "~/components/folders/SortableFolder";
+import { DashboardHeader } from "~/components/layout/DashboardHeader";
+import { OrganizeTabsSheet } from "~/components/tabs/OrganizeTabsSheet";
+import { OrganizeFoldersSheet } from "~/components/folders/OrganizeFoldersSheet";
+import { OrganizeSubFoldersSheet } from "~/components/folders/OrganizeSubFoldersSheet";
+import { OrganizeWorkspacesSheet } from "~/components/workspaces/OrganizeWorkspacesSheet";
+import { TagsTabContent } from "~/components/tabs/TagsTabContent";
+import { ManageTagGroupsSheet } from "~/components/tags/ManageTagGroupsSheet";
+import { WorkspaceSwitcher } from "~/components/workspaces/WorkspaceSwitcher";
+import CreateWorkspaceDialog from "~/components/workspaces/CreateWorkspaceDialog";
+import EditWorkspaceDialog from "~/components/workspaces/EditWorkspaceDialog";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { getHostname } from "~/lib/utils";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
@@ -174,12 +173,12 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     }
   });
 
-  return json({
+  return {
     tabs: tabsData,
     user,
     workspaces: allWorkspaces,
     currentWorkspaceId: currentWorkspaceId || null
-  });
+  };
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
@@ -196,17 +195,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
     const newPassword = formData.get("newPassword") as string;
 
     if (!oldPassword || !newPassword) {
-      return json({ error: "密碼不得為空" }, { status: 400 });
+      return data({ error: "密碼不得為空" }, { status: 400 });
     }
 
     const result = await changePassword(user.id, oldPassword, newPassword, context.cloudflare.env);
     if (result.error) {
-      return json({ error: result.error }, { status: 400 });
+      return data({ error: result.error }, { status: 400 });
     }
-    return json({ success: true });
+    return { success: true };
   }
 
-  return json({ error: "無效的操作" }, { status: 400 });
+  return data({ error: "無效的操作" }, { status: 400 });
 }
 
 
@@ -225,6 +224,127 @@ export const meta: MetaFunction = () => {
     { property: "twitter:description", content: description },
   ];
 };
+
+// Recursive component for rendering nested folders at any depth
+function NestedFolders({
+  folders: nestedFolders,
+  parentId,
+  sensors,
+  activeDragBookmark,
+  handleNestedFolderDragEnd,
+  handleBookmarkDragStart,
+  getBookmarkDragEndHandler,
+  handleBookmarkDragCancel,
+  handleEditBookmark,
+  handleDeleteBookmark,
+  handleMoveBookmark,
+  onEditFolder,
+  onDeleteFolder,
+  onCreateSubfolder,
+  onCreateBookmark,
+  onOrganizeSubfolders,
+}: {
+  folders: FolderWithChildren[];
+  parentId: string;
+  sensors: ReturnType<typeof useSensors>;
+  activeDragBookmark: Bookmark | null;
+  handleNestedFolderDragEnd: (parentId: string) => (event: DragEndEvent) => void;
+  handleBookmarkDragStart: (event: DragStartEvent) => void;
+  getBookmarkDragEndHandler: (folderId: string) => (event: DragEndEvent) => void;
+  handleBookmarkDragCancel: () => void;
+  handleEditBookmark: (bookmark: Bookmark) => void;
+  handleDeleteBookmark: (bookmark: Bookmark) => void;
+  handleMoveBookmark: (bookmark: Bookmark) => void;
+  onEditFolder: (folder: FolderWithChildren) => void;
+  onDeleteFolder: (folder: FolderWithChildren) => void;
+  onCreateSubfolder: (folder: FolderWithChildren) => void;
+  onCreateBookmark: (folder: FolderWithChildren) => void;
+  onOrganizeSubfolders: (folder: FolderWithChildren) => void;
+}) {
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleNestedFolderDragEnd(parentId)}
+    >
+      <SortableContext
+        items={nestedFolders.map((f) => f.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        {nestedFolders.map((childFolder) => (
+          <div key={childFolder.id}>
+            <SortableFolder
+              folder={childFolder}
+              isNested={true}
+              onEdit={() => onEditFolder(childFolder)}
+              onDelete={() => onDeleteFolder(childFolder)}
+              onCreateSubfolder={() => onCreateSubfolder(childFolder)}
+              onCreateBookmark={() => onCreateBookmark(childFolder)}
+              onOrganizeSubfolders={() => onOrganizeSubfolders(childFolder)}
+            >
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleBookmarkDragStart}
+                onDragEnd={getBookmarkDragEndHandler(childFolder.id)}
+                onDragCancel={handleBookmarkDragCancel}
+              >
+                <SortableContext
+                  items={childFolder.bookmarks?.map((b) => b.id) || []}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {childFolder.bookmarks?.map((bookmark) => (
+                      <SortableBookmark
+                        key={bookmark.id}
+                        bookmark={bookmark}
+                        onEdit={handleEditBookmark}
+                        onDelete={handleDeleteBookmark}
+                        onMove={handleMoveBookmark}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+                <DragOverlay>
+                  {activeDragBookmark ? (
+                    <BookmarkCard bookmark={activeDragBookmark} />
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+
+              {/* Recurse into deeper children */}
+              {childFolder.children && childFolder.children.length > 0 && (
+                <>
+                  <hr className="mt-8" />
+                  <div className="mt-4 -mr-4">
+                    <NestedFolders
+                      folders={childFolder.children}
+                      parentId={childFolder.id}
+                      sensors={sensors}
+                      activeDragBookmark={activeDragBookmark}
+                      handleNestedFolderDragEnd={handleNestedFolderDragEnd}
+                      handleBookmarkDragStart={handleBookmarkDragStart}
+                      getBookmarkDragEndHandler={getBookmarkDragEndHandler}
+                      handleBookmarkDragCancel={handleBookmarkDragCancel}
+                      handleEditBookmark={handleEditBookmark}
+                      handleDeleteBookmark={handleDeleteBookmark}
+                      handleMoveBookmark={handleMoveBookmark}
+                      onEditFolder={onEditFolder}
+                      onDeleteFolder={onDeleteFolder}
+                      onCreateSubfolder={onCreateSubfolder}
+                      onCreateBookmark={onCreateBookmark}
+                      onOrganizeSubfolders={onOrganizeSubfolders}
+                    />
+                  </div>
+                </>
+              )}
+            </SortableFolder>
+          </div>
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
 
 export default function Dashboard() {
   const { tabs, user, workspaces, currentWorkspaceId } = useLoaderData<typeof loader>();
@@ -838,81 +958,29 @@ export default function Dashboard() {
                             </DragOverlay>
                           </DndContext>
 
-                          {/* Nested Folders */}
+                          {/* Nested Folders (recursive) */}
                           {folder.children && folder.children.length > 0 && (
                             <>
                               <hr className="mt-8" />
                               <div className="mt-4 -mr-4">
-                                <DndContext
+                                <NestedFolders
+                                  folders={folder.children}
+                                  parentId={folder.id}
                                   sensors={sensors}
-                                  collisionDetection={closestCenter}
-                                  onDragEnd={handleNestedFolderDragEnd(folder.id)}
-                                >
-                                  <SortableContext
-                                    items={folder.children.map((f: FolderWithChildren) => f.id)}
-                                    strategy={verticalListSortingStrategy}
-                                  >
-                                    {folder.children.map((childFolder: FolderWithChildren) => (
-                                      <div key={childFolder.id}>
-                                        <SortableFolder
-                                          folder={childFolder}
-                                          isNested={true}
-                                          onEdit={() => {
-                                            setEditingFolder(childFolder);
-                                            setShowEditFolderDialog(true);
-                                          }}
-                                          onDelete={() => {
-                                            setDeleteResource({ type: "folder", id: childFolder.id, title: childFolder.title });
-                                            setShowDeleteDialog(true);
-                                          }}
-                                          onCreateSubfolder={() => {
-                                            setParentFolderId(childFolder.id);
-                                            setShowCreateFolderDialog(true);
-                                          }}
-                                          onCreateBookmark={() => {
-                                            setSelectedFolderId(childFolder.id);
-                                            setSelectedFolderName(childFolder.title);
-                                            setShowCreateBookmarkDialog(true);
-                                          }}
-                                          onOrganizeSubfolders={() => {
-                                            setOrganizingSubFoldersParent(childFolder);
-                                            setShowOrganizeSubFoldersSheet(true);
-                                          }}
-                                        >
-                                          <DndContext
-                                            sensors={sensors}
-                                            collisionDetection={closestCenter}
-                                            onDragStart={handleBookmarkDragStart}
-                                            onDragEnd={getBookmarkDragEndHandler(childFolder.id)}
-                                            onDragCancel={handleBookmarkDragCancel}
-                                          >
-                                            <SortableContext
-                                              items={childFolder.bookmarks?.map((b: Bookmark) => b.id) || []}
-                                              strategy={verticalListSortingStrategy}
-                                            >
-                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                                {childFolder.bookmarks?.map((bookmark: Bookmark) => (
-                                                  <SortableBookmark
-                                                    key={bookmark.id}
-                                                    bookmark={bookmark}
-                                                    onEdit={handleEditBookmark}
-                                                    onDelete={handleDeleteBookmark}
-                                                    onMove={handleMoveBookmark}
-                                                  />
-                                                ))}
-                                              </div>
-                                            </SortableContext>
-                                            <DragOverlay>
-                                              {activeDragBookmark ? (
-                                                <BookmarkCard bookmark={activeDragBookmark} />
-                                              ) : null}
-                                            </DragOverlay>
-                                          </DndContext>
-                                        </SortableFolder>
-                                      </div>
-                                    ))}
-                                  </SortableContext>
-                                </DndContext>
+                                  activeDragBookmark={activeDragBookmark}
+                                  handleNestedFolderDragEnd={handleNestedFolderDragEnd}
+                                  handleBookmarkDragStart={handleBookmarkDragStart}
+                                  getBookmarkDragEndHandler={getBookmarkDragEndHandler}
+                                  handleBookmarkDragCancel={handleBookmarkDragCancel}
+                                  handleEditBookmark={handleEditBookmark}
+                                  handleDeleteBookmark={handleDeleteBookmark}
+                                  handleMoveBookmark={handleMoveBookmark}
+                                  onEditFolder={(f) => { setEditingFolder(f); setShowEditFolderDialog(true); }}
+                                  onDeleteFolder={(f) => { setDeleteResource({ type: "folder", id: f.id, title: f.title }); setShowDeleteDialog(true); }}
+                                  onCreateSubfolder={(f) => { setParentFolderId(f.id); setShowCreateFolderDialog(true); }}
+                                  onCreateBookmark={(f) => { setSelectedFolderId(f.id); setSelectedFolderName(f.title); setShowCreateBookmarkDialog(true); }}
+                                  onOrganizeSubfolders={(f) => { setOrganizingSubFoldersParent(f); setShowOrganizeSubFoldersSheet(true); }}
+                                />
                               </div>
                             </>
                           )}

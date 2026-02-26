@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { data, type LoaderFunctionArgs } from "react-router";
 import { getUser } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { shares, users } from "~/drizzle/schema";
@@ -19,7 +19,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
             .get();
 
         if (!share) {
-            return json({ hash: null }, { status: 404 });
+            return data({ hash: null }, { status: 404 });
         }
 
         const user = await db
@@ -28,14 +28,14 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
             .where(eq(users.id, share.user_id))
             .get();
 
-        return json({ hash: user?.data_hash ?? null });
+        return { hash: user?.data_hash ?? null };
     }
 
     // 已登入使用者
     const { user } = await getUser(request, context.cloudflare.env);
     if (!user) {
-        return json({ hash: null }, { status: 401 });
+        return data({ hash: null }, { status: 401 });
     }
 
-    return json({ hash: user.data_hash });
+    return { hash: user.data_hash };
 }

@@ -1,4 +1,4 @@
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { CircleNotch, ArrowCounterClockwise } from "@phosphor-icons/react";
 import {
@@ -12,7 +12,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
+import type { Workspace } from "~/lib/types";
 
 interface EditWorkspaceDialogProps {
   open: boolean;

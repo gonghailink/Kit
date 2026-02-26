@@ -5,9 +5,9 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
-} from "@remix-run/react";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import "./globals.css";
+} from "react-router";
+import type { LinksFunction, LoaderFunctionArgs } from "react-router";
+import globalsCss from "./globals.css?url";
 
 // 定義環境變數型別
 declare global {
@@ -20,7 +20,8 @@ declare global {
 }
 
 export const links: LinksFunction = () => [
-  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "stylesheet", href: globalsCss },
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",

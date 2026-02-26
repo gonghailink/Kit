@@ -1,4 +1,4 @@
-import { createPagesFunctionHandler } from "@remix-run/cloudflare-pages";
+import { createPagesFunctionHandler } from "@react-router/cloudflare";
 
 // The server build is generated at build time
 import * as build from "../build/server/index.js";

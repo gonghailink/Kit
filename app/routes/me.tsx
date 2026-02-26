@@ -1,5 +1,5 @@
-import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "@remix-run/react";
+import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "react-router";
 import { createDb } from "~/lib/db.server";
 import { tabs, folders, bookmarks, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -9,12 +9,12 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { generateThemeStyle } from "~/lib/theme";
 import { Input } from "~/components/ui/input";
-import { FolderCard } from "~/components/page-ui/view/FolderCard";
-import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
+import { FolderCard } from "~/components/folders/FolderCard";
+import { ViewHeader } from "~/components/layout/ViewHeader";
 import { getUser } from "~/lib/auth.server";
-import { WorkspaceSwitcher } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
-import type { Workspace } from "~/components/page-ui/dashboard/WorkspaceSwitcher";
-import { TagFilterBar } from "~/components/page-ui/shared/TagFilterBar";
+import { WorkspaceSwitcher } from "~/components/workspaces/WorkspaceSwitcher";
+import type { Workspace } from "~/lib/types";
+import { TagFilterBar } from "~/components/tags/TagFilterBar";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
     const title = "我的書籤 · Kit";
@@ -29,7 +29,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     const { user } = await getUser(request, context.cloudflare.env);
 
     if (!user) {
-        return json({ user: null, tabs: [], workspaces: [], currentWorkspaceId: null, share: null, dataHash: null });
+        return { user: null, tabs: [], workspaces: [], currentWorkspaceId: null, share: null, dataHash: null };
     }
 
     const db = createDb(context.cloudflare.env);
@@ -134,7 +134,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
             }
         });
 
-        return json({
+        return {
             user,
             tabs: tabsData,
             workspaces: allWorkspaces,
@@ -145,7 +145,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
                 extra_btn_url: "/dashboard",
             },
             dataHash: user.data_hash,
-        });
+        };
     } catch (error) {
         console.error("Me page error:", error);
         throw new Response("載入內容失敗", { status: 500 });

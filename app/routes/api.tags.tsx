@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
+import { data, type ActionFunctionArgs } from "react-router";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { tags, tagGroups } from "~/drizzle/schema";
@@ -23,11 +23,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!tag_group_id) {
-          return json<ActionData>({ error: "TagGroup ID 是必要的" }, { status: 400 });
+          return data({ error: "TagGroup ID 是必要的" }, { status: 400 });
         }
 
         if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "標籤名稱不能為空" }, { status: 400 });
+          return data({ error: "標籤名稱不能為空" }, { status: 400 });
         }
 
         // 驗證 tag_group 是否屬於當前使用者
@@ -38,7 +38,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!tagGroup) {
-          return json<ActionData>({ error: "找不到該標籤群組" }, { status: 404 });
+          return data({ error: "找不到該標籤群組" }, { status: 404 });
         }
 
         // 取得當前最大的 sort_order
@@ -66,7 +66,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         await bumpUserDataHash(db, user.id);
-        return json({ tag: newTag, success: true });
+        return { tag: newTag, success: true };
       }
 
       case "update": {
@@ -74,19 +74,19 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string | undefined;
 
         if (!id) {
-          return json<ActionData>({ error: "Tag ID 是必要的" }, { status: 400 });
+          return data({ error: "Tag ID 是必要的" }, { status: 400 });
         }
 
         const updates: any = {};
         if (title !== undefined) {
           if (title.trim() === "") {
-            return json<ActionData>({ error: "標籤名稱不能為空" }, { status: 400 });
+            return data({ error: "標籤名稱不能為空" }, { status: 400 });
           }
           updates.title = title.trim();
         }
 
         if (Object.keys(updates).length === 0) {
-          return json<ActionData>({ error: "沒有要更新的欄位" }, { status: 400 });
+          return data({ error: "沒有要更新的欄位" }, { status: 400 });
         }
 
         const updated = await db
@@ -97,18 +97,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!updated) {
-          return json<ActionData>({ error: "更新失敗" }, { status: 400 });
+          return data({ error: "更新失敗" }, { status: 400 });
         }
 
         await bumpUserDataHash(db, user.id);
-        return json({ tag: updated, success: true });
+        return { tag: updated, success: true };
       }
 
       case "delete": {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json<ActionData>({ error: "Tag ID 是必要的" }, { status: 400 });
+          return data({ error: "Tag ID 是必要的" }, { status: 400 });
         }
 
         await db
@@ -117,7 +117,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .run();
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       case "reorder": {
@@ -125,14 +125,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json<ActionData>({ error: "缺少必要參數" }, { status: 400 });
+          return data({ error: "缺少必要參數" }, { status: 400 });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
+          return data({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
         }
 
         const statements = ids.map((id, index) =>
@@ -144,15 +144,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
         await db.batch(statements as any);
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       default:
-        return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+        return data({ error: "無效的操作" }, { status: 400 });
     }
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );

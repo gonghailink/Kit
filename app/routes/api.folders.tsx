@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "@remix-run/cloudflare";
+import { data, type ActionFunctionArgs } from "react-router";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { folders, tabs } from "~/drizzle/schema";
@@ -24,11 +24,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!tab_id) {
-          return json<ActionData>({ error: "Tab ID 是必要的" }, { status: 400 });
+          return data({ error: "Tab ID 是必要的" }, { status: 400 });
         }
 
         if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "資料夾名稱不能為空" }, { status: 400 });
+          return data({ error: "資料夾名稱不能為空" }, { status: 400 });
         }
 
         // 驗證 tab 是否屬於當前使用者
@@ -39,7 +39,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!tab) {
-          return json<ActionData>({ error: "找不到該 Tab" }, { status: 404 });
+          return data({ error: "找不到該 Tab" }, { status: 404 });
         }
 
         // 如果有 parent_id，驗證 parent folder 是否存在
@@ -51,7 +51,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             .get();
 
           if (!parentFolder) {
-            return json<ActionData>({ error: "找不到上層資料夾" }, { status: 404 });
+            return data({ error: "找不到上層資料夾" }, { status: 404 });
           }
         }
 
@@ -106,7 +106,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         await bumpUserDataHash(db, user.id);
-        return json({ folder: newFolder, success: true });
+        return { folder: newFolder, success: true };
       }
 
       case "update": {
@@ -115,13 +115,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const is_collapsed = formData.get("is_collapsed") as string | undefined;
 
         if (!id) {
-          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400 });
+          return data({ error: "Folder ID 是必要的" }, { status: 400 });
         }
 
         const updates: any = {};
         if (title !== undefined) {
           if (title.trim() === "") {
-            return json<ActionData>({ error: "資料夾名稱不能為空" }, { status: 400 });
+            return data({ error: "資料夾名稱不能為空" }, { status: 400 });
           }
           updates.title = title.trim();
         }
@@ -130,7 +130,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         if (Object.keys(updates).length === 0) {
-          return json<ActionData>({ error: "沒有要更新的欄位" }, { status: 400 });
+          return data({ error: "沒有要更新的欄位" }, { status: 400 });
         }
 
         const updatedFolder = await db
@@ -141,18 +141,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!updatedFolder) {
-          return json<ActionData>({ error: "更新失敗" }, { status: 400 });
+          return data({ error: "更新失敗" }, { status: 400 });
         }
 
         await bumpUserDataHash(db, user.id);
-        return json({ folder: updatedFolder, success: true });
+        return { folder: updatedFolder, success: true };
       }
 
       case "delete": {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json<ActionData>({ error: "Folder ID 是必要的" }, { status: 400 });
+          return data({ error: "Folder ID 是必要的" }, { status: 400 });
         }
 
         // 刪除資料夾（會級聯刪除子資料夾和書籤 - Database CASCADE should handle this if defined in schema?
@@ -166,7 +166,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .run();
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       case "reorder": {
@@ -174,14 +174,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json<ActionData>({ error: "缺少必要參數" }, { status: 400 });
+          return data({ error: "缺少必要參數" }, { status: 400 });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
+          return data({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
         }
 
         // 批次更新
@@ -194,15 +194,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
         await db.batch(statements as any);
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       default:
-        return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+        return data({ error: "無效的操作" }, { status: 400 });
     }
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );

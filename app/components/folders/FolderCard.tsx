@@ -1,5 +1,5 @@
 import type { FolderWithChildren } from "~/lib/types";
-import { BookmarkItem } from "./BookmarkItem";
+import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
 import { SubFolderTree } from "./SubFolderTree";
 
 interface FolderCardProps {

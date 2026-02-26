@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { data, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { requireAuth } from "~/lib/auth.server";
 import { createDb } from "~/lib/db.server";
 import { workspaces } from "~/drizzle/schema";
@@ -22,10 +22,10 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
       .orderBy(workspaces.sort_order)
       .all();
 
-    return json({ workspaces: userWorkspaces });
+    return { workspaces: userWorkspaces };
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );
@@ -46,7 +46,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "工作區名稱不能為空" }, { status: 400 });
+          return data({ error: "工作區名稱不能為空" }, { status: 400 });
         }
 
         // 取得當前最大的 sort_order
@@ -73,7 +73,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         await bumpUserDataHash(db, user.id);
-        return json({ workspace: newWorkspace, success: true });
+        return { workspace: newWorkspace, success: true };
       }
 
       case "update": {
@@ -81,11 +81,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const title = formData.get("title") as string;
 
         if (!id) {
-          return json<ActionData>({ error: "工作區 ID 是必要的" }, { status: 400 });
+          return data({ error: "工作區 ID 是必要的" }, { status: 400 });
         }
 
         if (!title || title.trim() === "") {
-          return json<ActionData>({ error: "工作區名稱不能為空" }, { status: 400 });
+          return data({ error: "工作區名稱不能為空" }, { status: 400 });
         }
 
         // 主題欄位（空字串視為清除）
@@ -100,7 +100,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
         // 驗證 theme_font 值
         if (themeUpdate.theme_font && !["serif", "sans", "mono"].includes(themeUpdate.theme_font)) {
-          return json<ActionData>({ error: "無效的字體設定" }, { status: 400 });
+          return data({ error: "無效的字體設定" }, { status: 400 });
         }
 
         const updatedWorkspace = await db
@@ -111,18 +111,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .get();
 
         if (!updatedWorkspace) {
-          return json<ActionData>({ error: "更新失敗" }, { status: 400 });
+          return data({ error: "更新失敗" }, { status: 400 });
         }
 
         await bumpUserDataHash(db, user.id);
-        return json({ workspace: updatedWorkspace, success: true });
+        return { workspace: updatedWorkspace, success: true };
       }
 
       case "delete": {
         const id = formData.get("id") as string;
 
         if (!id) {
-          return json<ActionData>({ error: "工作區 ID 是必要的" }, { status: 400 });
+          return data({ error: "工作區 ID 是必要的" }, { status: 400 });
         }
 
         // 刪除工作區（資料庫 CASCADE 會自動刪除關聯的 tabs、folders、bookmarks）
@@ -132,7 +132,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
           .run();
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       case "reorder": {
@@ -140,14 +140,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
         const sortOrdersJson = formData.get("sortOrders") as string;
 
         if (!idsJson || !sortOrdersJson) {
-          return json<ActionData>({ error: "缺少必要參數" }, { status: 400 });
+          return data({ error: "缺少必要參數" }, { status: 400 });
         }
 
         const ids = JSON.parse(idsJson) as string[];
         const sortOrders = JSON.parse(sortOrdersJson) as number[];
 
         if (ids.length !== sortOrders.length) {
-          return json<ActionData>({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
+          return data({ error: "IDs 和 sortOrders 長度不一致" }, { status: 400 });
         }
 
         // 批次更新
@@ -160,15 +160,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
         await db.batch(statements as any);
 
         await bumpUserDataHash(db, user.id);
-        return json<ActionData>({ success: true });
+        return { success: true };
       }
 
       default:
-        return json<ActionData>({ error: "無效的操作" }, { status: 400 });
+        return data({ error: "無效的操作" }, { status: 400 });
     }
   } catch (error) {
     console.error("API Error:", error);
-    return json(
+    return data(
       { error: error instanceof Error ? error.message : "未知錯誤" },
       { status: 500 }
     );

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
-import { BookmarkItem } from "./BookmarkItem";
+import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
 
 interface SubFolderTreeProps {
     folders: FolderWithChildren[];

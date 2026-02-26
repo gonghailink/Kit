@@ -1,5 +1,5 @@
-import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "@remix-run/react";
+import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
+import { useLoaderData, Link, useSearchParams, type ClientLoaderFunctionArgs } from "react-router";
 import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks, users, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -10,10 +10,10 @@ import { buildFolderTree } from "~/lib/utils";
 import { generateThemeStyle } from "~/lib/theme";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { FolderCard } from "~/components/page-ui/view/FolderCard";
-import { ViewHeader } from "~/components/page-ui/view/ViewHeader";
-import { BookmarkItem } from "~/components/page-ui/view/BookmarkItem";
-import { TagFilterBar } from "~/components/page-ui/shared/TagFilterBar";
+import { FolderCard } from "~/components/folders/FolderCard";
+import { ViewHeader } from "~/components/layout/ViewHeader";
+import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
+import { TagFilterBar } from "~/components/tags/TagFilterBar";
 
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -151,7 +151,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       .where(eq(users.id, share.user_id))
       .get();
 
-    return json({
+    return {
       tabs: tabsData,
       shareToken: token,
       share: {
@@ -161,7 +161,7 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       },
       workspace: workspace ?? null,
       dataHash: ownerUser?.data_hash ?? null,
-    });
+    };
   } catch (error) {
     console.error("Share page error:", error);
     if (error instanceof Response) {

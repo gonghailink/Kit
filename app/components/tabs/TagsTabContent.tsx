@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import {
   DndContext,
   DragOverlay,
@@ -17,10 +17,10 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { SortableBookmark } from "./SortableBookmark";
-import { BookmarkCard } from "./BookmarkCard";
+import { SortableBookmark } from "~/components/bookmarks/SortableBookmark";
+import { BookmarkCard } from "~/components/bookmarks/BookmarkCard";
 import type { TabWithTags } from "~/lib/types";
-import { TagFilterBar } from "~/components/page-ui/shared/TagFilterBar";
+import { TagFilterBar } from "~/components/tags/TagFilterBar";
 
 interface TagsTabContentProps {
   tab: TabWithTags;

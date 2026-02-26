@@ -1,12 +1,12 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs } from "react-router";
 
 export async function loader({ context }: LoaderFunctionArgs) {
   const env = context.cloudflare.env;
 
-  return json({
+  return {
     hasJwtKw: !!env.JWT_KW,
     jwtKwLength: env.JWT_KW?.length || 0,
-  });
+  };
 }
 
 export default function TestEnv() {

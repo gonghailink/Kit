@@ -1,4 +1,4 @@
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { CircleNotch } from "@phosphor-icons/react";
 import {
@@ -12,31 +12,33 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import type { Folder } from "~/lib/types";
 
-interface EditFolderDialogProps {
+interface CreateFolderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  folder: Folder;
+  tabId: string;
+  parentId?: string | null;
 }
 
 type FetcherData =
   | { error: string; success?: never }
   | { success: true; error?: never };
 
-export default function EditFolderDialog({ open, onOpenChange, folder }: EditFolderDialogProps) {
+export default function CreateFolderDialog({
+  open,
+  onOpenChange,
+  tabId,
+  parentId = null,
+}: CreateFolderDialogProps) {
   const fetcher = useFetcher<FetcherData>();
-  const [title, setTitle] = useState(folder.title);
+  const [title, setTitle] = useState("");
   const isSubmitting = fetcher.state === "submitting";
   const submitted = useRef(false);
 
   useEffect(() => {
-    setTitle(folder.title);
-  }, [folder.title]);
-
-  useEffect(() => {
     if (submitted.current && fetcher.data && "success" in fetcher.data && fetcher.data.success && fetcher.state === "idle") {
       submitted.current = false;
+      setTitle("");
       onOpenChange(false);
     }
   }, [fetcher.data, fetcher.state, onOpenChange]);
@@ -46,8 +48,11 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
     if (!title.trim()) return;
 
     const formData = new FormData();
-    formData.append("intent", "update");
-    formData.append("id", folder.id);
+    formData.append("intent", "create");
+    formData.append("tab_id", tabId);
+    if (parentId) {
+      formData.append("parent_id", parentId);
+    }
     formData.append("title", title.trim());
 
     submitted.current = true;
@@ -61,18 +66,20 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>編輯資料夾</DialogTitle>
+          <DialogTitle>
+            {parentId ? "建立子資料夾" : "建立新資料夾"}
+          </DialogTitle>
           <DialogDescription>
-            修改資料夾的名稱
+            在此 Tab 下建立一個新的資料夾來分類書籤
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2 p-4 mb-4 bg-card/80 rounded-lg">
-              <Label htmlFor="edit-folder-title">資料夾名稱</Label>
+          <div className="space-y-4 pt-4 pb-6 mt-2 border-t">
+            <div className="space-y-2">
+              <Label htmlFor="folder-title">資料夾名稱</Label>
               <Input
-                id="edit-folder-title"
+                id="folder-title"
                 placeholder="例如：前端開發、設計資源"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -101,10 +108,10 @@ export default function EditFolderDialog({ open, onOpenChange, folder }: EditFol
               {isSubmitting ? (
                 <>
                   <CircleNotch className="w-4 h-4 animate-spin" />
-                  儲存中...
+                  建立中...
                 </>
               ) : (
-                "儲存"
+                "建立"
               )}
             </Button>
           </DialogFooter>
