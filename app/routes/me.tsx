@@ -4,7 +4,7 @@ import { createDb } from "~/lib/db.server";
 import { tabs, folders, bookmarks, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
-import { ArrowSquareOut as ExternalLink, BookmarkSimple as BookmarkIcon, ArrowUp, SignIn as LogIn } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon as ExternalLink, BookmarkSimpleIcon as BookmarkIcon, ArrowUp, SignIn as LogIn } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { buildFolderTree } from "~/lib/utils";
 import { generateThemeStyle } from "~/lib/theme";

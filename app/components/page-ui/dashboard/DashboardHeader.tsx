@@ -22,7 +22,7 @@ export function DashboardHeader({
     workspaceSwitcher,
 }: DashboardHeaderProps) {
     return (
-        <header className="bg-card/80 backdrop-blur-sm border-border px-6 pt-4 pb-2">
+        <header className="backdrop-blur-sm border-border px-6 pt-4 pb-2">
             {/* First row: Logo, workspace switcher (desktop), and action buttons */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">

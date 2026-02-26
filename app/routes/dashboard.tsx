@@ -396,20 +396,20 @@ export default function Dashboard() {
 
   const activeDragBookmark = activeDragBookmarkId
     ? (() => {
-        const tab = tabsState.find((t: TabData) => t.id === activeTabId);
-        if (tab && isFoldersTab(tab)) {
-          const find = (folders: FolderWithChildren[]): Bookmark | undefined => {
-            for (const f of folders) {
-              const b = f.bookmarks?.find((b: Bookmark) => b.id === activeDragBookmarkId);
-              if (b) return b;
-              if (f.children) { const c = find(f.children); if (c) return c; }
-            }
-            return undefined;
-          };
-          return find(tab.folders);
-        }
-        return undefined;
-      })()
+      const tab = tabsState.find((t: TabData) => t.id === activeTabId);
+      if (tab && isFoldersTab(tab)) {
+        const find = (folders: FolderWithChildren[]): Bookmark | undefined => {
+          for (const f of folders) {
+            const b = f.bookmarks?.find((b: Bookmark) => b.id === activeDragBookmarkId);
+            if (b) return b;
+            if (f.children) { const c = find(f.children); if (c) return c; }
+          }
+          return undefined;
+        };
+        return find(tab.folders);
+      }
+      return undefined;
+    })()
     : undefined;
 
   // 穩定的書籤操作回調（避免 inline arrow 導致 SortableBookmark memo 失效）
@@ -704,7 +704,7 @@ export default function Dashboard() {
       />
 
       {/* Tabs Bar */}
-      <div className="flex flex-col bg-card/70 backdrop-blur-sm border-b border-border">
+      <div className="flex flex-col backdrop-blur-sm border-b border-border">
         <div className="flex ps-6">
           {/* Tab 管理按鈕 */}
           <div className="flex items-center gap-1">

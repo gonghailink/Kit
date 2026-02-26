@@ -10,6 +10,9 @@ import {
   DotsSixVerticalIcon,
   CaretDownIcon,
   CaretRightIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+  PlusIcon,
 } from "@phosphor-icons/react";
 import {
   DndContext,
@@ -51,14 +54,7 @@ interface ManageTagGroupsSheetProps {
   tagGroups: TagGroupWithTags[];
 }
 
-const TAG_GROUP_COLORS = [
-  "#F5212D", "#FA541C", "#FA8B16", "#FAAD14",
-  "#FADB15", "#A0D912", "#52C41A", "#16C2C2",
-  "#24BBE5", "#1777FF", "#3054EB", "#722ED1",
-  "#EB2E95", "#595959",
-];
-
-function ColorSelect({
+function ColorInput({
   value,
   onValueChange,
 }: {
@@ -66,27 +62,18 @@ function ColorSelect({
   onValueChange: (v: string) => void;
 }) {
   return (
-    <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="w-9 px-0 justify-center flex-shrink-0 [&>svg]:hidden rounded-full">
-        <div
-          className="w-6 h-6 rounded-full"
-          style={{ backgroundColor: value }}
-        />
-      </SelectTrigger>
-      <SelectContent>
-        {TAG_GROUP_COLORS.map((c) => (
-          <SelectItem key={c} value={c} className="pl-2 pr-8">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-full flex-shrink-0"
-                style={{ backgroundColor: c }}
-              />
-              <span className="text-xs text-muted-foreground">{c}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <label className="relative w-7 h-7 flex-shrink-0 cursor-pointer">
+      <span
+        className="block w-full h-full rounded-full border border-border"
+        style={{ backgroundColor: value }}
+      />
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+      />
+    </label>
   );
 }
 
@@ -109,7 +96,7 @@ export function ManageTagGroupsSheet({
 
   // 新增 TagGroup
   const [newGroupTitle, setNewGroupTitle] = useState("");
-  const [newGroupColor, setNewGroupColor] = useState<string>(TAG_GROUP_COLORS[4]);
+  const [newGroupColor, setNewGroupColor] = useState<string>("#FADB15");
   // 新增 Tag
   const [addingTagGroupId, setAddingTagGroupId] = useState<string | null>(null);
   const [newTagTitle, setNewTagTitle] = useState("");
@@ -336,14 +323,14 @@ export function ManageTagGroupsSheet({
           </DndContext>
 
           {/* Add TagGroup */}
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 border rounded-xl">
             <div className="flex items-center gap-2">
-              <ColorSelect value={newGroupColor} onValueChange={setNewGroupColor} />
+              <ColorInput value={newGroupColor} onValueChange={setNewGroupColor} />
               <Input
                 value={newGroupTitle}
                 onChange={(e) => setNewGroupTitle(e.target.value)}
                 placeholder="新增標籤群組名稱..."
-                className="h-9 text-sm rounded-full"
+                className="h-9 border-0 shadow-none"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddGroup();
                 }}
@@ -468,7 +455,7 @@ function SortableTagGroup({
 
         {editingGroupId === tagGroup.id ? (
           <div className="flex-1 flex items-center gap-2">
-            <ColorSelect value={editingGroupColor} onValueChange={onEditingGroupColorChange} />
+            <ColorInput value={editingGroupColor} onValueChange={onEditingGroupColorChange} />
             <Input
               value={editingGroupTitle}
               onChange={(e) => onEditingGroupTitleChange(e.target.value)}
@@ -481,11 +468,7 @@ function SortableTagGroup({
             />
             <Select value={editingGroupFilterMode} onValueChange={(v) => onEditingGroupFilterModeChange(v as FilterMode)}>
               <SelectTrigger
-                className="h-8 w-16 px-2 rounded-full text-[10px] font-bold uppercase flex-shrink-0 border-0 shadow-none focus:ring-0"
-                style={{
-                  backgroundColor: editingGroupColor ? `${editingGroupColor}20` : "hsl(var(--secondary))",
-                  color: editingGroupColor || "hsl(var(--muted-foreground))",
-                }}
+                className="h-8 w-20 px-2 rounded-full text-[10px] font-bold uppercase flex-shrink-0"
               >
                 <span>{editingGroupFilterMode === "and" ? "AND" : editingGroupFilterMode === "single" ? "單選" : "OR"}</span>
               </SelectTrigger>
@@ -516,13 +499,10 @@ function SortableTagGroup({
           </div>
         ) : (
           <>
-            {tagGroup.color && (
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: tagGroup.color }}
-              />
-            )}
-            <span className="flex-1 font-medium text-sm">{tagGroup.title}</span>
+            <span
+              className="flex-1 font-medium text-sm"
+              style={tagGroup.color ? { color: tagGroup.color } : undefined}
+            >{tagGroup.title}</span>
             <button
               onClick={onToggleFilterMode}
               className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all hover:opacity-80"
@@ -539,85 +519,87 @@ function SortableTagGroup({
                 onSetEditingGroup(
                   tagGroup.id,
                   tagGroup.title,
-                  tagGroup.color || TAG_GROUP_COLORS[4],
+                  tagGroup.color || "#FADB15",
                   tagGroup.filter_mode || "or"
                 );
               }}
               className="p-1 text-muted-foreground hover:text-foreground"
             >
-              <PencilSimple className="w-3.5 h-3.5" />
+              <PencilSimpleIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDeleteGroup(tagGroup.id)}
               className="p-1 text-muted-foreground hover:text-destructive"
             >
-              <Trash className="w-3.5 h-3.5" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </>
         )}
       </div>
 
       {/* Tags List */}
-      {isExpanded && (
-        <div className="px-3 pb-3 space-y-2">
-          <DndContext
-            sensors={tagSensors}
-            collisionDetection={closestCenter}
-            onDragEnd={onTagDragEnd}
-          >
-            <SortableContext
-              items={tagGroup.tags.map((t) => t.id)}
-              strategy={verticalListSortingStrategy}
+      {
+        isExpanded && (
+          <div className="p-3 border-t space-y-2">
+            <DndContext
+              sensors={tagSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onTagDragEnd}
             >
-              <div className="flex flex-col gap-1.5">
-                {tagGroup.tags.map((tag) => (
-                  <SortableTag
-                    key={tag.id}
-                    tag={tag}
-                    groupColor={tagGroup.color}
-                    editingTagId={editingTagId}
-                    editingTagTitle={editingTagTitle}
-                    onSetEditingTag={onSetEditingTag}
-                    onCancelEditTag={onCancelEditTag}
-                    onUpdateTag={onUpdateTag}
-                    onDeleteTag={onDeleteTag}
-                    onEditingTagTitleChange={onEditingTagTitleChange}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={tagGroup.tags.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-1.5">
+                  {tagGroup.tags.map((tag) => (
+                    <SortableTag
+                      key={tag.id}
+                      tag={tag}
+                      groupColor={tagGroup.color}
+                      editingTagId={editingTagId}
+                      editingTagTitle={editingTagTitle}
+                      onSetEditingTag={onSetEditingTag}
+                      onCancelEditTag={onCancelEditTag}
+                      onUpdateTag={onUpdateTag}
+                      onDeleteTag={onDeleteTag}
+                      onEditingTagTitleChange={onEditingTagTitleChange}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
 
-          {/* Add Tag */}
-          {addingTagGroupId === tagGroup.id ? (
-            <div className="flex items-center gap-2 mt-2">
-              <Input
-                value={newTagTitle}
-                onChange={(e) => onNewTagTitleChange(e.target.value)}
-                placeholder="標籤名稱"
-                className="h-8 text-sm flex-1"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onAddTag(tagGroup.id);
-                  if (e.key === "Escape") onCancelAddTag();
-                }}
-              />
-              <Button size="sm" onClick={() => onAddTag(tagGroup.id)}>
-                新增
-              </Button>
-            </div>
-          ) : (
-            <button
-              onClick={() => onSetAddingTag(tagGroup.id)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-4"
-            >
-              <Plus className="w-3 h-3" />
-              新增標籤
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+            {/* Add Tag */}
+            {addingTagGroupId === tagGroup.id ? (
+              <div className="flex items-center gap-2 mt-2">
+                <Input
+                  value={newTagTitle}
+                  onChange={(e) => onNewTagTitleChange(e.target.value)}
+                  placeholder="標籤名稱"
+                  className="h-8 text-sm flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onAddTag(tagGroup.id);
+                    if (e.key === "Escape") onCancelAddTag();
+                  }}
+                />
+                <Button size="sm" onClick={() => onAddTag(tagGroup.id)}>
+                  新增
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => onSetAddingTag(tagGroup.id)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1 pt-2"
+              >
+                <PlusIcon className="w-3 h-3" />
+                新增標籤
+              </button>
+            )}
+          </div>
+        )
+      }
+    </div >
   );
 }
 

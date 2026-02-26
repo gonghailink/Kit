@@ -68,7 +68,7 @@ export function WorkspaceSwitcher({
         {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
-            className={`cursor-pointer rounded-2xl ps-3 ${workspace.id === currentWorkspaceId
+            className={`cursor-pointer ps-3 ${workspace.id === currentWorkspaceId
               ? "font-bold"
               : "hover:bg-primary/10"
               }`}

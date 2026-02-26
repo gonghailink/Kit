@@ -127,7 +127,6 @@ export default function ShareDialog({
       <DialogContent className="sm:max-w-[600px] max-w-[95vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShareNetworkIcon className="w-5 h-5" />
             分享我的書籤
           </DialogTitle>
           <DialogDescription>
@@ -135,7 +134,7 @@ export default function ShareDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 pt-4 border-t">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
               <CircleNotchIcon className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -153,7 +152,7 @@ export default function ShareDialog({
                     key={share.id}
                   >
                     <div className="min-w-0 space-y-4">
-                      <div className="px-4 pt-2 pb-1.5 rounded-full min-w-0 bg-muted/10 text-foreground">
+                      <div className="px-4 pt-2 pb-1.5 rounded-full min-w-0 border text-foreground">
                         <p className="text-sm font-mono break-all">
                           {shareUrl}
                         </p>
