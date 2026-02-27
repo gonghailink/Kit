@@ -1,6 +1,6 @@
 # Kit (Bookmarks Clip)
 
-基於 **Remix + Cloudflare Pages + D1** 的現代化書籤管理系統。
+基於 **React Router v7 + Cloudflare Pages + D1** 的現代化書籤管理系統。
 
 ## 功能特色
 
@@ -17,7 +17,7 @@
 
 ### 前端
 
-- **框架**：Remix v2 (React 18)
+- **框架**：React Router v7
 - **UI 元件庫**：shadcn/ui (Radix UI)
 - **樣式**：Tailwind CSS
 - **圖示**：Phosphor Icons
@@ -147,7 +147,7 @@ npm run deploy
 
 ## 資料庫架構
 
-使用 Cloudflare D1 (SQLite) + Drizzle ORM，共 8 張表：
+使用 Cloudflare D1 (SQLite) + Drizzle ORM，共 9 張表：
 
 | 資料表 | 說明 |
 |--------|------|
