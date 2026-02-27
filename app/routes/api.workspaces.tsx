@@ -89,7 +89,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         // 主題欄位（空字串視為清除）
-        const themeFields = ["theme_primary", "theme_background", "theme_card", "theme_secondary", "theme_foreground", "theme_font"] as const;
+        const themeFields = ["theme_primary", "theme_background", "theme_card", "theme_secondary", "theme_foreground", "theme_font", "theme_dark_primary", "theme_dark_background", "theme_dark_card", "theme_dark_secondary", "theme_dark_foreground"] as const;
         const themeUpdate: Record<string, string | null> = {};
         for (const field of themeFields) {
           const value = formData.get(field) as string | null;

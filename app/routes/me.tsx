@@ -7,7 +7,7 @@ import type { TabWithFolders, TabData, TabWithTags, BookmarkWithTags, TagGroupWi
 import { BookmarkSimple as BookmarkIcon, SignIn as LogIn } from "@phosphor-icons/react";
 import { useState, useEffect } from "react";
 import { buildFolderTree } from "~/lib/utils";
-import { generateThemeStyle } from "~/lib/theme";
+import type { ThemeWorkspace } from "~/lib/theme";
 import { getUser } from "~/lib/auth.server";
 import { WorkspaceSwitcher } from "~/components/workspaces/WorkspaceSwitcher";
 import { BookmarkView } from "~/components/layout/BookmarkView";
@@ -217,8 +217,7 @@ export default function MePage() {
     }
 
     const { tabs: tabsData, share, workspaces, currentWorkspaceId } = data;
-    const currentWorkspace = workspaces.find((w: any) => w.id === currentWorkspaceId);
-    const themeStyle = generateThemeStyle(currentWorkspace);
+    const currentWorkspace = workspaces.find((w: any) => w.id === currentWorkspaceId) as ThemeWorkspace | undefined;
     const [activeTabId, setActiveTabId] = useState(tabsData[0]?.id);
 
     // 當 tabs 變化時，更新 activeTabId
@@ -250,7 +249,7 @@ export default function MePage() {
                     />
                 ) : undefined
             }
-            themeStyle={themeStyle}
+            workspace={currentWorkspace}
         />
     );
 }

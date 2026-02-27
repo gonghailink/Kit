@@ -1,6 +1,6 @@
 import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { CircleNotch, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { CircleNotch, ArrowCounterClockwise, SunIcon, MoonIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,15 @@ const DEFAULT_COLORS = {
   theme_foreground: "#0a0a0a",
 };
 
+/** 預設深色色值（對應 globals.css .dark） */
+const DARK_DEFAULT_COLORS = {
+  theme_primary: "#fafafa",
+  theme_background: "#0a0a0a",
+  theme_card: "#0a0a0a",
+  theme_secondary: "#262626",
+  theme_foreground: "#fafafa",
+};
+
 const COLOR_LABELS: Record<string, string> = {
   theme_primary: "主色",
   theme_background: "背景色",
@@ -49,6 +58,52 @@ const FONT_OPTIONS = [
 
 type ThemeColorKey = keyof typeof DEFAULT_COLORS;
 
+function ColorPickerGroup({
+  colors,
+  setColors,
+  defaults,
+  isSubmitting,
+  idPrefix,
+}: {
+  colors: Record<ThemeColorKey, string>;
+  setColors: React.Dispatch<React.SetStateAction<Record<ThemeColorKey, string>>>;
+  defaults: Record<ThemeColorKey, string>;
+  isSubmitting: boolean;
+  idPrefix: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      {(Object.keys(defaults) as ThemeColorKey[]).map((key) => (
+        <div key={key} className="flex items-center gap-3">
+          <label
+            htmlFor={`${idPrefix}-${key}`}
+            className="relative w-8 h-8 rounded-full overflow-hidden cursor-pointer border border-border flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+          >
+            <input
+              type="color"
+              id={`${idPrefix}-${key}`}
+              value={colors[key]}
+              onChange={(e) => setColors((prev) => ({ ...prev, [key]: e.target.value }))}
+              disabled={isSubmitting}
+              className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0"
+            />
+          </label>
+          <span className="text-sm flex-1">{COLOR_LABELS[key]}</span>
+          <span className="text-xs text-muted-foreground font-mono w-16">{colors[key]}</span>
+          <button
+            type="button"
+            onClick={() => setColors((prev) => ({ ...prev, [key]: defaults[key] }))}
+            className="p-1 text-muted-foreground hover:text-primary transition-colors"
+            title="重設為預設值"
+          >
+            <ArrowCounterClockwise className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function EditWorkspaceDialog({
   open,
   onOpenChange,
@@ -57,6 +112,7 @@ export default function EditWorkspaceDialog({
   const fetcher = useFetcher<FetcherData>();
   const [title, setTitle] = useState("");
   const [colors, setColors] = useState<Record<ThemeColorKey, string>>({ ...DEFAULT_COLORS });
+  const [darkColors, setDarkColors] = useState<Record<ThemeColorKey, string>>({ ...DARK_DEFAULT_COLORS });
   const [font, setFont] = useState("sans");
   const isSubmitting = fetcher.state === "submitting";
   const submitted = useRef(false);
@@ -71,6 +127,13 @@ export default function EditWorkspaceDialog({
         theme_card: workspace.theme_card || DEFAULT_COLORS.theme_card,
         theme_secondary: workspace.theme_secondary || DEFAULT_COLORS.theme_secondary,
         theme_foreground: workspace.theme_foreground || DEFAULT_COLORS.theme_foreground,
+      });
+      setDarkColors({
+        theme_primary: workspace.theme_dark_primary || DARK_DEFAULT_COLORS.theme_primary,
+        theme_background: workspace.theme_dark_background || DARK_DEFAULT_COLORS.theme_background,
+        theme_card: workspace.theme_dark_card || DARK_DEFAULT_COLORS.theme_card,
+        theme_secondary: workspace.theme_dark_secondary || DARK_DEFAULT_COLORS.theme_secondary,
+        theme_foreground: workspace.theme_dark_foreground || DARK_DEFAULT_COLORS.theme_foreground,
       });
       setFont(workspace.theme_font || "sans");
     }
@@ -101,6 +164,11 @@ export default function EditWorkspaceDialog({
     for (const key of Object.keys(DEFAULT_COLORS) as ThemeColorKey[]) {
       themeData[key] = colors[key] === DEFAULT_COLORS[key] ? "" : colors[key];
     }
+    // 深色欄位
+    for (const key of Object.keys(DARK_DEFAULT_COLORS) as ThemeColorKey[]) {
+      const darkKey = key.replace("theme_", "theme_dark_");
+      themeData[darkKey] = darkColors[key] === DARK_DEFAULT_COLORS[key] ? "" : darkColors[key];
+    }
     themeData.theme_font = font === "sans" ? "" : font;
 
     fetcher.submit(
@@ -117,20 +185,19 @@ export default function EditWorkspaceDialog({
     );
   };
 
-  const resetColor = (key: ThemeColorKey) => {
-    setColors((prev) => ({ ...prev, [key]: DEFAULT_COLORS[key] }));
+  const resetAllLight = () => {
+    setColors({ ...DEFAULT_COLORS });
   };
 
-  const resetAll = () => {
-    setColors({ ...DEFAULT_COLORS });
-    setFont("sans");
+  const resetAllDark = () => {
+    setDarkColors({ ...DARK_DEFAULT_COLORS });
   };
 
   if (!workspace) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>編輯工作區</DialogTitle>
           <DialogDescription>
@@ -152,47 +219,52 @@ export default function EditWorkspaceDialog({
               />
             </div>
 
-            {/* 顏色設定 */}
+            {/* 淺色主題 */}
             <div className="grid gap-3">
               <div className="flex items-center justify-between">
-                <Label>顏色主題</Label>
+                <Label className="flex items-center gap-1.5">
+                  <SunIcon className="w-4 h-4" />
+                  淺色主題
+                </Label>
                 <button
                   type="button"
-                  onClick={resetAll}
+                  onClick={resetAllLight}
                   className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   全部重設
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-2">
-                {(Object.keys(DEFAULT_COLORS) as ThemeColorKey[]).map((key) => (
-                  <div key={key} className="flex items-center gap-3">
-                    <label
-                      htmlFor={`color-${key}`}
-                      className="relative w-8 h-8 rounded-full overflow-hidden cursor-pointer border border-border flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
-                    >
-                      <input
-                        type="color"
-                        id={`color-${key}`}
-                        value={colors[key]}
-                        onChange={(e) => setColors((prev) => ({ ...prev, [key]: e.target.value }))}
-                        disabled={isSubmitting}
-                        className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] cursor-pointer border-0"
-                      />
-                    </label>
-                    <span className="text-sm flex-1">{COLOR_LABELS[key]}</span>
-                    <span className="text-xs text-muted-foreground font-mono w-16">{colors[key]}</span>
-                    <button
-                      type="button"
-                      onClick={() => resetColor(key)}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors"
-                      title="重設為預設值"
-                    >
-                      <ArrowCounterClockwise className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+              <ColorPickerGroup
+                colors={colors}
+                setColors={setColors}
+                defaults={DEFAULT_COLORS}
+                isSubmitting={isSubmitting}
+                idPrefix="light"
+              />
+            </div>
+
+            {/* 深色主題 */}
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <MoonIcon className="w-4 h-4" />
+                  深色主題
+                </Label>
+                <button
+                  type="button"
+                  onClick={resetAllDark}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  全部重設
+                </button>
               </div>
+              <ColorPickerGroup
+                colors={darkColors}
+                setColors={setDarkColors}
+                defaults={DARK_DEFAULT_COLORS}
+                isSubmitting={isSubmitting}
+                idPrefix="dark"
+              />
             </div>
 
             {/* 字體設定 */}

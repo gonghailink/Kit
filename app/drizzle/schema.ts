@@ -21,6 +21,11 @@ export const workspaces = sqliteTable("workspaces", {
     theme_secondary: text("theme_secondary"),
     theme_foreground: text("theme_foreground"),
     theme_font: text("theme_font"),
+    theme_dark_primary: text("theme_dark_primary"),
+    theme_dark_background: text("theme_dark_background"),
+    theme_dark_card: text("theme_dark_card"),
+    theme_dark_secondary: text("theme_dark_secondary"),
+    theme_dark_foreground: text("theme_dark_foreground"),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
 

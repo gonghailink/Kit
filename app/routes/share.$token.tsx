@@ -6,7 +6,7 @@ import { eq, and, asc } from "drizzle-orm";
 import type { TabWithFolders, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 import { useCallback } from "react";
 import { buildFolderTree } from "~/lib/utils";
-import { generateThemeStyle } from "~/lib/theme";
+import type { ThemeWorkspace } from "~/lib/theme";
 import { BookmarkView } from "~/components/layout/BookmarkView";
 
 
@@ -51,6 +51,11 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
         theme_secondary: workspacesSchema.theme_secondary,
         theme_foreground: workspacesSchema.theme_foreground,
         theme_font: workspacesSchema.theme_font,
+        theme_dark_primary: workspacesSchema.theme_dark_primary,
+        theme_dark_background: workspacesSchema.theme_dark_background,
+        theme_dark_card: workspacesSchema.theme_dark_card,
+        theme_dark_secondary: workspacesSchema.theme_dark_secondary,
+        theme_dark_foreground: workspacesSchema.theme_dark_foreground,
       })
       .from(workspacesSchema)
       .where(eq(workspacesSchema.id, share.workspace_id))
@@ -201,7 +206,6 @@ export function HydrateFallback() {
 
 export default function SharePage() {
   const { tabs: tabsData, share, workspace } = useLoaderData<typeof loader>();
-  const themeStyle = generateThemeStyle(workspace);
   const [searchParams, setSearchParams] = useSearchParams();
   const paramTabId = searchParams.get("tab");
   const activeTabId = (paramTabId && tabsData.find((t) => t.id === paramTabId))
@@ -226,7 +230,7 @@ export default function SharePage() {
         url: share.extra_btn_url,
         isLink: true,
       } : undefined}
-      themeStyle={themeStyle}
+      workspace={workspace as ThemeWorkspace | undefined}
     />
   );
 }

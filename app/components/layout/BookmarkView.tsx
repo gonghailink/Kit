@@ -6,6 +6,9 @@ import { FolderCard } from "~/components/folders/FolderCard";
 import { ViewHeader } from "~/components/layout/ViewHeader";
 import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
 import { TagFilterBar } from "~/components/tags/TagFilterBar";
+import { SearchDialog } from "~/components/shared/SearchDialog";
+import { useThemeMode } from "~/components/shared/ThemeModeToggle";
+import { generateThemeStyle, type ThemeWorkspace } from "~/lib/theme";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 
 interface BookmarkViewProps {
@@ -15,7 +18,7 @@ interface BookmarkViewProps {
   title: string;
   extraBtn?: { title: string; url: string; isLink?: boolean };
   workspaceSwitcher?: React.ReactNode;
-  themeStyle?: React.CSSProperties;
+  workspace?: ThemeWorkspace | null;
 }
 
 export function BookmarkView({
@@ -25,9 +28,28 @@ export function BookmarkView({
   title,
   extraBtn,
   workspaceSwitcher,
-  themeStyle,
+  workspace,
 }: BookmarkViewProps) {
+  const { isDark } = useThemeMode();
+  const themeStyle = useMemo(
+    () => generateThemeStyle(workspace, isDark),
+    [workspace, isDark]
+  );
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+
+  // Cmd+K / Ctrl+K 全文搜尋
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowSearchDialog((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, []);
 
   const activeTab = tabsData.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
@@ -367,6 +389,14 @@ export function BookmarkView({
           <ArrowUpIcon className="w-6 h-6" />
         </button>
       )}
+
+      {/* 全文搜尋 Dialog */}
+      <SearchDialog
+        open={showSearchDialog}
+        onOpenChange={setShowSearchDialog}
+        tabs={tabsData}
+        onNavigateToTab={(tabId) => setActiveTabId(tabId)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Form } from "react-router";
 import { UserIcon, EyeIcon, ShareNetworkIcon, CaretDownIcon, PencilSimpleIcon, SignOutIcon } from "@phosphor-icons/react";
+import { ThemeModeToggle } from "~/components/shared/ThemeModeToggle";
 import { Button } from "~/components/ui/button";
 import {
     DropdownMenu,
@@ -53,6 +54,7 @@ export function DashboardHeader({
                         <ShareNetworkIcon className="w-4 h-4" />
                         <span className="hidden md:block text-xs">分享</span>
                     </Button>
+                    <ThemeModeToggle />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
+import { ThemeModeToggle } from "~/components/shared/ThemeModeToggle";
+import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import type { TabData } from "~/lib/types";
 
 interface ViewHeaderProps {
@@ -67,17 +69,27 @@ export function ViewHeader({
                                 placeholder="搜尋書籤..."
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange(e.target.value)}
-                                className="w-64 pl-9 rounded-full"
+                                className="w-64 pl-9 pr-20 rounded-full"
                             />
-                            {searchQuery && (
+                            {searchQuery ? (
                                 <button
                                     onClick={() => onSearchChange("")}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
                                 >
                                     <XIcon className="size-4" />
                                 </button>
+                            ) : (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <KbdGroup className="opacity-50">
+                                        <Kbd>Ctrl</Kbd>
+                                        <span className="text-muted-foreground text-xs">+</span>
+                                        <Kbd>K</Kbd>
+                                    </KbdGroup>
+                                </div>
                             )}
                         </div>
+
+                        <ThemeModeToggle />
 
                         {extraBtn && (
                             extraBtn.isLink ? (

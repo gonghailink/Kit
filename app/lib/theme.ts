@@ -86,25 +86,36 @@ const FONT_MAP: Record<string, string> = {
   mono: '"JetBrains Mono", "Noto Sans TC", "Courier New", monospace',
 };
 
-interface ThemeWorkspace {
+export interface ThemeWorkspace {
   theme_primary?: string | null;
   theme_background?: string | null;
   theme_card?: string | null;
   theme_secondary?: string | null;
   theme_foreground?: string | null;
   theme_font?: string | null;
+  theme_dark_primary?: string | null;
+  theme_dark_background?: string | null;
+  theme_dark_card?: string | null;
+  theme_dark_secondary?: string | null;
+  theme_dark_foreground?: string | null;
 }
 
 /**
  * 從 workspace 主題設定產生 CSS 變數 style 物件
  * 只回傳有設定的覆蓋值，未設定的欄位不會產生 CSS 變數（使用 globals.css 預設）
  */
-export function generateThemeStyle(workspace: ThemeWorkspace | null | undefined): CSSProperties {
+export function generateThemeStyle(workspace: ThemeWorkspace | null | undefined, isDark = false): CSSProperties {
   if (!workspace) return {};
 
-  const { theme_primary, theme_background, theme_card, theme_secondary, theme_foreground, theme_font } = workspace;
+  // 根據 isDark 決定讀取哪組欄位
+  const theme_primary = isDark ? workspace.theme_dark_primary : workspace.theme_primary;
+  const theme_background = isDark ? workspace.theme_dark_background : workspace.theme_background;
+  const theme_card = isDark ? workspace.theme_dark_card : workspace.theme_card;
+  const theme_secondary = isDark ? workspace.theme_dark_secondary : workspace.theme_secondary;
+  const theme_foreground = isDark ? workspace.theme_dark_foreground : workspace.theme_foreground;
+  const theme_font = workspace.theme_font;
 
-  // 沒有任何主題設定時直接回傳空物件
+  // 沒有任何主題設定時直接回傳空物件（dark 模式由 globals.css .dark 預設色處理）
   if (!theme_primary && !theme_background && !theme_card && !theme_secondary && !theme_foreground && !theme_font) {
     return {};
   }
