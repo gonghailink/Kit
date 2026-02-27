@@ -1,4 +1,4 @@
-import { MagnifyingGlass, X as XIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
@@ -62,7 +62,7 @@ export function ViewHeader({
                     <div className="md:flex items-center gap-3">
                         {/* 搜尋功能 */}
                         <div className="relative hidden md:block">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <Input
                                 placeholder="搜尋書籤..."
                                 value={searchQuery}
@@ -85,14 +85,14 @@ export function ViewHeader({
                                     href={extraBtn.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
+                                    className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-background rounded-full transition-colors font-medium text-sm flex items-center gap-2"
                                 >
                                     {extraBtn.title}
                                 </a>
                             ) : (
                                 <button
                                     onClick={() => window.location.href = extraBtn.url}
-                                    className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-full transition-colors font-medium text-sm flex items-center gap-2"
+                                    className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-background rounded-full transition-colors font-medium text-sm flex items-center gap-2"
                                 >
                                     {extraBtn.title}
                                 </button>
@@ -132,7 +132,7 @@ export function ViewHeader({
                 className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-background rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
                 aria-label="搜尋書籤"
             >
-                <MagnifyingGlass className="w-6 h-6" />
+                <MagnifyingGlassIcon className="w-6 h-6" />
             </button>
 
             {/* Mobile Search Sheet */}
@@ -143,7 +143,7 @@ export function ViewHeader({
                     </SheetHeader>
                     <div className="mt-6 pb-2 space-y-3">
                         <div className="relative">
-                            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                             <Input
                                 placeholder="輸入關鍵字搜尋..."
                                 value={searchQuery}

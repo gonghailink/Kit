@@ -114,7 +114,7 @@ function SortableFolderRow({ folder }: { folder: FolderWithChildren }) {
             ref={setNodeRef}
             style={style}
             className={`
-                flex items-center justify-between py-2 px-4 rounded-2xl bg-card shadow-sm
+                flex items-center justify-between py-1.5 px-2 rounded-2xl bg-card shadow-sm
                 ${isDragging ? "opacity-50" : "opacity-100"}
             `}
         >

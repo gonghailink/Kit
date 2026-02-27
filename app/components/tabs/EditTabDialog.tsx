@@ -1,6 +1,6 @@
 import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { CircleNotch, Folder as FolderIcon, Tag as TagIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, FolderIcon, TagIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -72,7 +72,7 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 pb-4">
+          <div className="space-y-4 pb-8">
             <div className="space-y-2">
               <Label htmlFor="edit-tab-title">Tab 名稱</Label>
               <Input
@@ -85,7 +85,7 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
               />
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-4 py-2 text-sm bg-muted text-muted-foreground rounded-md">
               {tab.type === "tags" ? (
                 <>
                   <TagIcon className="w-4 h-4" />
@@ -115,10 +115,10 @@ export default function EditTabDialog({ open, onOpenChange, tab }: EditTabDialog
             >
               取消
             </Button>
-            <Button type="submit" disabled={isSubmitting || !title.trim()}>
+            <Button type="submit" className="flex-1" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <CircleNotch className="w-4 h-4 animate-spin" />
+                  <CircleNotchIcon className="w-4 h-4 animate-spin" />
                   儲存中...
                 </>
               ) : (

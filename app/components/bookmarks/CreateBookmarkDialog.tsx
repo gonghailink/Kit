@@ -122,92 +122,94 @@ export default function CreateBookmarkDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4 border-t">
-            <div className="space-y-2">
-              <Label htmlFor="bookmark-title">標題</Label>
-              <Input
-                id="bookmark-title"
-                placeholder="例如：Google 首頁"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={isSubmitting}
-                autoFocus
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+          <div className="overflow-y-auto max-h-[60vh] -mx-6 px-7 py-1">
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="bookmark-title">標題</Label>
+                <Input
+                  id="bookmark-title"
+                  placeholder="例如：Google 首頁"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={isSubmitting}
+                  autoFocus
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bookmark-url">URL</Label>
-              <Input
-                id="bookmark-url"
-                type="url"
-                placeholder="https://example.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-muted-foreground">
-                網站圖示會自動抓取
-              </p>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="bookmark-url">URL</Label>
+                <Input
+                  id="bookmark-url"
+                  type="url"
+                  placeholder="https://example.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  網站圖示會自動抓取
+                </p>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bookmark-memo">備註 (選填)</Label>
-              <textarea
-                id="bookmark-memo"
-                placeholder="輸入備註..."
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                disabled={isSubmitting}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="bookmark-memo">備註 (選填)</Label>
+                <textarea
+                  id="bookmark-memo"
+                  placeholder="輸入備註..."
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  disabled={isSubmitting}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
 
-            {/* Tag 選擇（Tags 模式） */}
-            {hasTagGroups && (
-              <div className="space-y-2 pb-4">
-                <Label>標籤 (選填)</Label>
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {tagGroups!.map((tg) => {
-                    if (tg.tags.length === 0) return null;
-                    const groupColor = tg.color;
-                    return (
-                      <div key={tg.id}>
-                        <p className="text-xs font-medium text-muted-foreground mb-1.5">{tg.title}</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {tg.tags.map((tag) => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => toggleTag(tag.id)}
-                              disabled={isSubmitting}
-                              className="px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100"
-                              style={{
-                                backgroundColor: selectedTagIds.has(tag.id)
-                                  ? (groupColor || "hsl(var(--foreground))")
-                                  : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
-                                color: selectedTagIds.has(tag.id)
-                                  ? "white"
-                                  : (groupColor || "hsl(var(--foreground))"),
-                                opacity: selectedTagIds.has(tag.id) ? 1 : 0.7,
-                              }}
-                            >
-                              {tag.title}
-                            </button>
-                          ))}
+              {/* Tag 選擇（Tags 模式） */}
+              {hasTagGroups && (
+                <div className="space-y-2 pb-4">
+                  <Label>標籤 (選填)</Label>
+                  <div className="space-y-3">
+                    {tagGroups!.map((tg) => {
+                      if (tg.tags.length === 0) return null;
+                      const groupColor = tg.color;
+                      return (
+                        <div key={tg.id}>
+                          <p className="text-xs font-medium text-muted-foreground mb-1.5">{tg.title}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {tg.tags.map((tag) => (
+                              <button
+                                key={tag.id}
+                                type="button"
+                                onClick={() => toggleTag(tag.id)}
+                                disabled={isSubmitting}
+                                className="px-2.5 py-1 rounded-full text-xs font-medium transition-all hover:opacity-100"
+                                style={{
+                                  backgroundColor: selectedTagIds.has(tag.id)
+                                    ? (groupColor || "hsl(var(--foreground))")
+                                    : (groupColor ? `${groupColor}20` : "hsl(var(--secondary))"),
+                                  color: selectedTagIds.has(tag.id)
+                                    ? "white"
+                                    : (groupColor || "hsl(var(--foreground))"),
+                                  opacity: selectedTagIds.has(tag.id) ? 1 : 0.7,
+                                }}
+                              >
+                                {tag.title}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
-              <div className="text-sm text-destructive">
-                {fetcher.data.error}
-              </div>
-            )}
+              {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
+                <div className="text-sm text-destructive">
+                  {fetcher.data.error}
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="flex pt-4">

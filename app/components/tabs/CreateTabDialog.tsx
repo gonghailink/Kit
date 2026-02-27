@@ -1,6 +1,6 @@
 import { useFetcher } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { CircleNotch, Folder as FolderIcon, Tag as TagIcon } from "@phosphor-icons/react";
+import { CircleNotchIcon, FolderIcon, TagIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -152,7 +152,7 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? (
                 <>
-                  <CircleNotch className="w-4 h-4 animate-spin" />
+                  <CircleNotchIcon className="w-4 h-4 animate-spin" />
                   建立中...
                 </>
               ) : (

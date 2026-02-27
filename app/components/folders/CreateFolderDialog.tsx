@@ -75,7 +75,7 @@ export default function CreateFolderDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 pt-4 pb-6 mt-2 border-t">
+          <div className="space-y-4 pb-8">
             <div className="space-y-2">
               <Label htmlFor="folder-title">資料夾名稱</Label>
               <Input

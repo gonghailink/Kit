@@ -84,7 +84,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="space-y-4 py-4 pb-6 border-t">
+                    <div className="space-y-4 pb-8">
                         <div className="space-y-2">
                             <Label htmlFor="old-password">目前的密碼</Label>
                             <Input
@@ -140,7 +140,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
                         >
                             取消
                         </Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                        <Button type="submit" className="flex-1" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <>
                                     <CircleNotch className="w-4 h-4 animate-spin mr-2" />

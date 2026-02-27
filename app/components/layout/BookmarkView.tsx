@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookmarkSimple as BookmarkIcon, ArrowUp } from "@phosphor-icons/react";
+import { BookmarkSimpleIcon as BookmarkIcon, ArrowUpIcon } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { groupBookmarksByTagGroup } from "~/lib/utils";
 import { ScrollArea } from "~/components/ui/scroll-area";
@@ -373,7 +373,7 @@ export function BookmarkView({
           className="fixed bottom-12 right-6 p-4 bg-primary text-background rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
           aria-label="返回頂部"
         >
-          <ArrowUp className="w-6 h-6" />
+          <ArrowUpIcon className="w-6 h-6" />
         </button>
       )}
     </div>
