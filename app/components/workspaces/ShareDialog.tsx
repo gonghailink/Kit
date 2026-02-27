@@ -124,7 +124,7 @@ export default function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-w-[95vw] rounded-2xl">
+      <DialogContent className="sm:max-w-[600px] max-w-[95vw] max-h-[85vh] flex flex-col overflow-hidden rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             分享我的書籤
@@ -134,7 +134,7 @@ export default function ShareDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4 border-t">
+        <div className="space-y-6 px-7 -mx-6 overflow-y-auto flex-1 min-h-0">
           {loadFetcher.state === "loading" ? (
             <div className="flex items-center justify-center py-8">
               <CircleNotchIcon className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -151,8 +151,8 @@ export default function ShareDialog({
                   <div
                     key={share.id}
                   >
-                    <div className="min-w-0 space-y-4">
-                      <div className="px-4 pt-2 pb-1.5 rounded-full min-w-0 border text-foreground">
+                    <div className="min-w-0 space-y-4 pb-4">
+                      <div className="min-w-0 px-4 pt-2 pb-1.5 rounded-xl bg-muted text-foreground">
                         <p className="text-sm font-mono break-all">
                           {shareUrl}
                         </p>
@@ -222,7 +222,7 @@ export default function ShareDialog({
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 pb-4">
                 <div className="space-y-2 ">
                   <label className="block text-sm font-medium">
                     顯示名稱（選填）
