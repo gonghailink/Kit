@@ -291,7 +291,7 @@ export function TagsTabContent({
   }, [reorderFetcher]);
 
   return (
-    <div className="max-w-7xl min-h-[80vh] mx-auto">
+    <div className="max-w-7xl mx-auto">
       <TagFilterBar
         tagGroups={tab.tagGroups}
         selectedTagIds={selectedTagIds}

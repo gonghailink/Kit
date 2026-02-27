@@ -1,8 +1,7 @@
 import { Link } from "react-router";
 import { BookmarkSimpleIcon as BookmarkIcon, ArrowUpIcon } from "@phosphor-icons/react";
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { groupBookmarksByTagGroup } from "~/lib/utils";
-import { ScrollArea } from "~/components/ui/scroll-area";
 import { FolderCard } from "~/components/folders/FolderCard";
 import { ViewHeader } from "~/components/layout/ViewHeader";
 import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
@@ -29,7 +28,6 @@ export function BookmarkView({
   themeStyle,
 }: BookmarkViewProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const activeTab = tabsData.find((t) => t.id === activeTabId);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,31 +35,24 @@ export function BookmarkView({
   // Tags 模式篩選
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
 
-  // 切換 tab 時清除篩選
+  // 切換 tab 時清除篩選並重置滾動
   useEffect(() => {
     setSelectedTagIds(new Set());
     setSearchQuery("");
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [activeTabId]);
 
   useEffect(() => {
-    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      setShowScrollTop(target.scrollTop > 300);
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
     };
 
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", handleScroll);
-      return () => scrollContainer.removeEventListener("scroll", handleScroll);
-    }
-  }, [activeTabId]);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToTop = () => {
-    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Folders 模式：搜尋過濾函數
@@ -226,7 +217,7 @@ export function BookmarkView({
   }, [tagGroupOrderMap, groupTagIds]);
 
   return (
-    <div style={themeStyle} className="h-screen flex flex-col bg-transparent">
+    <div style={themeStyle} className="min-h-screen flex flex-col bg-transparent">
       {/* Header */}
       <ViewHeader
         title={title}
@@ -239,7 +230,7 @@ export function BookmarkView({
         workspaceSwitcher={workspaceSwitcher}
       />
 
-      <ScrollArea ref={scrollAreaRef} className="flex-1 relative min-h-0">
+      <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
           {/* Tags 模式 */}
           {isActiveTagsTab && activeTagsTab ? (
@@ -364,7 +355,7 @@ export function BookmarkView({
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </main>
 
       {/* Scroll to Top Button */}
       {showScrollTop && (

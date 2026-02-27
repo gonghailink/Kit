@@ -800,68 +800,70 @@ export default function Dashboard() {
   }, [activeFoldersTab]);
 
   return (
-    <div className="h-screen flex flex-col bg-transparent">
-      {/* Header */}
-      <DashboardHeader
-        userEmail={user.email}
-        onShare={() => setShowShareDialog(true)}
-        onChangePassword={() => setShowChangePasswordDialog(true)}
-        workspaceSwitcher={
-          <WorkspaceSwitcher
-            workspaces={workspaces}
-            currentWorkspaceId={currentWorkspaceId || ""}
-            onWorkspaceChange={(workspaceId) => {
-              setSearchParams((prev) => {
-                const newParams = new URLSearchParams(prev);
-                newParams.set("workspace", workspaceId);
-                // 當切換 workspace 時，清除 tab 參數讓它自動選擇第一個 tab
-                newParams.delete("tab");
-                return newParams;
-              }, { preventScrollReset: true });
-            }}
-            onManageWorkspaces={() => setShowOrganizeWorkspacesSheet(true)}
-            allowEdit={true}
-          />
-        }
-      />
+    <div className="min-h-screen flex flex-col bg-transparent">
+      {/* Sticky Header + Tabs */}
+      <div className="sticky top-0 z-30">
+        {/* Header */}
+        <DashboardHeader
+          userEmail={user.email}
+          onShare={() => setShowShareDialog(true)}
+          onChangePassword={() => setShowChangePasswordDialog(true)}
+          workspaceSwitcher={
+            <WorkspaceSwitcher
+              workspaces={workspaces}
+              currentWorkspaceId={currentWorkspaceId || ""}
+              onWorkspaceChange={(workspaceId) => {
+                setSearchParams((prev) => {
+                  const newParams = new URLSearchParams(prev);
+                  newParams.set("workspace", workspaceId);
+                  // 當切換 workspace 時，清除 tab 參數讓它自動選擇第一個 tab
+                  newParams.delete("tab");
+                  return newParams;
+                }, { preventScrollReset: true });
+              }}
+              onManageWorkspaces={() => setShowOrganizeWorkspacesSheet(true)}
+              allowEdit={true}
+            />
+          }
+        />
 
-      {/* Tabs Bar */}
-      <div className="flex flex-col backdrop-blur-sm border-b border-border">
-        <div className="flex ps-6">
-          {/* Tab 管理按鈕 */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowOrganizeTabsSheet(true)}
-              className="flex items-center gap-1.5 px-3 py-2  text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
-            >
-              <MonitorCogIcon className="w-4 h-4" />
-              <span className="hidden md:block">管理 Tabs</span>
-            </button>
-            <div className="h-4 w-[1px] bg-muted-foreground/20 mr-2"></div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <ScrollArea className="w-full pt-2 pb-3 pr-6">
-              <div className="flex items-center gap-0">
-                {tabsState.map((tab: TabData) => (
-                  <SortableTabItem
-                    key={tab.id}
-                    tab={tab}
-                    isActive={activeTabId === tab.id}
-                    onSelect={() => setSearchParams((prev) => {
-                      const newParams = new URLSearchParams(prev);
-                      newParams.set("tab", tab.id);
-                      return newParams;
-                    }, { preventScrollReset: true })}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
+        {/* Tabs Bar */}
+        <div className="flex flex-col backdrop-blur-sm border-b border-border">
+          <div className="flex ps-6">
+            {/* Tab 管理按鈕 */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowOrganizeTabsSheet(true)}
+                className="flex items-center gap-1.5 px-3 py-2  text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 rounded-lg transition-colors"
+              >
+                <MonitorCogIcon className="w-4 h-4" />
+                <span className="hidden md:block">管理 Tabs</span>
+              </button>
+              <div className="h-4 w-[1px] bg-muted-foreground/20 mr-2"></div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <ScrollArea className="w-full pt-2 pb-3 pr-6">
+                <div className="flex items-center gap-0">
+                  {tabsState.map((tab: TabData) => (
+                    <SortableTabItem
+                      key={tab.id}
+                      tab={tab}
+                      isActive={activeTabId === tab.id}
+                      onSelect={() => setSearchParams((prev) => {
+                        const newParams = new URLSearchParams(prev);
+                        newParams.set("tab", tab.id);
+                        return newParams;
+                      }, { preventScrollReset: true })}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </div>
       {/* Main Content */}
-      <main className="flex-1 relative min-h-0 bg-transparent">
-        <div className="h-full w-full overflow-auto">
+      <main className="flex-1 relative bg-transparent">
           <div className="p-6">
             {tabsState.length === 0 ? (
               // 空狀態
@@ -883,7 +885,7 @@ export default function Dashboard() {
               </div>
             ) : activeTab && activeFoldersTab ? (
               // Folders 模式：顯示資料夾和書籤
-              <div className="max-w-7xl min-h-[80vh] mx-auto">
+              <div className="max-w-7xl mx-auto">
                 {activeFoldersTab.folders.length === 0 ? (
                   <div className="text-center py-12">
                     <div>
@@ -1004,7 +1006,6 @@ export default function Dashboard() {
               />
             ) : null}
           </div>
-        </div>
       </main>
 
       {/* Floating Action Buttons */}
