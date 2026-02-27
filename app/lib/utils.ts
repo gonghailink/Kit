@@ -112,3 +112,49 @@ export function isValidUrl(url: string): boolean {
     return false;
   }
 }
+
+// 書籤分組
+export interface BookmarkGroup {
+  tag: import("./types").Tag | null;
+  label: string;
+  color: string | null;
+  bookmarks: import("./types").BookmarkWithTags[];
+}
+
+export function groupBookmarksByTagGroup(
+  bookmarks: import("./types").BookmarkWithTags[],
+  groupTagGroup: import("./types").TagGroupWithTags
+): BookmarkGroup[] {
+  const groups: BookmarkGroup[] = [];
+
+  for (const tag of groupTagGroup.tags) {
+    const matching = bookmarks.filter(b =>
+      b.tags.some(t => t.id === tag.id)
+    );
+
+    if (matching.length > 0) {
+      groups.push({
+        tag,
+        label: tag.title,
+        color: groupTagGroup.color,
+        bookmarks: matching,
+      });
+    }
+  }
+
+  // 未分類：沒有任何 group tag 的書籤
+  const groupTagIds = new Set(groupTagGroup.tags.map(t => t.id));
+  const uncategorized = bookmarks.filter(b =>
+    !b.tags.some(t => groupTagIds.has(t.id))
+  );
+  if (uncategorized.length > 0) {
+    groups.push({
+      tag: null,
+      label: "未分類",
+      color: null,
+      bookmarks: uncategorized,
+    });
+  }
+
+  return groups;
+}

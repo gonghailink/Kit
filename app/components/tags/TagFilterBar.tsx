@@ -1,4 +1,11 @@
 import type { TagGroupWithTags } from "~/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 interface TagFilterBarProps {
   tagGroups: TagGroupWithTags[];
@@ -7,6 +14,10 @@ interface TagFilterBarProps {
   onClearGroupFilters: (tagGroup: TagGroupWithTags) => void;
   onClearAllFilters: () => void;
   hasGroupSelection: (tagGroup: TagGroupWithTags) => boolean;
+  // 分組控制（僅 dashboard 使用）
+  showGroupControl?: boolean;
+  groupTagGroupId?: string | null;
+  onChangeGroupTagGroup?: (tagGroupId: string | null) => void;
 }
 
 export function TagFilterBar({
@@ -16,8 +27,14 @@ export function TagFilterBar({
   onClearGroupFilters,
   onClearAllFilters,
   hasGroupSelection,
+  showGroupControl,
+  groupTagGroupId,
+  onChangeGroupTagGroup,
 }: TagFilterBarProps) {
-  if (tagGroups.length === 0) return null;
+  const filterableGroups = tagGroups.filter(tg => tg.filter_mode !== "group");
+
+  // 即使沒有可篩選的 group，如果有 showGroupControl 仍需渲染
+  if (filterableGroups.length === 0 && !showGroupControl) return null;
 
   return (
     <div className="mb-6 bg-card rounded-lg border-none p-4 space-y-4">
@@ -31,8 +48,31 @@ export function TagFilterBar({
             清除篩選
           </button>
         )}
+
+        {/* 分組控制 */}
+        {showGroupControl && onChangeGroupTagGroup && tagGroups.length > 0 && (
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">分組：</span>
+            <Select
+              value={groupTagGroupId || "__none__"}
+              onValueChange={(v) => onChangeGroupTagGroup(v === "__none__" ? null : v)}
+            >
+              <SelectTrigger className="h-8 w-32 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">無</SelectItem>
+                {tagGroups.map((tg) => (
+                  <SelectItem key={tg.id} value={tg.id}>
+                    {tg.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
-      {tagGroups.map((tagGroup) => {
+      {filterableGroups.map((tagGroup) => {
         const groupColor = tagGroup.color;
         return (
           <div key={tagGroup.id} className="space-y-2">

@@ -59,7 +59,7 @@ export interface Share {
   created_at: string;
 }
 
-export type FilterMode = "and" | "or" | "single";
+export type FilterMode = "and" | "or" | "single" | "group";
 
 export interface TagGroup {
   id: string;

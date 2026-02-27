@@ -64,7 +64,7 @@ export const tagGroups = sqliteTable("tag_groups", {
     tab_id: text("tab_id").notNull().references(() => tabs.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     color: text("color"),
-    filter_mode: text("filter_mode").notNull().default("or"), // "and" | "or" | "single"
+    filter_mode: text("filter_mode").notNull().default("or"), // "and" | "or" | "single" | "group"
     sort_order: real("sort_order").default(0),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });

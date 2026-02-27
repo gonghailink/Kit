@@ -26,8 +26,8 @@ export function DashboardHeader({
             {/* First row: Logo, workspace switcher (desktop), and action buttons */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm">
                             <img src="/favicon-white.svg" alt="Kit" className="h-full w-full p-[1px] object-contain rounded-xl bg-froeground" />
                         </div>
                         <h1 className="text-xl font-semibold text-primary">

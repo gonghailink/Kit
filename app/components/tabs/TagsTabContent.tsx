@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import {
   DndContext,
   DragOverlay,
@@ -19,8 +19,9 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableBookmark } from "~/components/bookmarks/SortableBookmark";
 import { BookmarkCard } from "~/components/bookmarks/BookmarkCard";
-import type { TabWithTags } from "~/lib/types";
+import type { TabWithTags, Tag } from "~/lib/types";
 import { TagFilterBar } from "~/components/tags/TagFilterBar";
+import { groupBookmarksByTagGroup } from "~/lib/utils";
 
 interface TagsTabContentProps {
   tab: TabWithTags;
@@ -37,6 +38,8 @@ export function TagsTabContent({
 }: TagsTabContentProps) {
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const reorderFetcher = useFetcher();
+  const groupFetcher = useFetcher();
+  const revalidator = useRevalidator();
 
   // 本地書籤狀態（用於 optimistic update，拖動結束後立即更新順序）
   const [localBookmarks, setLocalBookmarks] = useState(tab.bookmarks);
@@ -50,6 +53,17 @@ export function TagsTabContent({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // 找出 group 模式的 TagGroup
+  const groupTagGroup = useMemo(() => {
+    return tab.tagGroups.find(tg => tg.filter_mode === "group") || null;
+  }, [tab.tagGroups]);
+
+  // group TagGroup 的 tag IDs（用於過濾 badges）
+  const groupTagIds = useMemo(() => {
+    if (!groupTagGroup) return null;
+    return new Set(groupTagGroup.tags.map(t => t.id));
+  }, [groupTagGroup]);
 
   // TagGroup id -> color 映射
   const tagColorMap = useMemo(() => {
@@ -70,11 +84,13 @@ export function TagsTabContent({
   }, [tab.tagGroups]);
 
   // 篩選後的書籤：各 group 內依 filter_mode (and/or)，group 之間為 AND
+  // 排除 group 模式的 TagGroup（不參與篩選計算）
   const filteredBookmarks = useMemo(() => {
     if (selectedTagIds.size === 0) return localBookmarks;
 
-    // 按 tagGroup 分組已選取的 tagIds
+    // 按 tagGroup 分組已選取的 tagIds，排除 group 模式
     const groupSelections = tab.tagGroups
+      .filter(group => group.filter_mode !== "group")
       .map((group) => ({
         filterMode: group.filter_mode,
         tagIds: group.tags.map((t) => t.id).filter((id) => selectedTagIds.has(id)),
@@ -92,16 +108,35 @@ export function TagsTabContent({
     });
   }, [localBookmarks, tab.tagGroups, selectedTagIds]);
 
+  // 分組後的書籤
+  const groupedBookmarks = useMemo(() => {
+    if (!groupTagGroup) return null;
+    return groupBookmarksByTagGroup(filteredBookmarks, groupTagGroup);
+  }, [groupTagGroup, filteredBookmarks]);
+
   // 預計算每個書籤排序後的 tags（穩定引用，避免每次 render 建新陣列）
+  // 如果有 group 模式，過濾掉 group TagGroup 的 tags
   const sortedTagsMap = useMemo(() => {
-    const map: Record<string, typeof filteredBookmarks[0]["tags"]> = {};
-    for (const bookmark of filteredBookmarks) {
-      map[bookmark.id] = [...bookmark.tags].sort(
-        (a, b) => (tagGroupOrderMap[a.tag_group_id] ?? 999) - (tagGroupOrderMap[b.tag_group_id] ?? 999)
-      );
+    const map: Record<string, Tag[]> = {};
+    const bookmarksToProcess = groupedBookmarks
+      ? groupedBookmarks.flatMap(g => g.bookmarks)
+      : filteredBookmarks;
+
+    for (const bookmark of bookmarksToProcess) {
+      if (map[bookmark.id]) continue;
+      let tags = [...bookmark.tags].sort((a, b) => {
+        const groupDiff = (tagGroupOrderMap[a.tag_group_id] ?? 999) - (tagGroupOrderMap[b.tag_group_id] ?? 999);
+        if (groupDiff !== 0) return groupDiff;
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      });
+      // 在分組模式下，隱藏 group TagGroup 的 tags
+      if (groupTagIds) {
+        tags = tags.filter(t => !groupTagIds.has(t.id));
+      }
+      map[bookmark.id] = tags;
     }
     return map;
-  }, [filteredBookmarks, tagGroupOrderMap]);
+  }, [filteredBookmarks, groupedBookmarks, tagGroupOrderMap, groupTagIds]);
 
   // Memoize SortableContext items 陣列
   const sortableBookmarkIds = useMemo(
@@ -152,6 +187,25 @@ export function TagsTabContent({
   const clearFilters = () => {
     setSelectedTagIds(new Set());
   };
+
+  // 切換分組 TagGroup
+  const handleChangeGroupTagGroup = useCallback((tagGroupId: string | null) => {
+    // 如果目前有 group，先將它改回 "or"
+    if (groupTagGroup && groupTagGroup.id !== tagGroupId) {
+      groupFetcher.submit(
+        { intent: "update", id: groupTagGroup.id, filter_mode: "or" },
+        { method: "post", action: "/api/tag-groups" }
+      );
+    }
+    // 設定新的 group（API 會自動清除舊的，但上面已手動處理）
+    if (tagGroupId) {
+      groupFetcher.submit(
+        { intent: "update", id: tagGroupId, filter_mode: "group" },
+        { method: "post", action: "/api/tag-groups" }
+      );
+    }
+    revalidator.revalidate();
+  }, [groupTagGroup, groupFetcher, revalidator]);
 
   // DragOverlay 狀態
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -219,9 +273,12 @@ export function TagsTabContent({
         onClearGroupFilters={clearGroupFilters}
         onClearAllFilters={clearFilters}
         hasGroupSelection={hasGroupSelection}
+        showGroupControl
+        groupTagGroupId={groupTagGroup?.id || null}
+        onChangeGroupTagGroup={handleChangeGroupTagGroup}
       />
 
-      {/* Bookmarks Grid */}
+      {/* Bookmarks */}
       {filteredBookmarks.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
@@ -238,7 +295,37 @@ export function TagsTabContent({
             </button>
           )}
         </div>
+      ) : groupedBookmarks ? (
+        /* 分組顯示（參考資料夾模式） */
+        <div className="grid grid-cols-1 gap-8 pb-16">
+          {groupedBookmarks.map((group) => (
+            <div
+              key={group.tag?.id || "uncategorized"}
+              className="px-6 py-4 bg-card rounded-xl"
+            >
+              <h2
+                className="text-lg font-semibold mb-4"
+                style={{ color: group.color || undefined }}
+              >
+                {group.label}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {group.bookmarks.map((bookmark) => (
+                  <SortableBookmark
+                    key={bookmark.id}
+                    bookmark={bookmark}
+                    tags={sortedTagsMap[bookmark.id]}
+                    tagColorMap={tagColorMap}
+                    onEdit={onEditBookmark}
+                    onDelete={onDeleteBookmark}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
+        /* 平面顯示（原有邏輯） */
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

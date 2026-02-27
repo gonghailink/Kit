@@ -130,7 +130,7 @@ export default function EditBookmarkDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 mb-4">
+          <div className="space-y-4 py-4 border-t">
             <div className="space-y-2">
               <Label htmlFor="edit-bookmark-title">標題</Label>
               <Input

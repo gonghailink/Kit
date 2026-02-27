@@ -166,7 +166,7 @@ export function ManageTagGroupsSheet({
   };
 
   const handleToggleFilterMode = (tagGroup: TagGroupWithTags) => {
-    const newMode: FilterMode = tagGroup.filter_mode === "or" ? "and" : tagGroup.filter_mode === "and" ? "single" : "or";
+    const newMode: FilterMode = tagGroup.filter_mode === "or" ? "and" : tagGroup.filter_mode === "and" ? "single" : tagGroup.filter_mode === "single" ? "group" : "or";
     tagGroupFetcher.submit(
       { intent: "update", id: tagGroup.id, filter_mode: newMode },
       { method: "post", action: "/api/tag-groups" }
@@ -470,7 +470,7 @@ function SortableTagGroup({
               <SelectTrigger
                 className="h-8 w-20 px-2 rounded-full text-[10px] font-bold uppercase flex-shrink-0"
               >
-                <span>{editingGroupFilterMode === "and" ? "AND" : editingGroupFilterMode === "single" ? "單選" : "OR"}</span>
+                <span>{editingGroupFilterMode === "and" ? "AND" : editingGroupFilterMode === "single" ? "單選" : editingGroupFilterMode === "group" ? "分組" : "OR"}</span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="or">
@@ -489,6 +489,12 @@ function SortableTagGroup({
                   <div className="flex flex-col">
                     <span className="font-bold text-xs">單選</span>
                     <span className="text-[10px] text-muted-foreground">只能選一個</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="group">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs">分組</span>
+                    <span className="text-[10px] text-muted-foreground">書籤分組顯示</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -510,9 +516,9 @@ function SortableTagGroup({
                 backgroundColor: tagGroup.color ? `${tagGroup.color}20` : "hsl(var(--secondary))",
                 color: tagGroup.color || "hsl(var(--muted-foreground))",
               }}
-              title={`篩選模式：${tagGroup.filter_mode === "and" ? "AND（須符合全部）" : tagGroup.filter_mode === "single" ? "單選（只能選一個）" : "OR（符合其一即可）"}`}
+              title={`篩選模式：${tagGroup.filter_mode === "and" ? "AND（須符合全部）" : tagGroup.filter_mode === "single" ? "單選（只能選一個）" : tagGroup.filter_mode === "group" ? "分組（書籤分組顯示）" : "OR（符合其一即可）"}`}
             >
-              {tagGroup.filter_mode === "and" ? "AND" : tagGroup.filter_mode === "single" ? "單選" : "OR"}
+              {tagGroup.filter_mode === "and" ? "AND" : tagGroup.filter_mode === "single" ? "單選" : tagGroup.filter_mode === "group" ? "分組" : "OR"}
             </button>
             <button
               onClick={() => {

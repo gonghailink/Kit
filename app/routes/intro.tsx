@@ -109,11 +109,11 @@ export const meta: MetaFunction = () => {
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:type", content: "website" },
-    { property: "og:image", content: "/og-intro.svg" },
+    { property: "og:image", content: "/meta.png" },
     { property: "twitter:card", content: "summary_large_image" },
     { property: "twitter:title", content: title },
     { property: "twitter:description", content: description },
-    { property: "twitter:image", content: "/og-intro.svg" },
+    { property: "twitter:image", content: "/meta.png" },
   ];
 };
 

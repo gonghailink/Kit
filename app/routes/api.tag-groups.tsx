@@ -60,6 +60,21 @@ export async function action({ request, context }: ActionFunctionArgs) {
           ? (existing[0].sort_order || 0) + 1000
           : 1000;
 
+        const validFilterMode = filter_mode === "and" ? "and" : filter_mode === "single" ? "single" : filter_mode === "group" ? "group" : "or";
+
+        // 確保每個 tab 只有一個 group 模式的 TagGroup
+        if (validFilterMode === "group") {
+          await db
+            .update(tagGroups)
+            .set({ filter_mode: "or" })
+            .where(and(
+              eq(tagGroups.tab_id, tab_id),
+              eq(tagGroups.user_id, user.id),
+              eq(tagGroups.filter_mode, "group")
+            ))
+            .run();
+        }
+
         const newTagGroup = await db
           .insert(tagGroups)
           .values({
@@ -67,7 +82,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
             tab_id,
             title: title.trim(),
             color: color || null,
-            filter_mode: filter_mode === "and" ? "and" : filter_mode === "single" ? "single" : "or",
+            filter_mode: validFilterMode,
             sort_order: newSortOrder,
           })
           .returning()
@@ -98,11 +113,32 @@ export async function action({ request, context }: ActionFunctionArgs) {
           updates.color = color || null;
         }
         if (filter_mode !== undefined) {
-          updates.filter_mode = filter_mode === "and" ? "and" : filter_mode === "single" ? "single" : "or";
+          updates.filter_mode = filter_mode === "and" ? "and" : filter_mode === "single" ? "single" : filter_mode === "group" ? "group" : "or";
         }
 
         if (Object.keys(updates).length === 0) {
           return data({ error: "沒有要更新的欄位" }, { status: 400 });
+        }
+
+        // 確保每個 tab 只有一個 group 模式的 TagGroup
+        if (updates.filter_mode === "group") {
+          const existing = await db
+            .select({ tab_id: tagGroups.tab_id })
+            .from(tagGroups)
+            .where(and(eq(tagGroups.id, id), eq(tagGroups.user_id, user.id)))
+            .get();
+
+          if (existing) {
+            await db
+              .update(tagGroups)
+              .set({ filter_mode: "or" })
+              .where(and(
+                eq(tagGroups.tab_id, existing.tab_id),
+                eq(tagGroups.user_id, user.id),
+                eq(tagGroups.filter_mode, "group")
+              ))
+              .run();
+          }
         }
 
         const updated = await db
