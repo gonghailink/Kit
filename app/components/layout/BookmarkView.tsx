@@ -370,7 +370,7 @@ export function BookmarkView({
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-12 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+          className="fixed bottom-12 right-6 p-4 bg-primary text-background rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
           aria-label="返回頂部"
         >
           <ArrowUp className="w-6 h-6" />

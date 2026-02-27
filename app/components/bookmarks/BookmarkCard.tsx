@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
+import { BookmarkSimpleIcon as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
 
 interface BookmarkCardProps {
@@ -45,7 +45,7 @@ export const BookmarkCard = memo(function BookmarkCard({
                                         key={tag.id}
                                         className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
                                         style={{
-                                            backgroundColor: color ? `${color}20` : "hsl(var(--secondary))",
+                                            backgroundColor: color ? `${color}10` : "hsl(var(--secondary))",
                                             color: color || "hsl(var(--muted-foreground))",
                                         }}
                                     >

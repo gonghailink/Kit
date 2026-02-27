@@ -129,7 +129,7 @@ export function ViewHeader({
             {/* Mobile Search Button */}
             <button
                 onClick={() => setIsSearchSheetOpen(true)}
-                className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+                className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-background rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
                 aria-label="搜尋書籤"
             >
                 <MagnifyingGlass className="w-6 h-6" />

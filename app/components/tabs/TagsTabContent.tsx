@@ -19,9 +19,10 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableBookmark } from "~/components/bookmarks/SortableBookmark";
 import { BookmarkCard } from "~/components/bookmarks/BookmarkCard";
-import type { TabWithTags, Tag } from "~/lib/types";
+import type { TabWithTags, Tag, BookmarkWithTags } from "~/lib/types";
+import type { SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 import { TagFilterBar } from "~/components/tags/TagFilterBar";
-import { groupBookmarksByTagGroup } from "~/lib/utils";
+import { groupBookmarksByTagGroup, type BookmarkGroup } from "~/lib/utils";
 
 interface TagsTabContentProps {
   tab: TabWithTags;
@@ -264,6 +265,31 @@ export function TagsTabContent({
     }
   }, [filteredBookmarks, selectedTagIds, reorderFetcher]);
 
+  // 分組模式下：組內書籤重新排序
+  const handleGroupBookmarkReorder = useCallback((reorderedBookmarks: BookmarkWithTags[]) => {
+    // Optimistic update：僅調整該組內書籤的相對順序
+    const orderMap = new Map(reorderedBookmarks.map((b, i) => [b.id, i]));
+    setLocalBookmarks((prev) =>
+      [...prev].sort((a, b) => {
+        const aIdx = orderMap.get(a.id);
+        const bIdx = orderMap.get(b.id);
+        if (aIdx !== undefined && bIdx !== undefined) return aIdx - bIdx;
+        return 0;
+      })
+    );
+
+    const ids = reorderedBookmarks.map((b) => b.id);
+    const sortOrders = reorderedBookmarks.map((_, index) => (index + 1) * 1000);
+    reorderFetcher.submit(
+      {
+        intent: "reorder",
+        ids: JSON.stringify(ids),
+        sortOrders: JSON.stringify(sortOrders),
+      },
+      { method: "post", action: "/api/bookmarks" }
+    );
+  }, [reorderFetcher]);
+
   return (
     <div className="max-w-7xl min-h-[80vh] mx-auto">
       <TagFilterBar
@@ -296,32 +322,19 @@ export function TagsTabContent({
           )}
         </div>
       ) : groupedBookmarks ? (
-        /* 分組顯示（參考資料夾模式） */
+        /* 分組顯示：每組各自有獨立的 DndContext，支援組內拖曳排序 */
         <div className="grid grid-cols-1 gap-8 pb-16">
           {groupedBookmarks.map((group) => (
-            <div
+            <SortableGroupSection
               key={group.tag?.id || "uncategorized"}
-              className="px-6 py-4 bg-card rounded-xl"
-            >
-              <h2
-                className="text-lg font-semibold mb-4"
-                style={{ color: group.color || undefined }}
-              >
-                {group.label}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {group.bookmarks.map((bookmark) => (
-                  <SortableBookmark
-                    key={bookmark.id}
-                    bookmark={bookmark}
-                    tags={sortedTagsMap[bookmark.id]}
-                    tagColorMap={tagColorMap}
-                    onEdit={onEditBookmark}
-                    onDelete={onDeleteBookmark}
-                  />
-                ))}
-              </div>
-            </div>
+              group={group}
+              sensors={sensors}
+              sortedTagsMap={sortedTagsMap}
+              tagColorMap={tagColorMap}
+              onEdit={onEditBookmark}
+              onDelete={onDeleteBookmark}
+              onReorder={handleGroupBookmarkReorder}
+            />
           ))}
         </div>
       ) : (
@@ -360,6 +373,93 @@ export function TagsTabContent({
           </DragOverlay>
         </DndContext>
       )}
+    </div>
+  );
+}
+
+/** 分組模式下的單一組別，包含獨立的 DndContext 支援組內拖曳排序 */
+function SortableGroupSection({
+  group,
+  sensors,
+  sortedTagsMap,
+  tagColorMap,
+  onEdit,
+  onDelete,
+  onReorder,
+}: {
+  group: BookmarkGroup;
+  sensors: SensorDescriptor<SensorOptions>[];
+  sortedTagsMap: Record<string, Tag[]>;
+  tagColorMap: Record<string, string | null>;
+  onEdit: (bookmarkId: string) => void;
+  onDelete: (bookmarkId: string) => void;
+  onReorder: (bookmarks: BookmarkWithTags[]) => void;
+}) {
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const activeDragBookmark = activeDragId
+    ? group.bookmarks.find((b) => b.id === activeDragId)
+    : null;
+
+  const sortableIds = useMemo(
+    () => group.bookmarks.map((b) => b.id),
+    [group.bookmarks]
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = group.bookmarks.findIndex((b) => b.id === active.id);
+    const newIndex = group.bookmarks.findIndex((b) => b.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      onReorder(arrayMove(group.bookmarks, oldIndex, newIndex));
+    }
+  }, [group.bookmarks, onReorder]);
+
+  return (
+    <div className="px-6 py-4 bg-card rounded-xl">
+      <h2
+        className="text-lg font-semibold mb-4"
+        style={{ color: group.color || undefined }}
+      >
+        {group.label}
+      </h2>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {group.bookmarks.map((bookmark) => (
+              <SortableBookmark
+                key={bookmark.id}
+                bookmark={bookmark}
+                tags={sortedTagsMap[bookmark.id]}
+                tagColorMap={tagColorMap}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activeDragBookmark ? (
+            <BookmarkCard
+              bookmark={activeDragBookmark}
+              tags={sortedTagsMap[activeDragBookmark.id]}
+              tagColorMap={tagColorMap}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }
