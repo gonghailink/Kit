@@ -22,7 +22,13 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { NotePencilIcon, TrashIcon, DotsSixVerticalIcon, PlusIcon } from "@phosphor-icons/react";
+import { NotePencilIcon, TrashIcon, DotsSixVerticalIcon, PlusIcon, UploadSimpleIcon, DownloadSimpleIcon, DotsThreeIcon } from "@phosphor-icons/react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import type { TabData } from "~/lib/types";
 
 interface OrganizeTabsSheetProps {
@@ -33,6 +39,8 @@ interface OrganizeTabsSheetProps {
     onAddTab: () => void;
     onEditTab: (tab: TabData) => void;
     onDeleteTab: (tab: TabData) => void;
+    onImport: () => void;
+    onExportTab: (tab: TabData) => void;
 }
 
 export function OrganizeTabsSheet({
@@ -43,6 +51,8 @@ export function OrganizeTabsSheet({
     onAddTab,
     onEditTab,
     onDeleteTab,
+    onImport,
+    onExportTab,
 }: OrganizeTabsSheetProps) {
     const [localTabs, setLocalTabs] = useState(tabs);
 
@@ -77,14 +87,23 @@ export function OrganizeTabsSheet({
                     <SheetTitle className="text-2xl font-bold text-left px-2">Tab 管理</SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto p-4 pt-2">
-                    {/* Add Tab Button */}
-                    <button
-                        onClick={onAddTab}
-                        className="w-full flex items-center gap-4 px-4 py-3 mb-3 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-card/50 transition-colors"
-                    >
-                        <PlusIcon className="w-6 h-6 text-foreground" />
-                        <span className="font-medium text-foreground">Add Tab</span>
-                    </button>
+                    {/* Add Tab & Import Buttons */}
+                    <div className="flex gap-2 mb-3">
+                        <button
+                            onClick={onAddTab}
+                            className="flex-1 flex items-center gap-4 px-4 py-3 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-card/50 transition-colors"
+                        >
+                            <PlusIcon className="w-6 h-6 text-foreground" />
+                            <span className="font-medium text-foreground">Add Tab</span>
+                        </button>
+                        <button
+                            onClick={onImport}
+                            className="flex items-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-card/50 transition-colors"
+                            title="匯入書籤"
+                        >
+                            <UploadSimpleIcon className="w-6 h-6 text-foreground" />
+                        </button>
+                    </div>
 
                     <DndContext
                         sensors={sensors}
@@ -102,6 +121,7 @@ export function OrganizeTabsSheet({
                                         tab={tab}
                                         onEdit={() => onEditTab(tab)}
                                         onDelete={() => onDeleteTab(tab)}
+                                        onExport={() => onExportTab(tab)}
                                     />
                                 ))}
                             </div>
@@ -113,7 +133,7 @@ export function OrganizeTabsSheet({
     );
 }
 
-function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () => void; onDelete: () => void }) {
+function SortableTabRow({ tab, onEdit, onDelete, onExport }: { tab: TabData; onEdit: () => void; onDelete: () => void; onExport: () => void }) {
     const {
         attributes,
         listeners,
@@ -152,12 +172,23 @@ function SortableTabRow({ tab, onEdit, onDelete }: { tab: TabData; onEdit: () =>
             >
                 <NotePencilIcon className="w-5 h-5" />
             </button>
-            <button
-                onClick={onDelete}
-                className="p-2 text-destructive hover:text-destructive/80 transition-colors"
-            >
-                <TrashIcon className="w-5 h-5" />
-            </button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button className="p-2 text-muted-foreground hover:text-foreground transition-colors">
+                        <DotsThreeIcon className="w-5 h-5" weight="bold" />
+                    </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onExport}>
+                        <DownloadSimpleIcon className="w-4 h-4 mr-2" />
+                        匯出
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                        <TrashIcon className="w-4 h-4 mr-2" />
+                        刪除
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 }

@@ -71,7 +71,7 @@ export default function CreateTabDialog({ open, onOpenChange, workspaceId }: Cre
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4 border-t">
+          <div className="space-y-4 pb-8">
             <div className="space-y-2">
               <Label htmlFor="tab-title">Tab 名稱</Label>
               <Input

@@ -149,17 +149,17 @@ npm run deploy
 
 使用 Cloudflare D1 (SQLite) + Drizzle ORM，共 9 張表：
 
-| 資料表 | 說明 |
-|--------|------|
-| `users` | 使用者帳號（Email + 密碼雜湊） |
-| `workspaces` | 工作區，每位使用者可建立多個 |
-| `tabs` | 分頁，支援 `folders` 和 `tags` 兩種類型 |
-| `folders` | 資料夾，支援無限巢狀（self-reference） |
-| `bookmarks` | 書籤項目 |
-| `tag_groups` | 標籤群組，含篩選模式（and / or / single） |
-| `tags` | 標籤 |
-| `bookmark_tags` | 書籤與標籤的多對多關聯 |
-| `shares` | 公開分享連結（token + 短網址） |
+| 資料表          | 說明                                      |
+| --------------- | ----------------------------------------- |
+| `users`         | 使用者帳號（Email + 密碼雜湊）            |
+| `workspaces`    | 工作區，每位使用者可建立多個              |
+| `tabs`          | 分頁，支援 `folders` 和 `tags` 兩種類型   |
+| `folders`       | 資料夾，支援無限巢狀（self-reference）    |
+| `bookmarks`     | 書籤項目                                  |
+| `tag_groups`    | 標籤群組，含篩選模式（and / or / single） |
+| `tags`          | 標籤                                      |
+| `bookmark_tags` | 書籤與標籤的多對多關聯                    |
+| `shares`        | 公開分享連結（token + 短網址）            |
 
 Schema 定義位於 [app/drizzle/schema.ts](app/drizzle/schema.ts)。
 
@@ -189,16 +189,9 @@ npm run deploy
 
 ## 待實作功能
 
-- [ ] 深色模式切換 UI（CSS 已支援，需加入切換按鈕）
-- [ ] 批量匯入書籤（Chrome / Firefox）
-- [ ] 匯出書籤（JSON / HTML）
-- [ ] 右鍵選單
 - [ ] 效能優化（虛擬滾動）
 - [ ] 多語系支援
 
-## 授權
-
-MIT License
 
 ## 致謝
 

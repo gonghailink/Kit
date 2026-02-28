@@ -64,6 +64,8 @@ import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { getHostname } from "~/lib/utils";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { Button } from "~/components/ui/button";
+import ImportBookmarksDialog from "~/components/tabs/ImportBookmarksDialog";
+import { exportTabToJSON } from "~/lib/bookmark-io";
 
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
@@ -458,6 +460,9 @@ export default function Dashboard() {
 
   // 管理標籤群組 Sheet 狀態（Tags 模式）
   const [showManageTagGroupsSheet, setShowManageTagGroupsSheet] = useState(false);
+
+  // 匯入書籤 Dialog 狀態
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   // Drag and Drop sensors
   const sensors = useSensors(
@@ -1145,6 +1150,8 @@ export default function Dashboard() {
           setDeleteResource({ type: "tab", id: tab.id, title: tab.title });
           setShowDeleteDialog(true);
         }}
+        onImport={() => setShowImportDialog(true)}
+        onExportTab={(tab) => exportTabToJSON(tab)}
       />
       <OrganizeFoldersSheet
         open={showOrganizeFoldersSheet}
@@ -1179,6 +1186,14 @@ export default function Dashboard() {
           onOpenChange={setShowManageTagGroupsSheet}
           tabId={activeTagsTab.id}
           tagGroups={activeTagsTab.tagGroups}
+        />
+      )}
+      {currentWorkspaceId && (
+        <ImportBookmarksDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          tabs={tabsState}
+          workspaceId={currentWorkspaceId}
         />
       )}
     </div>
