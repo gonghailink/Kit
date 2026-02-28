@@ -328,6 +328,7 @@ export function BookmarkView({
         onOpenChange={setShowSearchDialog}
         tabs={tabsData}
         onNavigateToTab={(tabId) => setActiveTabId(tabId)}
+        themeStyle={themeStyle}
       />
     </div>
   );

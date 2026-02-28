@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from "react";
-import { XIcon } from "@phosphor-icons/react";
+import { XIcon, LinkSimpleIcon } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import type { TabData, Tag } from "~/lib/types";
@@ -10,6 +10,7 @@ interface SearchDialogProps {
   onOpenChange: (open: boolean) => void;
   tabs: TabData[];
   onNavigateToTab?: (tabId: string) => void;
+  themeStyle?: React.CSSProperties;
 }
 
 /** 將文字中匹配到的 keywords 用 primary 色標亮 */
@@ -33,7 +34,7 @@ function highlightText(text: string, keywords: string[]): ReactNode {
   });
 }
 
-export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab }: SearchDialogProps) {
+export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab, themeStyle }: SearchDialogProps) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -73,7 +74,7 @@ export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab }: Sear
   );
 
   const openResult = useCallback((r: SearchResult) => {
-    window.open(r.bookmark.url, "_blank", "noopener,noreferrer");
+    window.open(r.bookmark.url, "_self");
   }, []);
 
   const buildPath = (r: SearchResult): string => {
@@ -105,6 +106,7 @@ export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab }: Sear
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-[680px] p-0 gap-0 !top-[15vh] !translate-y-0 rounded-2xl overflow-hidden"
+        style={themeStyle}
         onKeyDown={handleKeyDown}
       >
         <DialogTitle className="sr-only">搜尋書籤</DialogTitle>
@@ -147,14 +149,23 @@ export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab }: Sear
               key={r.bookmark.id}
               onClick={() => openResult(r)}
               onMouseEnter={() => setActiveIndex(i)}
-              className={`flex items-start justify-between gap-4 px-6 py-4 border-b border-border/60 cursor-pointer transition-colors ${
-                i === activeIndex ? "bg-card" : ""
-              }`}
+              className={`flex items-center justify-between gap-4 px-6 py-4 border-b border-border/60 cursor-pointer transition-colors ${i === activeIndex ? "bg-card" : ""
+                }`}
             >
               {/* Left: title + tags */}
               <div className="flex-1 min-w-0">
                 <div className="text-base text-foreground truncate">
                   {highlightText(r.bookmark.title, keywords)}
+                  {keywords.length > 0 &&
+                    keywords.some((kw) =>
+                      r.bookmark.url.toLowerCase().includes(kw)
+                    ) && (
+                      <LinkSimpleIcon
+                        className="inline-block ml-1.5 mb-0.5 text-primary align-text-bottom"
+                        size={16}
+                        weight="bold"
+                      />
+                    )}
                 </div>
                 {r.tags && r.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
