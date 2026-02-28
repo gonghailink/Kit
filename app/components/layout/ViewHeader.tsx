@@ -59,7 +59,7 @@ export function ViewHeader({
                         {/* 搜尋按鈕 */}
                         <button
                             onClick={onSearchClick}
-                            className="relative hidden md:flex items-center w-54 pl-9 pr-20 h-9 rounded-full border border-input bg-transparent text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                            className="relative hidden md:flex items-center w-54 pl-9 pr-20 h-9 rounded-full border bg-transparent text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                         >
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <span>搜尋書籤...</span>

@@ -304,9 +304,6 @@ export function BookmarkView({
               </Link>{" "}
               提供
             </p>
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/90 text-primary-foreground shadow-sm opacity-50">
-              <img src="/favicon-white.svg" alt="Kit" className="h-full w-full object-contain p-[1px] rounded-xl" />
-            </div>
           </div>
         </div>
       </main>
