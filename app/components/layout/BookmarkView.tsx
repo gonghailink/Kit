@@ -192,7 +192,7 @@ export function BookmarkView({
   }, [tagGroupOrderMap, groupTagIds]);
 
   return (
-    <div style={themeStyle} className="min-h-screen flex flex-col bg-transparent">
+    <div style={themeStyle} className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <ViewHeader
         title={title}
