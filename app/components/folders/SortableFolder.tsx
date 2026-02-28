@@ -1,4 +1,4 @@
-import { Plus, DotsThreeVertical, PencilSimple, Trash, ArrowBendDownRight, ArrowsDownUp } from "@phosphor-icons/react";
+import { Plus, DotsThreeVertical, PencilSimple, Trash, ArrowBendDownRight, ArrowsDownUp, ArrowBendDownRightIcon, PlusIcon, DotsThreeVerticalIcon, ArrowsDownUpIcon, TrashIcon } from "@phosphor-icons/react";
 import type { FolderWithChildren } from "~/lib/types";
 import {
     DropdownMenu,
@@ -30,12 +30,12 @@ export function SortableFolder({
 }: SortableFolderProps) {
     const hasSubfolders = folder.children && folder.children.length > 0;
     return (
-        <div className="px-6 py-4 bg-card rounded-xl">
+        <div className="px-6 pt-4 pb-5 bg-card rounded-xl">
             <div className="group flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>
                         {
-                            isNested && <ArrowBendDownRight className="w-4 h-4" />
+                            isNested && <ArrowBendDownRightIcon className="w-4 h-4" />
                         }
                         {folder.title}
                     </h2>
@@ -47,29 +47,29 @@ export function SortableFolder({
                             className="text-muted-foreground hover:text-foreground"
                             title="新增書籤"
                         >
-                            <Plus className="w-4 h-4" />
+                            <PlusIcon className="w-4 h-4" />
                         </button>
                     )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="text-muted-foreground hover:text-foreground">
-                                <DotsThreeVertical className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                                <DotsThreeVerticalIcon className={`${isNested ? 'w-3 h-3' : 'w-4 h-4'}`} />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={onCreateSubfolder}>
-                                <Plus className="w-4 h-4" />
+                                <PlusIcon className="w-4 h-4" />
                                 新增子資料夾
                             </DropdownMenuItem>
                             {hasSubfolders && onOrganizeSubfolders && (
                                 <DropdownMenuItem onClick={onOrganizeSubfolders}>
-                                    <ArrowsDownUp className="w-4 h-4" />
+                                    <ArrowsDownUpIcon className="w-4 h-4" />
                                     排序子資料夾
                                 </DropdownMenuItem>
                             )}
                             {isNested && (
                                 <DropdownMenuItem onClick={onCreateBookmark}>
-                                    <Plus className="w-4 h-4" />
+                                    <PlusIcon className="w-4 h-4" />
                                     新增書籤
                                 </DropdownMenuItem>
                             )}
@@ -81,7 +81,7 @@ export function SortableFolder({
                                 onClick={onDelete}
                                 className="text-destructive focus:text-destructive"
                             >
-                                <Trash className="w-4 h-4" />
+                                <TrashIcon className="w-4 h-4" />
                                 刪除
                             </DropdownMenuItem>
                         </DropdownMenuContent>

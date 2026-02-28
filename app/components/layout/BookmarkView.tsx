@@ -52,7 +52,6 @@ export function BookmarkView({
   }, []);
 
   const activeTab = tabsData.find((t) => t.id === activeTabId);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Tags 模式篩選
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
@@ -60,7 +59,6 @@ export function BookmarkView({
   // 切換 tab 時清除篩選並重置滾動
   useEffect(() => {
     setSelectedTagIds(new Set());
-    setSearchQuery("");
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [activeTabId]);
 
@@ -77,60 +75,15 @@ export function BookmarkView({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Folders 模式：搜尋過濾函數
-  const filterFolder = (folder: FolderWithChildren, query: string): FolderWithChildren | null => {
-    const lowerQuery = query.toLowerCase();
-
-    const filteredBookmarks = folder.bookmarks?.filter((bookmark) => {
-      return (
-        bookmark.title.toLowerCase().includes(lowerQuery) ||
-        bookmark.url.toLowerCase().includes(lowerQuery) ||
-        bookmark.memo?.toLowerCase().includes(lowerQuery)
-      );
-    });
-
-    const filteredChildren = folder.children
-      ?.map((child) => filterFolder(child, query))
-      .filter((child): child is FolderWithChildren => child !== null);
-
-    if ((filteredBookmarks && filteredBookmarks.length > 0) || (filteredChildren && filteredChildren.length > 0)) {
-      return {
-        ...folder,
-        bookmarks: filteredBookmarks || [],
-        children: filteredChildren || [],
-      };
-    }
-
-    return null;
-  };
-
   // 判斷當前 tab 類型
   const isActiveTagsTab = activeTab && activeTab.type === "tags";
   const activeFoldersTab = activeTab && activeTab.type !== "tags" ? activeTab as unknown as TabWithFolders : null;
   const activeTagsTab = activeTab && activeTab.type === "tags" ? activeTab as unknown as TabWithTags : null;
 
-  // Folders 模式：應用搜尋過濾
-  const filteredFoldersTab = activeFoldersTab && searchQuery ? {
-    ...activeFoldersTab,
-    folders: activeFoldersTab.folders
-      .map((folder: FolderWithChildren) => filterFolder(folder, searchQuery))
-      .filter((folder: FolderWithChildren | null): folder is FolderWithChildren => folder !== null),
-  } : activeFoldersTab;
-
   // Tags 模式：篩選書籤
   const filteredTagsBookmarks = useMemo(() => {
     if (!activeTagsTab) return [];
     let result = activeTagsTab.bookmarks;
-
-    // 搜尋篩選
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter((b: BookmarkWithTags) =>
-        b.title.toLowerCase().includes(lowerQuery) ||
-        b.url.toLowerCase().includes(lowerQuery) ||
-        b.memo?.toLowerCase().includes(lowerQuery)
-      );
-    }
 
     // Tag 篩選：各 group 內依 filter_mode (and/or/single)，group 之間為 AND
     // 排除 group 模式的 TagGroup（不參與篩選計算）
@@ -155,7 +108,7 @@ export function BookmarkView({
     }
 
     return result;
-  }, [activeTagsTab, searchQuery, selectedTagIds]);
+  }, [activeTagsTab, selectedTagIds]);
 
   const toggleTag = (tagId: string) => {
     const group = activeTagsTab?.tagGroups.find((g: TagGroupWithTags) =>
@@ -243,8 +196,7 @@ export function BookmarkView({
       {/* Header */}
       <ViewHeader
         title={title}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchClick={() => setShowSearchDialog(true)}
         extraBtn={extraBtn}
         tabs={tabsData as unknown as TabData[]}
         activeTabId={activeTabId}
@@ -272,7 +224,7 @@ export function BookmarkView({
                   <div className="text-center py-12">
                     <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">
-                      {searchQuery || selectedTagIds.size > 0
+                      {selectedTagIds.size > 0
                         ? "沒有符合條件的書籤"
                         : "此 Tab 尚無書籤"}
                     </p>
@@ -322,39 +274,19 @@ export function BookmarkView({
           ) : (
             /* Folders 模式 */
             <>
-              {!filteredFoldersTab || filteredFoldersTab.folders.length === 0 ? (
+              {!activeFoldersTab || activeFoldersTab.folders.length === 0 ? (
                 <div className="bg-card rounded-lg shadow-sm p-6">
                   <div className="text-center py-12">
                     <BookmarkIcon className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">
-                      {searchQuery ? "找不到符合搜尋條件的書籤" : "這個 Tab 目前沒有任何書籤"}
+                      這個 Tab 目前沒有任何書籤
                     </p>
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="mt-4 text-primary hover:underline"
-                      >
-                        清除搜尋
-                      </button>
-                    )}
                   </div>
                 </div>
               ) : (
                 <>
-                  {searchQuery && (
-                    <div className="mb-4 text-sm text-muted-foreground">
-                      搜尋結果：共找到 {filteredFoldersTab.folders.reduce((count: number, folder: FolderWithChildren) => {
-                        const countBookmarks = (f: FolderWithChildren): number => {
-                          const bookmarkCount = f.bookmarks?.length || 0;
-                          const childrenCount = f.children?.reduce((sum, child) => sum + countBookmarks(child), 0) || 0;
-                          return bookmarkCount + childrenCount;
-                        };
-                        return count + countBookmarks(folder);
-                      }, 0)} 個書籤
-                    </div>
-                  )}
                   <div className="space-y-6">
-                    {filteredFoldersTab.folders.map((folder: FolderWithChildren) => (
+                    {activeFoldersTab.folders.map((folder: FolderWithChildren) => (
                       <FolderCard key={folder.id} folder={folder} />
                     ))}
                   </div>

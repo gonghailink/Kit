@@ -249,14 +249,14 @@ function NestedFolders({
   folders: FolderWithChildren[];
   parentId: string;
   sensors: ReturnType<typeof useSensors>;
-  activeDragBookmark: Bookmark | null;
+  activeDragBookmark: Bookmark | undefined;
   handleNestedFolderDragEnd: (parentId: string) => (event: DragEndEvent) => void;
   handleBookmarkDragStart: (event: DragStartEvent) => void;
   getBookmarkDragEndHandler: (folderId: string) => (event: DragEndEvent) => void;
   handleBookmarkDragCancel: () => void;
-  handleEditBookmark: (bookmark: Bookmark) => void;
-  handleDeleteBookmark: (bookmark: Bookmark) => void;
-  handleMoveBookmark: (bookmark: Bookmark) => void;
+  handleEditBookmark: (bookmarkId: string) => void;
+  handleDeleteBookmark: (bookmarkId: string) => void;
+  handleMoveBookmark: (bookmarkId: string) => void;
   onEditFolder: (folder: FolderWithChildren) => void;
   onDeleteFolder: (folder: FolderWithChildren) => void;
   onCreateSubfolder: (folder: FolderWithChildren) => void;
@@ -828,7 +828,7 @@ export default function Dashboard() {
         />
 
         {/* Tabs Bar */}
-        <div className="flex flex-col backdrop-blur-sm border-b border-border">
+        <div className="flex flex-col bg-background border-b border-border">
           <div className="flex ps-6">
             {/* Tab 管理按鈕 */}
             <div className="flex items-center gap-1">
@@ -864,148 +864,148 @@ export default function Dashboard() {
       </div>
       {/* Main Content */}
       <main className="flex-1 relative bg-transparent">
-          <div className="p-6">
-            {tabsState.length === 0 ? (
-              // 空狀態
-              <div className="flex flex-col items-center justify-center h-full">
-                <BookmarkIcon className="w-16 h-16 text-muted-foreground/50 mb-4" />
-                <h2 className="text-xl font-semibold text-foreground mb-2">
-                  還沒有任何書籤
-                </h2>
-                <p className="text-muted-foreground mb-6">
-                  開始建立你的第一個 Tab 和資料夾吧！
-                </p>
-                <button
-                  onClick={() => setShowCreateTabDialog(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  新增 Tab
-                </button>
-              </div>
-            ) : activeTab && activeFoldersTab ? (
-              // Folders 模式：顯示資料夾和書籤
-              <div className="max-w-7xl mx-auto">
-                {activeFoldersTab.folders.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div>
-                      <p className="text-muted-foreground mb-4">
-                        此 Tab 尚無資料夾
-                      </p>
-                      <button
-                        onClick={() => setShowCreateFolderDialog(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors mx-auto"
-                      >
-                        <Plus className="w-4 h-4" />
-                        新增資料夾
-                      </button>
-                    </div>
-                  </div>
-                ) : (
+        <div className="p-6">
+          {tabsState.length === 0 ? (
+            // 空狀態
+            <div className="flex flex-col items-center justify-center h-full">
+              <BookmarkIcon className="w-16 h-16 text-muted-foreground/50 mb-4" />
+              <h2 className="text-xl font-semibold text-foreground mb-2">
+                還沒有任何書籤
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                開始建立你的第一個 Tab 和資料夾吧！
+              </p>
+              <button
+                onClick={() => setShowCreateTabDialog(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                新增 Tab
+              </button>
+            </div>
+          ) : activeTab && activeFoldersTab ? (
+            // Folders 模式：顯示資料夾和書籤
+            <div className="max-w-7xl mx-auto">
+              {activeFoldersTab.folders.length === 0 ? (
+                <div className="text-center py-12">
                   <div>
-                    {/* Top-level Folders */}
-                    <div className="grid grid-cols-1 gap-8 pb-16">
-                      {activeFoldersTab.folders.map((folder: FolderWithChildren) => (
-                        <SortableFolder
-                          key={folder.id}
-                          folder={folder}
-                          onEdit={() => {
-                            setEditingFolder(folder);
-                            setShowEditFolderDialog(true);
-                          }}
-                          onDelete={() => {
-                            setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
-                            setShowDeleteDialog(true);
-                          }}
-                          onCreateSubfolder={() => {
-                            setParentFolderId(folder.id);
-                            setShowCreateFolderDialog(true);
-                          }}
-                          onCreateBookmark={() => {
-                            setSelectedFolderId(folder.id);
-                            setSelectedFolderName(folder.title);
-                            setShowCreateBookmarkDialog(true);
-                          }}
-                          onOrganizeSubfolders={() => {
-                            setOrganizingSubFoldersParent(folder);
-                            setShowOrganizeSubFoldersSheet(true);
-                          }}
-                        >
-                          {/* Folder Bookmarks */}
-                          <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragStart={handleBookmarkDragStart}
-                            onDragEnd={getBookmarkDragEndHandler(folder.id)}
-                            onDragCancel={handleBookmarkDragCancel}
-                          >
-                            <SortableContext
-                              items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
-                              strategy={verticalListSortingStrategy}
-                            >
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
-                                {folder.bookmarks?.map((bookmark: Bookmark) => (
-                                  <SortableBookmark
-                                    key={bookmark.id}
-                                    bookmark={bookmark}
-                                    onEdit={handleEditBookmark}
-                                    onDelete={handleDeleteBookmark}
-                                    onMove={handleMoveBookmark}
-                                  />
-                                ))}
-                              </div>
-                            </SortableContext>
-                            <DragOverlay>
-                              {activeDragBookmark ? (
-                                <BookmarkCard bookmark={activeDragBookmark} />
-                              ) : null}
-                            </DragOverlay>
-                          </DndContext>
-
-                          {/* Nested Folders (recursive) */}
-                          {folder.children && folder.children.length > 0 && (
-                            <>
-                              <hr className="mt-8" />
-                              <div className="mt-4 -mr-4">
-                                <NestedFolders
-                                  folders={folder.children}
-                                  parentId={folder.id}
-                                  sensors={sensors}
-                                  activeDragBookmark={activeDragBookmark}
-                                  handleNestedFolderDragEnd={handleNestedFolderDragEnd}
-                                  handleBookmarkDragStart={handleBookmarkDragStart}
-                                  getBookmarkDragEndHandler={getBookmarkDragEndHandler}
-                                  handleBookmarkDragCancel={handleBookmarkDragCancel}
-                                  handleEditBookmark={handleEditBookmark}
-                                  handleDeleteBookmark={handleDeleteBookmark}
-                                  handleMoveBookmark={handleMoveBookmark}
-                                  onEditFolder={(f) => { setEditingFolder(f); setShowEditFolderDialog(true); }}
-                                  onDeleteFolder={(f) => { setDeleteResource({ type: "folder", id: f.id, title: f.title }); setShowDeleteDialog(true); }}
-                                  onCreateSubfolder={(f) => { setParentFolderId(f.id); setShowCreateFolderDialog(true); }}
-                                  onCreateBookmark={(f) => { setSelectedFolderId(f.id); setSelectedFolderName(f.title); setShowCreateBookmarkDialog(true); }}
-                                  onOrganizeSubfolders={(f) => { setOrganizingSubFoldersParent(f); setShowOrganizeSubFoldersSheet(true); }}
-                                />
-                              </div>
-                            </>
-                          )}
-                        </SortableFolder>
-                      ))}
-                    </div>
+                    <p className="text-muted-foreground mb-4">
+                      此 Tab 尚無資料夾
+                    </p>
+                    <button
+                      onClick={() => setShowCreateFolderDialog(true)}
+                      className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors mx-auto"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新增資料夾
+                    </button>
                   </div>
-                )}
-              </div>
-            ) : activeTab && activeTagsTab ? (
-              // Tags 模式：顯示書籤和標籤
-              <TagsTabContent
-                tab={activeTagsTab}
-                onCreateBookmark={() => {
-                  setShowCreateBookmarkDialog(true);
-                }}
-                onEditBookmark={handleEditBookmark}
-                onDeleteBookmark={handleDeleteBookmark}
-              />
-            ) : null}
-          </div>
+                </div>
+              ) : (
+                <div>
+                  {/* Top-level Folders */}
+                  <div className="grid grid-cols-1 gap-8 pb-16">
+                    {activeFoldersTab.folders.map((folder: FolderWithChildren) => (
+                      <SortableFolder
+                        key={folder.id}
+                        folder={folder}
+                        onEdit={() => {
+                          setEditingFolder(folder);
+                          setShowEditFolderDialog(true);
+                        }}
+                        onDelete={() => {
+                          setDeleteResource({ type: "folder", id: folder.id, title: folder.title });
+                          setShowDeleteDialog(true);
+                        }}
+                        onCreateSubfolder={() => {
+                          setParentFolderId(folder.id);
+                          setShowCreateFolderDialog(true);
+                        }}
+                        onCreateBookmark={() => {
+                          setSelectedFolderId(folder.id);
+                          setSelectedFolderName(folder.title);
+                          setShowCreateBookmarkDialog(true);
+                        }}
+                        onOrganizeSubfolders={() => {
+                          setOrganizingSubFoldersParent(folder);
+                          setShowOrganizeSubFoldersSheet(true);
+                        }}
+                      >
+                        {/* Folder Bookmarks */}
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragStart={handleBookmarkDragStart}
+                          onDragEnd={getBookmarkDragEndHandler(folder.id)}
+                          onDragCancel={handleBookmarkDragCancel}
+                        >
+                          <SortableContext
+                            items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
+                              {folder.bookmarks?.map((bookmark: Bookmark) => (
+                                <SortableBookmark
+                                  key={bookmark.id}
+                                  bookmark={bookmark}
+                                  onEdit={handleEditBookmark}
+                                  onDelete={handleDeleteBookmark}
+                                  onMove={handleMoveBookmark}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                          <DragOverlay>
+                            {activeDragBookmark ? (
+                              <BookmarkCard bookmark={activeDragBookmark} />
+                            ) : null}
+                          </DragOverlay>
+                        </DndContext>
+
+                        {/* Nested Folders (recursive) */}
+                        {folder.children && folder.children.length > 0 && (
+                          <>
+                            <hr className="mt-8" />
+                            <div className="mt-4 -mr-4">
+                              <NestedFolders
+                                folders={folder.children}
+                                parentId={folder.id}
+                                sensors={sensors}
+                                activeDragBookmark={activeDragBookmark}
+                                handleNestedFolderDragEnd={handleNestedFolderDragEnd}
+                                handleBookmarkDragStart={handleBookmarkDragStart}
+                                getBookmarkDragEndHandler={getBookmarkDragEndHandler}
+                                handleBookmarkDragCancel={handleBookmarkDragCancel}
+                                handleEditBookmark={handleEditBookmark}
+                                handleDeleteBookmark={handleDeleteBookmark}
+                                handleMoveBookmark={handleMoveBookmark}
+                                onEditFolder={(f) => { setEditingFolder(f); setShowEditFolderDialog(true); }}
+                                onDeleteFolder={(f) => { setDeleteResource({ type: "folder", id: f.id, title: f.title }); setShowDeleteDialog(true); }}
+                                onCreateSubfolder={(f) => { setParentFolderId(f.id); setShowCreateFolderDialog(true); }}
+                                onCreateBookmark={(f) => { setSelectedFolderId(f.id); setSelectedFolderName(f.title); setShowCreateBookmarkDialog(true); }}
+                                onOrganizeSubfolders={(f) => { setOrganizingSubFoldersParent(f); setShowOrganizeSubFoldersSheet(true); }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </SortableFolder>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : activeTab && activeTagsTab ? (
+            // Tags 模式：顯示書籤和標籤
+            <TagsTabContent
+              tab={activeTagsTab}
+              onCreateBookmark={() => {
+                setShowCreateBookmarkDialog(true);
+              }}
+              onEditBookmark={handleEditBookmark}
+              onDeleteBookmark={handleDeleteBookmark}
+            />
+          ) : null}
+        </div>
       </main>
 
       {/* Floating Action Buttons */}

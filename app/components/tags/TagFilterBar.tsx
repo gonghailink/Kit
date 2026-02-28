@@ -37,13 +37,13 @@ export function TagFilterBar({
   if (filterableGroups.length === 0 && !showGroupControl) return null;
 
   return (
-    <div className="mb-6 bg-card rounded-lg border-none p-4 space-y-4">
+    <div className="mb-6 bg-card rounded-lg border-none px-6 pt-4 pb-5 space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold text-foreground">篩選器</h2>
         {selectedTagIds.size > 0 && (
           <button
             onClick={onClearAllFilters}
-            className="pl-2 pr-2.5 pb-0 pt0.5 mt-1 text-primary hover:bg-primary/10 rounded-full text-sm italic hover:underline underline-offset-4"
+            className="pl-1 pr-2 pb-0 pt0.5 mt-1 text-primary hover:bg-primary/10 rounded text-sm italic hover:underline underline-offset-4"
           >
             清除篩選
           </button>

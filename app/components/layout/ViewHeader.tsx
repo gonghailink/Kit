@@ -1,16 +1,13 @@
-import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
-import { Input } from "~/components/ui/input";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { useEffect } from "react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 import { ThemeModeToggle } from "~/components/shared/ThemeModeToggle";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import type { TabData } from "~/lib/types";
 
 interface ViewHeaderProps {
     title: string;
-    searchQuery: string;
-    onSearchChange: (val: string) => void;
+    onSearchClick: () => void;
     extraBtn?: {
         title: string;
         url: string;
@@ -24,16 +21,13 @@ interface ViewHeaderProps {
 
 export function ViewHeader({
     title,
-    searchQuery,
-    onSearchChange,
+    onSearchClick,
     extraBtn,
     tabs,
     activeTabId,
     setActiveTabId,
     workspaceSwitcher,
 }: ViewHeaderProps) {
-    const [isSearchSheetOpen, setIsSearchSheetOpen] = useState(false);
-
     useEffect(() => {
         if (activeTabId) {
             const activeTabElement = document.getElementById(`tab-${activeTabId}`);
@@ -61,33 +55,22 @@ export function ViewHeader({
                             </div>
                         )}
                     </div>
-                    <div className="md:flex items-center gap-3">
-                        {/* 搜尋功能 */}
-                        <div className="relative hidden md:block">
+                    <div className="flex items-center gap-3">
+                        {/* 搜尋按鈕 */}
+                        <button
+                            onClick={onSearchClick}
+                            className="relative hidden md:flex items-center w-54 pl-9 pr-20 h-9 rounded-full border border-input bg-transparent text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                        >
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                            <Input
-                                placeholder="搜尋書籤..."
-                                value={searchQuery}
-                                onChange={(e) => onSearchChange(e.target.value)}
-                                className="w-64 pl-9 pr-20 rounded-full"
-                            />
-                            {searchQuery ? (
-                                <button
-                                    onClick={() => onSearchChange("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                                >
-                                    <XIcon className="size-4" />
-                                </button>
-                            ) : (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <KbdGroup className="opacity-50">
-                                        <Kbd>Ctrl</Kbd>
-                                        <span className="text-muted-foreground text-xs">+</span>
-                                        <Kbd>K</Kbd>
-                                    </KbdGroup>
-                                </div>
-                            )}
-                        </div>
+                            <span>搜尋書籤...</span>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <KbdGroup className="opacity-50">
+                                    <Kbd>⌘</Kbd>
+                                    <span className="text-muted-foreground text-xs">+</span>
+                                    <Kbd>K</Kbd>
+                                </KbdGroup>
+                            </div>
+                        </button>
 
                         <ThemeModeToggle />
 
@@ -115,7 +98,7 @@ export function ViewHeader({
                 {/* Tabs Bar */}
                 {tabs.length > 0 && (
                     <ScrollArea className="w-full">
-                        <div className="flex items-center gap-0 pl-4 pr-6 pt-2 pb-3">
+                        <div className="flex items-center gap-0 pl-4 pt-2 pb-3">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
@@ -132,6 +115,7 @@ export function ViewHeader({
                                     {tab.title}
                                 </button>
                             ))}
+                            <div className="shrink-0 w-6" />
                         </div>
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea>
@@ -140,57 +124,12 @@ export function ViewHeader({
 
             {/* Mobile Search Button */}
             <button
-                onClick={() => setIsSearchSheetOpen(true)}
+                onClick={onSearchClick}
                 className="md:hidden fixed bottom-32 right-6 p-4 bg-primary text-background rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
                 aria-label="搜尋書籤"
             >
                 <MagnifyingGlassIcon className="w-6 h-6" />
             </button>
-
-            {/* Mobile Search Sheet */}
-            <Sheet open={isSearchSheetOpen} onOpenChange={setIsSearchSheetOpen}>
-                <SheetContent side="bottom" className="h-auto">
-                    <SheetHeader>
-                        <SheetTitle>搜尋書籤</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6 pb-2 space-y-3">
-                        <div className="relative">
-                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                            <Input
-                                placeholder="輸入關鍵字搜尋..."
-                                value={searchQuery}
-                                onChange={(e) => onSearchChange(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && searchQuery) {
-                                        setIsSearchSheetOpen(false);
-                                    }
-                                }}
-                                className="pl-10 h-12 text-lg rounded-xl"
-                                autoFocus
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => onSearchChange("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xl leading-none"
-                                >
-                                    <XIcon className="size-4" />
-                                </button>
-                            )}
-                        </div>
-                        <button
-                            onClick={() => {
-                                if (searchQuery) {
-                                    setIsSearchSheetOpen(false);
-                                }
-                            }}
-                            disabled={!searchQuery}
-                            className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            搜尋
-                        </button>
-                    </div>
-                </SheetContent>
-            </Sheet>
         </>
     );
 }
