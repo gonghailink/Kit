@@ -3,6 +3,7 @@ import { XIcon, LinkSimpleIcon } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import type { TabData, Tag } from "~/lib/types";
+import { isTagsTab } from "~/lib/types";
 import { extractAllBookmarks, filterByQuery, type SearchResult } from "~/lib/search";
 
 interface SearchDialogProps {
@@ -61,6 +62,19 @@ export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab, themeS
   useEffect(() => {
     setActiveIndex(-1);
   }, [debouncedQuery]);
+
+  // Build tagGroupId -> color map from all tags tabs
+  const tagColorMap = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (const tab of tabs) {
+      if (isTagsTab(tab)) {
+        for (const tg of tab.tagGroups) {
+          map[tg.id] = tg.color;
+        }
+      }
+    }
+    return map;
+  }, [tabs]);
 
   const allBookmarks = useMemo(() => extractAllBookmarks(tabs), [tabs]);
   const filtered = useMemo(
@@ -149,42 +163,43 @@ export function SearchDialog({ open, onOpenChange, tabs, onNavigateToTab, themeS
               key={r.bookmark.id}
               onClick={() => openResult(r)}
               onMouseEnter={() => setActiveIndex(i)}
-              className={`flex items-center justify-between gap-4 px-6 py-4 border-b border-border/60 cursor-pointer transition-colors ${i === activeIndex ? "bg-card" : ""
-                }`}
+              className={`px-6 py-3 border-b border-border/60 cursor-pointer transition-colors ${i === activeIndex ? "bg-card" : ""}`}
             >
-              {/* Left: title + tags */}
-              <div className="flex-1 min-w-0">
-                <div className="text-base text-foreground truncate">
+              {/* Row 1: Title + LinkIcon ...... Folder path */}
+              <div className="flex items-center gap-2">
+                <span className="text-base font-medium text-foreground truncate">
                   {highlightText(r.bookmark.title, keywords)}
-                  {keywords.length > 0 &&
-                    keywords.some((kw) =>
-                      r.bookmark.url.toLowerCase().includes(kw)
-                    ) && (
-                      <LinkSimpleIcon
-                        className="inline-block ml-1.5 mb-0.5 text-primary align-text-bottom"
-                        size={16}
-                        weight="bold"
-                      />
-                    )}
-                </div>
-                {r.tags && r.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {r.tags.map((tag: Tag) => (
+                </span>
+                {r.bookmark.url && (
+                  <LinkSimpleIcon
+                    className="flex-shrink-0 text-muted-foreground"
+                    size={14}
+                  />
+                )}
+                <span className="ml-auto text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">
+                  {highlightText(buildPath(r), keywords)}
+                </span>
+              </div>
+              {/* Row 2: Tags */}
+              {r.tags && r.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {r.tags.map((tag: Tag) => {
+                    const color = tagColorMap[tag.tag_group_id] || null;
+                    return (
                       <span
                         key={tag.id}
-                        className="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary text-xs text-secondary-foreground"
+                        className="px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                        style={{
+                          backgroundColor: color ? `${color}20` : "hsl(var(--secondary))",
+                          color: color || "hsl(var(--muted-foreground))",
+                        }}
                       >
                         {highlightText(tag.title, keywords)}
                       </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Tab / Folder path */}
-              <div className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">
-                {highlightText(buildPath(r), keywords)}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))}
         </div>
