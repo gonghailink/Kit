@@ -1,4 +1,4 @@
-import { ArrowSquareOut, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon, BookmarkSimpleIcon as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
 
 interface BookmarkItemProps {
@@ -35,7 +35,7 @@ export function BookmarkItem({ bookmark, tags, tagColorMap }: BookmarkItemProps)
                         {bookmark.title}
                     </h4>
                     {bookmark.memo && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                             {bookmark.memo}
                         </p>
                     )}
@@ -59,7 +59,6 @@ export function BookmarkItem({ bookmark, tags, tagColorMap }: BookmarkItemProps)
                         </div>
                     )}
                 </div>
-                <ArrowSquareOut className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
         </a>
     );
