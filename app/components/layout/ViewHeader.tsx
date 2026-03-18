@@ -43,7 +43,7 @@ export function ViewHeader({
 
     return (
         <>
-            <div className="sticky top-0 z-30 bg-card/95 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
+            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
                 <div className="flex items-center justify-between px-6">
                     <div className="flex items-center space-x-3">
                         <h1 className="text-xl font-semibold text-foreground/90">
