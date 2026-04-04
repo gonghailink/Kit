@@ -382,7 +382,7 @@ export default function IntroPage() {
           <p className="text-sm text-neutral-500">
             &copy; {new Date().getFullYear()} Kit. Made by{" "}
             <a
-              href="https://lianglu.uk/"
+              href="https://lumakes.com/"
               className="text-neutral-400 transition-colors hover:text-white"
             >
               Liang Chin Lu
