@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /intro
+Allow: /share/
+Disallow: /dashboard
+Disallow: /me
+Disallow: /login
+Disallow: /api/
+Disallow: /s/
