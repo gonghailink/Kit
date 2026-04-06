@@ -1,6 +1,6 @@
 import { useFetcher } from "react-router";
 import { useEffect, useState } from "react";
-import { TextTIcon, ArrowSquareOutIcon, CheckIcon, CopyIcon, DesktopIcon, CircleNotchIcon, ShareNetworkIcon, TrashIcon } from "@phosphor-icons/react";
+import { TextTIcon, ArrowSquareOutIcon, CheckIcon, CopyIcon, DesktopIcon, CircleNotchIcon, ShareNetworkIcon, TrashIcon, PencilSimpleIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,10 @@ type CreateFetcherData =
   | { error: string; success?: never; share?: never }
   | { share: Share; success: true; error?: never };
 
+type UpdateFetcherData =
+  | { error: string; success?: never; share?: never }
+  | { share: Share; success: true; error?: never };
+
 type DeleteFetcherData =
   | { error: string; success?: never }
   | { success: true; error?: never };
@@ -32,6 +36,7 @@ export default function ShareDialog({
   workspaceId,
 }: ShareDialogProps) {
   const createFetcher = useFetcher<CreateFetcherData>();
+  const updateFetcher = useFetcher<UpdateFetcherData>();
   const deleteFetcher = useFetcher<DeleteFetcherData>();
   const loadFetcher = useFetcher<{ shares?: Share[] }>();
 
@@ -41,7 +46,15 @@ export default function ShareDialog({
   const [extraBtnTitle, setExtraBtnTitle] = useState("");
   const [extraBtnUrl, setExtraBtnUrl] = useState("");
 
+  // Edit mode state
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editShortLink, setEditShortLink] = useState("");
+  const [editExtraBtnTitle, setEditExtraBtnTitle] = useState("");
+  const [editExtraBtnUrl, setEditExtraBtnUrl] = useState("");
+
   const isCreating = createFetcher.state === "submitting";
+  const isUpdating = updateFetcher.state === "submitting";
   const shares = loadFetcher.data?.shares || [];
   const hasShare = shares.length > 0;
 
@@ -49,6 +62,7 @@ export default function ShareDialog({
   useEffect(() => {
     if (open && workspaceId) {
       loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
+      setEditing(false);
     }
   }, [open, workspaceId]);
 
@@ -58,6 +72,14 @@ export default function ShareDialog({
       loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
     }
   }, [createFetcher.data, isCreating, workspaceId]);
+
+  // 更新成功後重新載入並退出編輯模式
+  useEffect(() => {
+    if (updateFetcher.data && "success" in updateFetcher.data && updateFetcher.data.success && !isUpdating && workspaceId) {
+      loadFetcher.load(`/api/shares?workspace_id=${workspaceId}`);
+      setEditing(false);
+    }
+  }, [updateFetcher.data, isUpdating, workspaceId]);
 
   // 刪除成功後重新載入
   useEffect(() => {
@@ -89,6 +111,38 @@ export default function ShareDialog({
     });
   };
 
+  const handleStartEdit = (share: Share) => {
+    setEditName(share.name || "");
+    setEditShortLink(share.short_link || "");
+    setEditExtraBtnTitle(share.extra_btn_title || "");
+    setEditExtraBtnUrl(share.extra_btn_url || "");
+    setEditing(true);
+  };
+
+  const handleUpdate = (shareId: string) => {
+    const formData = new FormData();
+    formData.append("intent", "update");
+    formData.append("id", shareId);
+    formData.append("workspace_id", workspaceId);
+    if (editName.trim()) {
+      formData.append("name", editName.trim());
+    }
+    if (editShortLink.trim()) {
+      formData.append("short_link", editShortLink.trim());
+    }
+    if (editExtraBtnTitle.trim()) {
+      formData.append("extra_btn_title", editExtraBtnTitle.trim());
+    }
+    if (editExtraBtnUrl.trim()) {
+      formData.append("extra_btn_url", editExtraBtnUrl.trim());
+    }
+
+    updateFetcher.submit(formData, {
+      method: "post",
+      action: "/api/shares",
+    });
+  };
+
   const handleDelete = (shareId: string) => {
     deleteFetcher.submit(
       {
@@ -110,16 +164,6 @@ export default function ShareDialog({
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("zh-TW", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -148,60 +192,170 @@ export default function ShareDialog({
                   : `${window.location.origin}/share/${share.share_token}`;
 
                 return (
-                  <div
-                    key={share.id}
-                  >
+                  <div key={share.id}>
                     <div className="min-w-0 space-y-4 pb-4">
                       <div className="min-w-0 px-4 pt-2 pb-1.5 rounded-xl bg-muted text-foreground">
                         <p className="text-sm font-mono break-all">
                           {shareUrl}
                         </p>
                       </div>
-                      <div className="grid grid-cols-1 gap-2 pt-2">
-                        {share.name && (
-                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                            <TextTIcon className="w-4 h-4" /> {share.name}
-                          </p>
-                        )}
-                        {share.extra_btn_title && share.extra_btn_url && (
-                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                            <ArrowSquareOutIcon className="w-4 h-4" /> {share.extra_btn_title}
-                            <span className="text-muted-foreground/50">({share.extra_btn_url})</span>
-                          </p>
-                        )}
-                      </div>
+
+                      {editing ? (
+                        // 編輯模式
+                        <div className="space-y-4 pt-2">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium">
+                              顯示名稱（選填）
+                            </label>
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder="例如：小明"
+                              className="w-full px-3 py-2 border border-input rounded-full bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              disabled={isUpdating}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium">
+                              自訂短網址（選填）
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              留空則使用隨機產生的長網址。只能使用英數字、底線和連字號。
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">/s/</span>
+                              <input
+                                type="text"
+                                value={editShortLink}
+                                onChange={(e) => setEditShortLink(e.target.value)}
+                                placeholder="例如：myBookmarks"
+                                className="flex-1 px-3 py-2 border border-input rounded-full bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                disabled={isUpdating}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium">
+                              附加按鈕（選填）
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              在分享頁面右上角顯示自訂按鈕，兩個欄位都需填寫才會顯示。
+                            </p>
+                            <input
+                              type="text"
+                              value={editExtraBtnTitle}
+                              onChange={(e) => setEditExtraBtnTitle(e.target.value)}
+                              placeholder="按鈕文字，例如：聯絡我"
+                              className="w-full px-3 py-2 border border-input rounded-full bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              disabled={isUpdating}
+                            />
+                            <input
+                              type="url"
+                              value={editExtraBtnUrl}
+                              onChange={(e) => setEditExtraBtnUrl(e.target.value)}
+                              placeholder="按鈕連結，例如：https://example.com"
+                              className="w-full px-3 py-2 border border-input rounded-full bg-background/70 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              disabled={isUpdating}
+                            />
+                          </div>
+
+                          {updateFetcher.data && "error" in updateFetcher.data && updateFetcher.data.error && (
+                            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-lg">
+                              {updateFetcher.data.error}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // 顯示模式
+                        <div className="grid grid-cols-1 gap-2 pt-2">
+                          {share.name && (
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                              <TextTIcon className="w-4 h-4" /> {share.name}
+                            </p>
+                          )}
+                          {share.extra_btn_title && share.extra_btn_url && (
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                              <ArrowSquareOutIcon className="w-4 h-4" /> {share.extra_btn_title}
+                              <span className="text-muted-foreground/50">({share.extra_btn_url})</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
+
                     <div className="flex gap-2 pt-4">
-                      <Button
-                        onClick={() => handleCopy(share)}
-                        className="flex-1 gap-2 rounded-full"
-                      >
-                        {copied ? (
-                          <>
-                            <CheckIcon className="w-4 h-4" />
-                            已複製
-                          </>
-                        ) : (
-                          <>
-                            <CopyIcon className="w-4 h-4" />
-                            複製連結
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-full"
-                        onClick={() => window.open(shareUrl, "_blank")}
-                      >
-                        <ArrowSquareOutIcon className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="rounded-full"
-                        onClick={() => handleDelete(share.id)}
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </Button>
+                      {editing ? (
+                        <>
+                          <Button
+                            onClick={() => handleUpdate(share.id)}
+                            disabled={isUpdating}
+                            className="flex-1 gap-2 rounded-full"
+                          >
+                            {isUpdating ? (
+                              <>
+                                <CircleNotchIcon className="w-4 h-4 animate-spin" />
+                                儲存中...
+                              </>
+                            ) : (
+                              <>
+                                <FloppyDiskIcon className="w-4 h-4" />
+                                儲存變更
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={() => setEditing(false)}
+                            disabled={isUpdating}
+                          >
+                            取消
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            onClick={() => handleCopy(share)}
+                            className="flex-1 gap-2 rounded-full"
+                          >
+                            {copied ? (
+                              <>
+                                <CheckIcon className="w-4 h-4" />
+                                已複製
+                              </>
+                            ) : (
+                              <>
+                                <CopyIcon className="w-4 h-4" />
+                                複製連結
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={() => handleStartEdit(share)}
+                          >
+                            <PencilSimpleIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-full"
+                            onClick={() => window.open(shareUrl, "_blank")}
+                          >
+                            <ArrowSquareOutIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="rounded-full"
+                            onClick={() => handleDelete(share.id)}
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

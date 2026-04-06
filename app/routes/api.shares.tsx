@@ -155,6 +155,103 @@ export async function action({ request, context }: ActionFunctionArgs) {
         return { share: newShare, success: true };
       }
 
+      case "update": {
+        const id = formData.get("id") as string;
+        const workspaceId = formData.get("workspace_id") as string;
+
+        if (!id || !workspaceId) {
+          return data({ error: "缺少必要參數" }, { status: 400 });
+        }
+
+        // 確認分享連結存在且屬於該使用者
+        const existingShare = await db
+          .select()
+          .from(shares)
+          .where(and(
+            eq(shares.id, id),
+            eq(shares.user_id, user.id),
+            eq(shares.workspace_id, workspaceId)
+          ))
+          .get();
+
+        if (!existingShare) {
+          return data({ error: "找不到該分享連結" }, { status: 404 });
+        }
+
+        const updatedName = formData.get("name") as string | null;
+        const updatedShortLink = formData.get("short_link") as string | null;
+        const updatedExtraBtnTitle = formData.get("extra_btn_title") as string | null;
+        const updatedExtraBtnUrl = formData.get("extra_btn_url") as string | null;
+
+        // 驗證短網址格式
+        if (updatedShortLink) {
+          const shortLinkRegex = /^[a-zA-Z0-9_-]+$/;
+          if (!shortLinkRegex.test(updatedShortLink)) {
+            return data(
+              { error: "短網址只能包含英數字、底線和連字號" },
+              { status: 400 }
+            );
+          }
+
+          if (updatedShortLink.length < 3 || updatedShortLink.length > 50) {
+            return data(
+              { error: "短網址長度必須在 3-50 個字元之間" },
+              { status: 400 }
+            );
+          }
+
+          // 檢查短網址是否已被其他分享使用
+          if (updatedShortLink !== existingShare.short_link) {
+            const existingShortLink = await db
+              .select({ id: shares.id })
+              .from(shares)
+              .where(eq(shares.short_link, updatedShortLink))
+              .get();
+
+            if (existingShortLink) {
+              return data(
+                { error: "這個短網址已被使用，請換一個" },
+                { status: 400 }
+              );
+            }
+          }
+        }
+
+        // 驗證附加按鈕
+        if ((updatedExtraBtnTitle && !updatedExtraBtnUrl) || (!updatedExtraBtnTitle && updatedExtraBtnUrl)) {
+          return data(
+            { error: "附加按鈕的標題和網址必須同時填寫或同時留空" },
+            { status: 400 }
+          );
+        }
+
+        if (updatedExtraBtnUrl) {
+          try {
+            new URL(updatedExtraBtnUrl);
+          } catch {
+            return data(
+              { error: "附加按鈕的網址格式不正確" },
+              { status: 400 }
+            );
+          }
+        }
+
+        const updatedShare = await db
+          .update(shares)
+          .set({
+            name: updatedName || null,
+            short_link: updatedShortLink || null,
+            extra_btn_title: updatedExtraBtnTitle || null,
+            extra_btn_url: updatedExtraBtnUrl || null,
+          })
+          .where(eq(shares.id, id))
+          .returning()
+          .get();
+
+        await bumpUserDataHash(db, user.id);
+        return { share: updatedShare, success: true };
+      }
+
       case "delete": {
         const id = formData.get("id") as string;
         const workspaceId = formData.get("workspace_id") as string;
