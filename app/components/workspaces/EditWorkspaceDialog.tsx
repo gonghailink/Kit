@@ -27,27 +27,18 @@ type FetcherData =
 /** 預設色值（對應 globals.css light mode） */
 const DEFAULT_COLORS = {
   theme_primary: "#171717",
-  theme_background: "#ffffff",
-  theme_card: "#f2f2f2",
-  theme_secondary: "#d9d9d9",
-  theme_foreground: "#0a0a0a",
+  theme_secondary: "#ffffff",
 };
 
 /** 預設深色色值（對應 globals.css .dark） */
 const DARK_DEFAULT_COLORS = {
   theme_primary: "#fafafa",
-  theme_background: "#0a0a0a",
-  theme_card: "#0a0a0a",
-  theme_secondary: "#262626",
-  theme_foreground: "#fafafa",
+  theme_secondary: "#ffffff",
 };
 
 const COLOR_LABELS: Record<string, string> = {
   theme_primary: "主色",
-  theme_background: "背景色",
-  theme_card: "資料夾顏色",
   theme_secondary: "書籤顏色",
-  theme_foreground: "文字顏色",
 };
 
 const FONT_OPTIONS = [
@@ -123,17 +114,11 @@ export default function EditWorkspaceDialog({
       setTitle(workspace.title);
       setColors({
         theme_primary: workspace.theme_primary || DEFAULT_COLORS.theme_primary,
-        theme_background: workspace.theme_background || DEFAULT_COLORS.theme_background,
-        theme_card: workspace.theme_card || DEFAULT_COLORS.theme_card,
         theme_secondary: workspace.theme_secondary || DEFAULT_COLORS.theme_secondary,
-        theme_foreground: workspace.theme_foreground || DEFAULT_COLORS.theme_foreground,
       });
       setDarkColors({
         theme_primary: workspace.theme_dark_primary || DARK_DEFAULT_COLORS.theme_primary,
-        theme_background: workspace.theme_dark_background || DARK_DEFAULT_COLORS.theme_background,
-        theme_card: workspace.theme_dark_card || DARK_DEFAULT_COLORS.theme_card,
         theme_secondary: workspace.theme_dark_secondary || DARK_DEFAULT_COLORS.theme_secondary,
-        theme_foreground: workspace.theme_dark_foreground || DARK_DEFAULT_COLORS.theme_foreground,
       });
       setFont(workspace.theme_font || "sans");
     }
@@ -277,11 +262,10 @@ export default function EditWorkspaceDialog({
                     type="button"
                     onClick={() => setFont(option.value)}
                     disabled={isSubmitting}
-                    className={`flex-1 px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                      font === option.value
-                        ? "border-primary bg-primary/10 text-primary font-medium"
-                        : "border-border hover:border-primary/50 text-muted-foreground"
-                    }`}
+                    className={`flex-1 px-3 py-2.5 rounded-lg border text-sm transition-all ${font === option.value
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-border hover:border-primary/50 text-muted-foreground"
+                      }`}
                     style={{ fontFamily: option.font }}
                   >
                     {option.label}

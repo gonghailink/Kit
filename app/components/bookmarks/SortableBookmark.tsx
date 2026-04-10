@@ -58,7 +58,7 @@ export const SortableBookmark = memo(function SortableBookmark({
                     ref={setNodeRef}
                     {...attributes}
                     {...listeners}
-                    className={`group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
+                    className={`group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg transition-all cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
                 >
                     {showIndicatorBefore && (
                         <div className="absolute -left-[10px] top-1 bottom-1 w-[3px] bg-primary rounded-full z-10" />

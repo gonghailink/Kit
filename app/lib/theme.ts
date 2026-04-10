@@ -38,6 +38,19 @@ export function hexToHsl(hex: string): string {
 }
 
 /**
+ * 將 hex 色碼轉為 RGB 格式 "R, G, B"
+ */
+export function hexToRgb(hex: string): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return "0, 0, 0";
+
+  const r = parseInt(result[1], 16);
+  const g = parseInt(result[2], 16);
+  const b = parseInt(result[3], 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+/**
  * 根據亮度決定文字應該是黑色還是白色
  */
 function contrastForeground(hex: string): string {
@@ -88,16 +101,10 @@ const FONT_MAP: Record<string, string> = {
 
 export interface ThemeWorkspace {
   theme_primary?: string | null;
-  theme_background?: string | null;
-  theme_card?: string | null;
   theme_secondary?: string | null;
-  theme_foreground?: string | null;
   theme_font?: string | null;
   theme_dark_primary?: string | null;
-  theme_dark_background?: string | null;
-  theme_dark_card?: string | null;
   theme_dark_secondary?: string | null;
-  theme_dark_foreground?: string | null;
 }
 
 /**
@@ -109,71 +116,54 @@ export function generateThemeStyle(workspace: ThemeWorkspace | null | undefined,
 
   // 根據 isDark 決定讀取哪組欄位
   const theme_primary = isDark ? workspace.theme_dark_primary : workspace.theme_primary;
-  const theme_background = isDark ? workspace.theme_dark_background : workspace.theme_background;
-  const theme_card = isDark ? workspace.theme_dark_card : workspace.theme_card;
   const theme_secondary = isDark ? workspace.theme_dark_secondary : workspace.theme_secondary;
-  const theme_foreground = isDark ? workspace.theme_dark_foreground : workspace.theme_foreground;
-  const theme_font = workspace.theme_font;
 
-  // 沒有任何主題設定時直接回傳空物件（dark 模式由 globals.css .dark 預設色處理）
-  if (!theme_primary && !theme_background && !theme_card && !theme_secondary && !theme_foreground && !theme_font) {
+  // 如果沒有主色設定，直接回傳空物件
+  if (!theme_primary) {
     return {};
   }
 
   const vars: Record<string, string> = {};
 
   // 主色
-  if (theme_primary) {
-    const hsl = hexToHsl(theme_primary);
-    if (hsl) {
-      vars["--primary"] = hsl;
-      vars["--primary-foreground"] = contrastForeground(theme_primary);
-      vars["--ring"] = hsl;
-      vars["--accent"] = hsl;
-      vars["--accent-foreground"] = contrastForeground(theme_primary);
-    }
+  const hsl = hexToHsl(theme_primary);
+  const rgb = hexToRgb(theme_primary);
+  if (hsl) {
+    vars["--primary"] = hsl;
+    vars["--primary-rgb"] = rgb; // 用於漸層
+    vars["--primary-foreground"] = contrastForeground(theme_primary);
+    vars["--ring"] = hsl;
+    vars["--accent"] = hsl;
+    vars["--accent-foreground"] = contrastForeground(theme_primary);
   }
 
-  // 背景色
-  if (theme_background) {
-    const hsl = hexToHsl(theme_background);
-    if (hsl) {
-      vars["--background"] = hsl;
-      // 衍生：border, input, muted 從背景色微調
-      vars["--border"] = adjustHslLightness(hsl, -10);
-      vars["--input"] = adjustHslLightness(hsl, -10);
-      vars["--muted"] = adjustHslLightness(hsl, -8);
-    }
-  }
+  // 背景漸層：基礎色 + 主色漸層覆蓋
+  const baseBackground = isDark ? "0 0% 15%" : "0 0% 100%"; // 深色：灰色，淺色：白色
+  const gradient = `linear-gradient(to bottom, rgba(${rgb}, 0) 0%, rgba(${rgb}, 0) 80%, rgba(${rgb}, 0.06) 85%, rgba(${rgb}, 0.10) 90%, rgba(${rgb}, 0.15) 95%, rgba(${rgb}, 0.2) 100%)`;
+  vars["--background"] = baseBackground;
+  vars["--background-color"] = baseBackground;
+  vars["--background-gradient"] = gradient;
 
-  // 資料夾顏色 (card)
-  if (theme_card) {
-    const hsl = hexToHsl(theme_card);
-    if (hsl) {
-      vars["--card"] = hsl;
-      vars["--popover"] = hsl;
-    }
-  }
+  // 文字顏色：全域字色依深色/淺色模式決定，避免主色過亮或過暗時整體文字失衡
+  const defaultForeground = isDark ? "0 0% 98%" : "0 0% 3.9%";
+  vars["--foreground"] = defaultForeground;
+  vars["--card-foreground"] = defaultForeground;
+  vars["--popover-foreground"] = defaultForeground;
+  vars["--secondary-foreground"] = defaultForeground;
+  vars["--muted-foreground"] = adjustHslSaturation(adjustHslLightness(defaultForeground, isDark ? -20 : 20), -10);
 
-  // 書籤顏色 (secondary)
+  // 衍生顏色：border, input, muted 從背景微調（但現在背景是漸層，所以用預設）
+  // 這裡簡化，不設定這些，因為背景是漸層
+
+  // 書籤顏色：如果設定了，使用設定值，否則預設白色
   if (theme_secondary) {
-    const hsl = hexToHsl(theme_secondary);
-    if (hsl) {
-      vars["--secondary"] = hsl;
+    const secondaryHsl = hexToHsl(theme_secondary);
+    if (secondaryHsl) {
+      vars["--secondary"] = secondaryHsl;
     }
-  }
-
-  // 文字顏色 (foreground)
-  if (theme_foreground) {
-    const hsl = hexToHsl(theme_foreground);
-    if (hsl) {
-      vars["--foreground"] = hsl;
-      vars["--card-foreground"] = hsl;
-      vars["--popover-foreground"] = hsl;
-      vars["--secondary-foreground"] = hsl;
-      // muted-foreground: 降低飽和度 + 調整亮度往中間靠
-      vars["--muted-foreground"] = adjustHslSaturation(adjustHslLightness(hsl, 20), -10);
-    }
+  } else {
+    // Tailwind expects raw HSL components in --secondary, not the full hsl() wrapper.
+    vars["--secondary"] = "0 0% 100%"; // 預設白色
   }
 
   // 轉換為 CSSProperties 格式
@@ -182,7 +172,14 @@ export function generateThemeStyle(workspace: ThemeWorkspace | null | undefined,
     style[key] = value;
   }
 
-  // 字體
+  // 同時把漸層設定成 root container 的背景圖，確保它能直接顯示
+  style.backgroundImage = gradient;
+  style.backgroundRepeat = "no-repeat";
+  style.backgroundAttachment = "fixed";
+  style.backgroundSize = "cover";
+
+  // 字體（如果有設定）
+  const theme_font = workspace.theme_font;
   if (theme_font && FONT_MAP[theme_font]) {
     style["fontFamily"] = FONT_MAP[theme_font];
   }

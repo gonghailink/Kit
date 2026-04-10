@@ -8,7 +8,7 @@ interface FolderCardProps {
 
 export function FolderCard({ folder }: FolderCardProps) {
     return (
-        <div className="bg-card rounded-xl p-6 shadow-sm">
+        <div className="rounded-xl p-6">
             {/* 資料夾標題 */}
             <h2 className="text-lg font-semibold text-foreground mb-4">
                 {folder.title}
@@ -22,7 +22,7 @@ export function FolderCard({ folder }: FolderCardProps) {
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-8 bg-secondary/40 rounded-lg">
+                <div className="text-center py-8 bg-background rounded-lg">
                     <p className="text-sm text-muted-foreground">
                         此資料夾尚無書籤
                     </p>
@@ -31,7 +31,7 @@ export function FolderCard({ folder }: FolderCardProps) {
 
             {/* 子資料夾區域 */}
             {folder.children && folder.children.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-border/60">
                     <SubFolderTree folders={folder.children} />
                 </div>
             )}

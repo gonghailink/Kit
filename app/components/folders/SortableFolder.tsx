@@ -39,7 +39,7 @@ export function SortableFolder({
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
-                <div className="px-6 pt-4 pb-5 bg-card rounded-xl">
+                <div className="px-6 pt-4 pb-5 rounded-xl bg-transparent">
                     <div className="group flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>

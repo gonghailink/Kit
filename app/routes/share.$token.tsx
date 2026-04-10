@@ -47,13 +47,11 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
       .select({
         theme_primary: workspacesSchema.theme_primary,
         theme_background: workspacesSchema.theme_background,
-        theme_card: workspacesSchema.theme_card,
         theme_secondary: workspacesSchema.theme_secondary,
         theme_foreground: workspacesSchema.theme_foreground,
         theme_font: workspacesSchema.theme_font,
         theme_dark_primary: workspacesSchema.theme_dark_primary,
         theme_dark_background: workspacesSchema.theme_dark_background,
-        theme_dark_card: workspacesSchema.theme_dark_card,
         theme_dark_secondary: workspacesSchema.theme_dark_secondary,
         theme_dark_foreground: workspacesSchema.theme_dark_foreground,
       })

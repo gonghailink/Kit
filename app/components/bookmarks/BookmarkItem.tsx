@@ -13,7 +13,7 @@ export function BookmarkItem({ bookmark, tags, tagColorMap }: BookmarkItemProps)
             href={bookmark.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative bg-secondary rounded-lg p-4 hover:shadow-lg border border-secondary/50 hover:border-primary/70 transition-all"
+            className="group relative bg-secondary rounded-lg p-4 hover:shadow-lg transition-all"
         >
             <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (

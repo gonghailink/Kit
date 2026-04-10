@@ -236,7 +236,7 @@ export function BookmarkView({
                   {groupedTagsBookmarks.map((group) => (
                     <div
                       key={group.tag?.id || "uncategorized"}
-                      className="bg-card rounded-xl p-6 shadow-sm"
+                      className="rounded-xl py-6"
                     >
                       <h2
                         className="text-lg font-semibold mb-4"

@@ -87,10 +87,11 @@
     color: hsl(var(--foreground));
     font-family: var(--font-sans);
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(1200px 600px at 8% -10%, hsl(var(--muted) / 0.5), transparent 60%),
-      radial-gradient(900px 500px at 92% -15%, hsl(var(--border) / 0.4), transparent 55%);
+    background-image: var(--background-gradient, none);
+    background-repeat: no-repeat;
     background-attachment: fixed;
+    background-size: cover;
+    min-height: 100vh;
   }
 
 }

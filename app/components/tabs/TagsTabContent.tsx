@@ -423,7 +423,7 @@ function SortableGroupSection({
   }, [group.bookmarks, onReorder]);
 
   return (
-    <div className="px-6 py-4 bg-card rounded-xl">
+    <div className="rounded-xl p-6 bg-transparent">
       <h2
         className="text-lg font-semibold mb-4"
         style={{ color: group.color || undefined }}
