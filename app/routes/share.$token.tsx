@@ -1,5 +1,12 @@
 import { type LoaderFunctionArgs, type MetaFunction } from "react-router";
-import { useLoaderData, useSearchParams, type ClientLoaderFunctionArgs } from "react-router";
+import {
+  Link,
+  isRouteErrorResponse,
+  useLoaderData,
+  useRouteError,
+  useSearchParams,
+  type ClientLoaderFunctionArgs,
+} from "react-router";
 import { createDb } from "~/lib/db.server";
 import { shares, tabs, folders, bookmarks, users, workspaces as workspacesSchema, tagGroups as tagGroupsSchema, tags as tagsSchema, bookmarkTags as bookmarkTagsSchema } from "~/drizzle/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -21,7 +28,7 @@ export const meta: MetaFunction<typeof loader> = ({ data }) => {
   ];
 };
 
-export async function loader({ params, request, context }: LoaderFunctionArgs) {
+export async function loader({ params, context }: LoaderFunctionArgs) {
   const { token } = params;
 
   if (!token) {
@@ -46,14 +53,10 @@ export async function loader({ params, request, context }: LoaderFunctionArgs) {
     const workspace = await db
       .select({
         theme_primary: workspacesSchema.theme_primary,
-        theme_background: workspacesSchema.theme_background,
         theme_secondary: workspacesSchema.theme_secondary,
-        theme_foreground: workspacesSchema.theme_foreground,
         theme_font: workspacesSchema.theme_font,
         theme_dark_primary: workspacesSchema.theme_dark_primary,
-        theme_dark_background: workspacesSchema.theme_dark_background,
         theme_dark_secondary: workspacesSchema.theme_dark_secondary,
-        theme_dark_foreground: workspacesSchema.theme_dark_foreground,
       })
       .from(workspacesSchema)
       .where(eq(workspacesSchema.id, share.workspace_id))
@@ -230,5 +233,36 @@ export default function SharePage() {
       } : undefined}
       workspace={workspace as ThemeWorkspace | undefined}
     />
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  const isResponseError = isRouteErrorResponse(error);
+  const status = isResponseError ? error.status : 500;
+  const title = status === 404 ? "找不到分享連結" : "載入分享內容失敗";
+  const description = isResponseError && typeof error.data === "string"
+    ? error.data
+    : "請稍後再試，或請分享者重新確認此連結是否有效。";
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-8 text-center shadow-sm">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">{status}</p>
+          <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
+          <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+
+        <div className="mt-6 flex justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+          >
+            返回首頁
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
