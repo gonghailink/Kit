@@ -116,6 +116,7 @@ export const SortableBookmark = memo(function SortableBookmark({
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button
+                                    onPointerDown={(e) => e.stopPropagation()}
                                     onClick={(e) => e.preventDefault()}
                                     className="p-1 rounded hover:bg-secondary/90"
                                 >

@@ -466,7 +466,10 @@ export default function Dashboard() {
 
   // Drag and Drop sensors
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      // 需移動 8px 才觸發拖曳，避免點擊卡片內按鈕（如「更多」選單）時誤觸拖曳
+      activationConstraint: { distance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
