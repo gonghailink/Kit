@@ -62,7 +62,7 @@ export function SortableFolder({
                 >
                     <div className="group flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>
+                            <h2 className={`flex items-center gap-2 text-foreground ${isNested ? 'text-md font-medium' : 'text-lg font-semibold'}`}>
                                 {
                                     isNested && <ArrowBendDownRightIcon className="w-4 h-4" />
                                 }

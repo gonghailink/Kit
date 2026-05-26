@@ -24,7 +24,7 @@ function CollapsibleSubFolder({ folder }: { folder: FolderWithChildren }) {
         <div>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 text-md font-medium text-muted-foreground mb-3 hover:text-primary transition-colors"
+                className="flex items-center gap-2 text-md font-medium text-foreground mb-3 hover:text-primary transition-colors"
             >
                 {isOpen ? (
                     <CaretDown className="w-4 h-4" />
