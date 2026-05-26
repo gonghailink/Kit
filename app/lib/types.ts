@@ -4,10 +4,13 @@ export interface Workspace {
   user_id: string;
   sort_order: number | null;
   theme_primary: string | null;
-  theme_secondary: string | null;
   theme_font: string | null;
-  theme_dark_primary: string | null;
-  theme_dark_secondary: string | null;
+  theme_text_color: string | null;
+  theme_background_type: string | null;
+  theme_background_color: string | null;
+  theme_background_gradient_from: string | null;
+  theme_background_gradient_to: string | null;
+  theme_background_image_url: string | null;
   created_at: string;
 }
 

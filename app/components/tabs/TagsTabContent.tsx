@@ -49,7 +49,10 @@ export function TagsTabContent({
   }, [tab.bookmarks]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      // 長按 200ms 才觸發拖曳；短按視為點擊（觸發書籤卡片的編輯）
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })

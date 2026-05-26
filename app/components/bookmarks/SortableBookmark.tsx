@@ -1,13 +1,7 @@
 import { memo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
-import { DotsThreeVertical, PencilSimple, FolderOpen, Trash, Tag as TagIcon, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
+import { PencilSimple, FolderOpen, Trash, Tag as TagIcon, BookmarkSimple as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import {
     ContextMenu,
     ContextMenuContent,
@@ -15,6 +9,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "~/components/ui/context-menu";
+import { bookmarkCardSurfaceClass } from "~/components/bookmarks/cardStyles";
 
 interface SortableBookmarkProps {
     bookmark: Bookmark;
@@ -58,7 +53,8 @@ export const SortableBookmark = memo(function SortableBookmark({
                     ref={setNodeRef}
                     {...attributes}
                     {...listeners}
-                    className={`group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg transition-all cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
+                    onClick={() => onEdit(bookmark.id)}
+                    className={`${bookmarkCardSurfaceClass} cursor-pointer active:cursor-grabbing select-none [-webkit-touch-callout:none] ${isDragging ? "opacity-30" : ""}`}
                 >
                     {showIndicatorBefore && (
                         <div className="absolute -left-[10px] top-1 bottom-1 w-[3px] bg-primary rounded-full z-10" />
@@ -111,44 +107,6 @@ export const SortableBookmark = memo(function SortableBookmark({
                                 </div>
                             )}
                         </div>
-                    </div>
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => e.preventDefault()}
-                                    className="p-1 rounded hover:bg-secondary/90"
-                                >
-                                    <DotsThreeVertical className="w-3 h-3 text-muted-foreground" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onEdit(bookmark.id)}>
-                                    <PencilSimple className="w-4 h-4" />
-                                    編輯
-                                </DropdownMenuItem>
-                                {onMove && (
-                                    <DropdownMenuItem onClick={() => onMove(bookmark.id)}>
-                                        <FolderOpen className="w-4 h-4" />
-                                        移動到資料夾
-                                    </DropdownMenuItem>
-                                )}
-                                {onManageTags && (
-                                    <DropdownMenuItem onClick={() => onManageTags(bookmark.id)}>
-                                        <TagIcon className="w-4 h-4" />
-                                        管理標籤
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                    onClick={() => onDelete(bookmark.id)}
-                                    className="text-destructive focus:text-destructive"
-                                >
-                                    <Trash className="w-4 h-4" />
-                                    刪除
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                 </div>
             </ContextMenuTrigger>

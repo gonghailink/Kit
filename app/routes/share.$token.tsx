@@ -53,10 +53,13 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     const workspace = await db
       .select({
         theme_primary: workspacesSchema.theme_primary,
-        theme_secondary: workspacesSchema.theme_secondary,
         theme_font: workspacesSchema.theme_font,
-        theme_dark_primary: workspacesSchema.theme_dark_primary,
-        theme_dark_secondary: workspacesSchema.theme_dark_secondary,
+        theme_text_color: workspacesSchema.theme_text_color,
+        theme_background_type: workspacesSchema.theme_background_type,
+        theme_background_color: workspacesSchema.theme_background_color,
+        theme_background_gradient_from: workspacesSchema.theme_background_gradient_from,
+        theme_background_gradient_to: workspacesSchema.theme_background_gradient_to,
+        theme_background_image_url: workspacesSchema.theme_background_image_url,
       })
       .from(workspacesSchema)
       .where(eq(workspacesSchema.id, share.workspace_id))

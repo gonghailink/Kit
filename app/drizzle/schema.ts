@@ -16,10 +16,13 @@ export const workspaces = sqliteTable("workspaces", {
     title: text("title").notNull(),
     sort_order: real("sort_order").default(0),
     theme_primary: text("theme_primary"),
-    theme_secondary: text("theme_secondary"),
     theme_font: text("theme_font"),
-    theme_dark_primary: text("theme_dark_primary"),
-    theme_dark_secondary: text("theme_dark_secondary"),
+    theme_text_color: text("theme_text_color"),
+    theme_background_type: text("theme_background_type"),
+    theme_background_color: text("theme_background_color"),
+    theme_background_gradient_from: text("theme_background_gradient_from"),
+    theme_background_gradient_to: text("theme_background_gradient_to"),
+    theme_background_image_url: text("theme_background_image_url"),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
 

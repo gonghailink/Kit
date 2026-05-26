@@ -9,6 +9,28 @@ type ActionData =
   | { error: string; success?: never }
   | { success: true; error?: never };
 
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const TEXT_COLOR_VALUES = ["black", "white"] as const;
+const BACKGROUND_TYPES = ["solid", "gradient", "image"] as const;
+const HEX_THEME_FIELDS = [
+  "theme_primary",
+  "theme_background_color",
+  "theme_background_gradient_from",
+  "theme_background_gradient_to",
+] as const;
+
+function isValidBackgroundImageUrl(value: string): boolean {
+  return value.startsWith("/") || /^https?:\/\//i.test(value);
+}
+
+function isTextColor(value: string): value is typeof TEXT_COLOR_VALUES[number] {
+  return (TEXT_COLOR_VALUES as readonly string[]).includes(value);
+}
+
+function isBackgroundType(value: string): value is typeof BACKGROUND_TYPES[number] {
+  return (BACKGROUND_TYPES as readonly string[]).includes(value);
+}
+
 // GET - 獲取用戶的所有工作區
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { user } = await requireAuth(request, context.cloudflare.env);
@@ -89,7 +111,16 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         // 主題欄位（空字串視為清除）
-        const themeFields = ["theme_primary", "theme_secondary", "theme_font", "theme_dark_primary", "theme_dark_secondary"] as const;
+        const themeFields = [
+          "theme_primary",
+          "theme_font",
+          "theme_text_color",
+          "theme_background_type",
+          "theme_background_color",
+          "theme_background_gradient_from",
+          "theme_background_gradient_to",
+          "theme_background_image_url",
+        ] as const;
         const themeUpdate: Record<string, string | null> = {};
         for (const field of themeFields) {
           const value = formData.get(field) as string | null;
@@ -101,6 +132,28 @@ export async function action({ request, context }: ActionFunctionArgs) {
         // 驗證 theme_font 值
         if (themeUpdate.theme_font && !["serif", "sans", "mono"].includes(themeUpdate.theme_font)) {
           return data({ error: "無效的字體設定" }, { status: 400 });
+        }
+
+        if (themeUpdate.theme_text_color && !isTextColor(themeUpdate.theme_text_color)) {
+          return data({ error: "無效的文字色彩設定" }, { status: 400 });
+        }
+
+        if (themeUpdate.theme_background_type && !isBackgroundType(themeUpdate.theme_background_type)) {
+          return data({ error: "無效的背景設定" }, { status: 400 });
+        }
+
+        for (const field of HEX_THEME_FIELDS) {
+          const value = themeUpdate[field];
+          if (value && !HEX_COLOR_RE.test(value)) {
+            return data({ error: "無效的色碼設定" }, { status: 400 });
+          }
+        }
+
+        if (
+          themeUpdate.theme_background_image_url &&
+          !isValidBackgroundImageUrl(themeUpdate.theme_background_image_url)
+        ) {
+          return data({ error: "背景圖片網址必須是 http(s) 或站內路徑" }, { status: 400 });
         }
 
         const updatedWorkspace = await db

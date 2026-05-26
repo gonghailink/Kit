@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { BookmarkSimpleIcon as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
+import { bookmarkCardSurfaceClass } from "~/components/bookmarks/cardStyles";
 
 interface BookmarkCardProps {
     bookmark: Bookmark;
@@ -14,7 +15,7 @@ export const BookmarkCard = memo(function BookmarkCard({
     tagColorMap,
 }: BookmarkCardProps) {
     return (
-        <div className="group relative bg-secondary/50 rounded-lg p-4 hover:shadow-lg transition-all">
+        <div className={bookmarkCardSurfaceClass}>
             <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (
                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90">

@@ -7,6 +7,7 @@ import {
   useLoaderData,
 } from "react-router";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
+import { useEffect } from "react";
 import globalsCss from "./globals.css?url";
 
 // 定義環境變數型別
@@ -73,6 +74,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { ENV } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+    window.localStorage.removeItem("bk-theme-mode");
+  }, []);
 
   return (
     <>

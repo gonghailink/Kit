@@ -30,6 +30,11 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", "Helvetica Neue", Arial, sans-serif;
+    --bookmark-card-bg: rgba(255, 255, 255, 0.62);
+    --bookmark-card-hover-bg: rgba(255, 255, 255, 0.78);
+    --bookmark-card-border: rgba(15, 23, 42, 0.1);
+    --bookmark-card-hover-border: hsl(var(--primary) / 0.55);
+    --bookmark-card-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
   }
 
   .dark {
@@ -57,6 +62,11 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --bookmark-card-bg: rgba(12, 15, 23, 0.46);
+    --bookmark-card-hover-bg: rgba(12, 15, 23, 0.58);
+    --bookmark-card-border: rgba(255, 255, 255, 0.16);
+    --bookmark-card-hover-border: hsl(var(--primary) / 0.72);
+    --bookmark-card-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
   }
 }
 

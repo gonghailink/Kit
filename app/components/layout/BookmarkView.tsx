@@ -7,7 +7,6 @@ import { ViewHeader } from "~/components/layout/ViewHeader";
 import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
 import { TagFilterBar } from "~/components/tags/TagFilterBar";
 import { SearchDialog } from "~/components/shared/SearchDialog";
-import { useThemeMode } from "~/components/shared/ThemeModeToggle";
 import { generateThemeStyle, type ThemeWorkspace } from "~/lib/theme";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 
@@ -30,10 +29,9 @@ export function BookmarkView({
   workspaceSwitcher,
   workspace,
 }: BookmarkViewProps) {
-  const { isDark } = useThemeMode();
   const themeStyle = useMemo(
-    () => generateThemeStyle(workspace, isDark),
-    [workspace, isDark]
+    () => generateThemeStyle(workspace),
+    [workspace]
   );
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
@@ -192,7 +190,7 @@ export function BookmarkView({
   }, [tagGroupOrderMap, groupTagIds]);
 
   return (
-    <div style={themeStyle} className="min-h-screen flex flex-col bg-background">
+    <div style={themeStyle} className="min-h-screen flex flex-col bg-background px-6 pt-6">
       {/* Header */}
       <ViewHeader
         title={title}

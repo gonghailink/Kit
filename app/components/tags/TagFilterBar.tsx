@@ -37,7 +37,7 @@ export function TagFilterBar({
   if (filterableGroups.length === 0 && !showGroupControl) return null;
 
   return (
-    <div className="mb-6 bg-card rounded-lg border-none px-6 pt-4 pb-5 space-y-4">
+    <div className="mb-6 rounded-2xl border border-[color:var(--bookmark-card-border)] bg-[var(--bookmark-card-bg)] shadow-[var(--bookmark-card-shadow)] backdrop-blur-xl px-6 pt-4 pb-5 space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold text-foreground">篩選器</h2>
         {selectedTagIds.size > 0 && (

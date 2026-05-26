@@ -1,5 +1,6 @@
 import { ArrowSquareOutIcon, BookmarkSimpleIcon as BookmarkIcon } from "@phosphor-icons/react";
 import type { Bookmark, Tag } from "~/lib/types";
+import { bookmarkCardSurfaceClass } from "~/components/bookmarks/cardStyles";
 
 interface BookmarkItemProps {
     bookmark: Bookmark;
@@ -13,7 +14,7 @@ export function BookmarkItem({ bookmark, tags, tagColorMap }: BookmarkItemProps)
             href={bookmark.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative bg-secondary rounded-lg p-4 hover:shadow-lg transition-all"
+            className={bookmarkCardSurfaceClass}
         >
             <div className="flex items-start gap-3">
                 {bookmark.favicon_url ? (

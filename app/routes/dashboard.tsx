@@ -229,16 +229,10 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-// Recursive component for rendering nested folders at any depth
+// Recursive component for rendering nested folders at any depth.
+// 不再各自開 DndContext — 由外層單一 DndContext 處理跨資料夾拖曳偵測。
 function NestedFolders({
   folders: nestedFolders,
-  parentId,
-  sensors,
-  activeDragBookmark,
-  handleNestedFolderDragEnd,
-  handleBookmarkDragStart,
-  getBookmarkDragEndHandler,
-  handleBookmarkDragCancel,
   handleEditBookmark,
   handleDeleteBookmark,
   handleMoveBookmark,
@@ -249,13 +243,6 @@ function NestedFolders({
   onOrganizeSubfolders,
 }: {
   folders: FolderWithChildren[];
-  parentId: string;
-  sensors: ReturnType<typeof useSensors>;
-  activeDragBookmark: Bookmark | undefined;
-  handleNestedFolderDragEnd: (parentId: string) => (event: DragEndEvent) => void;
-  handleBookmarkDragStart: (event: DragStartEvent) => void;
-  getBookmarkDragEndHandler: (folderId: string) => (event: DragEndEvent) => void;
-  handleBookmarkDragCancel: () => void;
   handleEditBookmark: (bookmarkId: string) => void;
   handleDeleteBookmark: (bookmarkId: string) => void;
   handleMoveBookmark: (bookmarkId: string) => void;
@@ -266,87 +253,58 @@ function NestedFolders({
   onOrganizeSubfolders: (folder: FolderWithChildren) => void;
 }) {
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleNestedFolderDragEnd(parentId)}
-    >
-      <SortableContext
-        items={nestedFolders.map((f) => f.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        {nestedFolders.map((childFolder) => (
-          <div key={childFolder.id}>
-            <SortableFolder
-              folder={childFolder}
-              isNested={true}
-              onEdit={() => onEditFolder(childFolder)}
-              onDelete={() => onDeleteFolder(childFolder)}
-              onCreateSubfolder={() => onCreateSubfolder(childFolder)}
-              onCreateBookmark={() => onCreateBookmark(childFolder)}
-              onOrganizeSubfolders={() => onOrganizeSubfolders(childFolder)}
+    <>
+      {nestedFolders.map((childFolder) => (
+        <div key={childFolder.id}>
+          <SortableFolder
+            folder={childFolder}
+            isNested={true}
+            onEdit={() => onEditFolder(childFolder)}
+            onDelete={() => onDeleteFolder(childFolder)}
+            onCreateSubfolder={() => onCreateSubfolder(childFolder)}
+            onCreateBookmark={() => onCreateBookmark(childFolder)}
+            onOrganizeSubfolders={() => onOrganizeSubfolders(childFolder)}
+          >
+            <SortableContext
+              items={childFolder.bookmarks?.map((b) => b.id) || []}
+              strategy={verticalListSortingStrategy}
             >
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleBookmarkDragStart}
-                onDragEnd={getBookmarkDragEndHandler(childFolder.id)}
-                onDragCancel={handleBookmarkDragCancel}
-              >
-                <SortableContext
-                  items={childFolder.bookmarks?.map((b) => b.id) || []}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {childFolder.bookmarks?.map((bookmark) => (
-                      <SortableBookmark
-                        key={bookmark.id}
-                        bookmark={bookmark}
-                        onEdit={handleEditBookmark}
-                        onDelete={handleDeleteBookmark}
-                        onMove={handleMoveBookmark}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-                <DragOverlay>
-                  {activeDragBookmark ? (
-                    <BookmarkCard bookmark={activeDragBookmark} />
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {childFolder.bookmarks?.map((bookmark) => (
+                  <SortableBookmark
+                    key={bookmark.id}
+                    bookmark={bookmark}
+                    onEdit={handleEditBookmark}
+                    onDelete={handleDeleteBookmark}
+                    onMove={handleMoveBookmark}
+                  />
+                ))}
+              </div>
+            </SortableContext>
 
-              {/* Recurse into deeper children */}
-              {childFolder.children && childFolder.children.length > 0 && (
-                <>
-                  <hr className="mt-8" />
-                  <div className="mt-4 -mr-4">
-                    <NestedFolders
-                      folders={childFolder.children}
-                      parentId={childFolder.id}
-                      sensors={sensors}
-                      activeDragBookmark={activeDragBookmark}
-                      handleNestedFolderDragEnd={handleNestedFolderDragEnd}
-                      handleBookmarkDragStart={handleBookmarkDragStart}
-                      getBookmarkDragEndHandler={getBookmarkDragEndHandler}
-                      handleBookmarkDragCancel={handleBookmarkDragCancel}
-                      handleEditBookmark={handleEditBookmark}
-                      handleDeleteBookmark={handleDeleteBookmark}
-                      handleMoveBookmark={handleMoveBookmark}
-                      onEditFolder={onEditFolder}
-                      onDeleteFolder={onDeleteFolder}
-                      onCreateSubfolder={onCreateSubfolder}
-                      onCreateBookmark={onCreateBookmark}
-                      onOrganizeSubfolders={onOrganizeSubfolders}
-                    />
-                  </div>
-                </>
-              )}
-            </SortableFolder>
-          </div>
-        ))}
-      </SortableContext>
-    </DndContext>
+            {/* Recurse into deeper children */}
+            {childFolder.children && childFolder.children.length > 0 && (
+              <>
+                <hr className="mt-8" />
+                <div className="mt-4 -mr-4">
+                  <NestedFolders
+                    folders={childFolder.children}
+                    handleEditBookmark={handleEditBookmark}
+                    handleDeleteBookmark={handleDeleteBookmark}
+                    handleMoveBookmark={handleMoveBookmark}
+                    onEditFolder={onEditFolder}
+                    onDeleteFolder={onDeleteFolder}
+                    onCreateSubfolder={onCreateSubfolder}
+                    onCreateBookmark={onCreateBookmark}
+                    onOrganizeSubfolders={onOrganizeSubfolders}
+                  />
+                </div>
+              </>
+            )}
+          </SortableFolder>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -389,13 +347,15 @@ export default function Dashboard() {
   const reorderTabsFetcher = useFetcher();
   const reorderFoldersFetcher = useFetcher();
   const reorderBookmarksFetcher = useFetcher();
+  const moveBookmarkFetcher = useFetcher();
   const reorderWorkspacesFetcher = useFetcher();
 
   // 確保 tabs 數據更新時同步，但排序進行中時跳過（避免覆蓋 optimistic update）
   const isReordering =
     reorderBookmarksFetcher.state !== "idle" ||
     reorderFoldersFetcher.state !== "idle" ||
-    reorderTabsFetcher.state !== "idle";
+    reorderTabsFetcher.state !== "idle" ||
+    moveBookmarkFetcher.state !== "idle";
   useEffect(() => {
     if (!isReordering) {
       setTabs(tabs as unknown as TabData[]);
@@ -467,8 +427,8 @@ export default function Dashboard() {
   // Drag and Drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      // 需移動 8px 才觸發拖曳，避免點擊卡片內按鈕（如「更多」選單）時誤觸拖曳
-      activationConstraint: { distance: 8 },
+      // 長按 200ms 才觸發拖曳；短按視為點擊（觸發書籤卡片的編輯）
+      activationConstraint: { delay: 200, tolerance: 5 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -603,70 +563,165 @@ export default function Dashboard() {
   const activeTabIdRef = useRef(activeTabId);
   activeTabIdRef.current = activeTabId;
 
-  const bookmarkDragEndHandlers = useRef(new Map<string, (event: DragEndEvent) => void>());
+  // 統一處理書籤拖曳結束：偵測來源資料夾、目標資料夾、目標位置，分別處理「同資料夾排序」與「跨資料夾搬遷」。
+  const handleBookmarkDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDragBookmarkId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const getBookmarkDragEndHandler = useCallback((folderId: string) => {
-    let handler = bookmarkDragEndHandlers.current.get(folderId);
-    if (handler) return handler;
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    const overData = over.data.current as { type?: string; folderId?: string } | undefined;
 
-    handler = (event: DragEndEvent) => {
-      setActiveDragBookmarkId(null);
-      const { active, over } = event;
+    setTabs((prevTabs: TabData[]) => {
+      return prevTabs.map((tab: TabData) => {
+        if (tab.id !== activeTabIdRef.current || !isFoldersTab(tab)) return tab;
 
-      if (over && active.id !== over.id) {
-        setTabs((prevTabs: TabData[]) => {
-          return prevTabs.map((tab: TabData) => {
-            if (tab.id !== activeTabIdRef.current || !isFoldersTab(tab)) return tab;
+        // 找到來源書籤與所屬資料夾
+        let sourceFolderId: string | null = null;
+        let activeBookmark: Bookmark | null = null;
+        const findSource = (folders: FolderWithChildren[]): boolean => {
+          for (const f of folders) {
+            const b = f.bookmarks?.find((b: Bookmark) => b.id === activeId);
+            if (b) {
+              sourceFolderId = f.id;
+              activeBookmark = b;
+              return true;
+            }
+            if (f.children && findSource(f.children)) return true;
+          }
+          return false;
+        };
+        findSource(tab.folders);
+        if (!sourceFolderId || !activeBookmark) return tab;
 
-            const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
-              const targetFolder = folders.find((f: FolderWithChildren) => f.id === folderId);
-              if (targetFolder && targetFolder.bookmarks) {
-                const oldIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === active.id);
-                const newIndex = targetFolder.bookmarks.findIndex((b: Bookmark) => b.id === over.id);
-
-                if (oldIndex !== -1 && newIndex !== -1) {
-                  const newBookmarks = arrayMove(targetFolder.bookmarks, oldIndex, newIndex);
-
-                  const ids = newBookmarks.map((b: Bookmark) => b.id);
-                  const sortOrders = newBookmarks.map((_: Bookmark, index: number) => (index + 1) * 1000);
-
-                  reorderBookmarksFetcher.submit(
-                    {
-                      intent: "reorder",
-                      ids: JSON.stringify(ids),
-                      sortOrders: JSON.stringify(sortOrders),
-                    },
-                    {
-                      method: "post",
-                      action: "/api/bookmarks",
-                    }
-                  );
-
-                  return folders.map((f: FolderWithChildren) =>
-                    f.id === folderId
-                      ? { ...f, bookmarks: newBookmarks }
-                      : { ...f, children: f.children ? updateFolders(f.children) : [] }
-                  );
-                }
+        // 判斷目標資料夾與是否拖到特定書籤上
+        let targetFolderId: string | null = null;
+        let overBookmarkId: string | null = null;
+        if (overData?.type === "folder" && overData.folderId) {
+          targetFolderId = overData.folderId;
+        } else {
+          overBookmarkId = overId;
+          const findTargetFolder = (folders: FolderWithChildren[]): void => {
+            for (const f of folders) {
+              if (f.bookmarks?.some((b: Bookmark) => b.id === overId)) {
+                targetFolderId = f.id;
+                return;
               }
+              if (f.children) {
+                findTargetFolder(f.children);
+                if (targetFolderId) return;
+              }
+            }
+          };
+          findTargetFolder(tab.folders);
+        }
+        if (!targetFolderId) return tab;
 
-              return folders.map((f: FolderWithChildren) => ({
-                ...f,
-                children: f.children ? updateFolders(f.children) : [],
-              }));
-            };
+        // CASE 1: 同資料夾內排序
+        if (sourceFolderId === targetFolderId) {
+          if (!overBookmarkId) return tab; // 拖到自己的資料夾標題上，無動作
+          const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
+            return folders.map((f: FolderWithChildren) => {
+              if (f.id === sourceFolderId && f.bookmarks) {
+                const oldIndex = f.bookmarks.findIndex((b: Bookmark) => b.id === activeId);
+                const newIndex = f.bookmarks.findIndex((b: Bookmark) => b.id === overBookmarkId);
+                if (oldIndex === -1 || newIndex === -1) return f;
+                const newBookmarks = arrayMove(f.bookmarks, oldIndex, newIndex);
+                const ids = newBookmarks.map((b: Bookmark) => b.id);
+                const sortOrders = newBookmarks.map((_: Bookmark, i: number) => (i + 1) * 1000);
+                reorderBookmarksFetcher.submit(
+                  {
+                    intent: "reorder",
+                    ids: JSON.stringify(ids),
+                    sortOrders: JSON.stringify(sortOrders),
+                  },
+                  { method: "post", action: "/api/bookmarks" }
+                );
+                return { ...f, bookmarks: newBookmarks };
+              }
+              return { ...f, children: f.children ? updateFolders(f.children) : [] };
+            });
+          };
+          return { ...tab, folders: updateFolders(tab.folders) };
+        }
 
-            return {
-              ...tab,
-              folders: updateFolders(tab.folders),
-            };
+        // CASE 2: 跨資料夾搬遷
+        // 計算目標位置的 sort_order：拖到特定書籤時，插到該書籤前；否則接在最後
+        let computedSortOrder: number | null = null;
+        const findFolder = (folders: FolderWithChildren[], id: string): FolderWithChildren | null => {
+          for (const f of folders) {
+            if (f.id === id) return f;
+            if (f.children) {
+              const found = findFolder(f.children, id);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const targetFolder = findFolder(tab.folders, targetFolderId);
+        if (targetFolder?.bookmarks) {
+          const bookmarksInTarget = targetFolder.bookmarks;
+          if (overBookmarkId) {
+            const overIndex = bookmarksInTarget.findIndex((b: Bookmark) => b.id === overBookmarkId);
+            if (overIndex !== -1) {
+              const prev = overIndex > 0 ? bookmarksInTarget[overIndex - 1].sort_order : 0;
+              const next = bookmarksInTarget[overIndex].sort_order;
+              computedSortOrder = (prev + next) / 2;
+            }
+          }
+          if (computedSortOrder === null) {
+            const last = bookmarksInTarget.length > 0 ? bookmarksInTarget[bookmarksInTarget.length - 1].sort_order : 0;
+            computedSortOrder = last + 1000;
+          }
+        } else {
+          computedSortOrder = 1000;
+        }
+
+        // optimistic：從來源移除、插入到目標
+        const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
+          return folders.map((f: FolderWithChildren) => {
+            const next: FolderWithChildren = { ...f };
+            if (f.id === sourceFolderId && f.bookmarks) {
+              next.bookmarks = f.bookmarks.filter((b: Bookmark) => b.id !== activeId);
+            }
+            if (f.id === targetFolderId && f.bookmarks) {
+              const updated = next.bookmarks
+                ? [...next.bookmarks]
+                : [...f.bookmarks];
+              const movedBookmark: Bookmark = {
+                ...(activeBookmark as Bookmark),
+                folder_id: targetFolderId!,
+                sort_order: computedSortOrder!,
+              };
+              if (overBookmarkId) {
+                const idx = updated.findIndex((b: Bookmark) => b.id === overBookmarkId);
+                if (idx === -1) updated.push(movedBookmark);
+                else updated.splice(idx, 0, movedBookmark);
+              } else {
+                updated.push(movedBookmark);
+              }
+              next.bookmarks = updated;
+            }
+            next.children = f.children ? updateFolders(f.children) : [];
+            return next;
           });
-        });
-      }
-    };
-    bookmarkDragEndHandlers.current.set(folderId, handler);
-    return handler;
-  }, [reorderBookmarksFetcher]);
+        };
+
+        moveBookmarkFetcher.submit(
+          {
+            intent: "move",
+            id: activeId,
+            newFolderId: targetFolderId,
+            sortOrder: String(computedSortOrder),
+          },
+          { method: "post", action: "/api/bookmarks" }
+        );
+
+        return { ...tab, folders: updateFolders(tab.folders) };
+      });
+    });
+  }, [reorderBookmarksFetcher, moveBookmarkFetcher]);
 
   // Handle top-level folder reorder via Sheet
   const handleTopLevelFolderReorder = (newFolders: FolderWithChildren[]) => {
@@ -740,64 +795,6 @@ export default function Dashboard() {
     });
   };
 
-  // Handle nested folder reorder
-  const handleNestedFolderDragEnd = (parentId: string) => (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setTabs((prevTabs: TabData[]) => {
-        return prevTabs.map((tab: TabData) => {
-          if (tab.id !== activeTabId || !isFoldersTab(tab)) return tab;
-
-          const updateFolders = (folders: FolderWithChildren[]): FolderWithChildren[] => {
-            const parentFolder = folders.find((f: FolderWithChildren) => f.id === parentId);
-            if (parentFolder && parentFolder.children) {
-              const oldIndex = parentFolder.children.findIndex((f: FolderWithChildren) => f.id === active.id);
-              const newIndex = parentFolder.children.findIndex((f: FolderWithChildren) => f.id === over.id);
-
-              if (oldIndex !== -1 && newIndex !== -1) {
-                const newChildren = arrayMove(parentFolder.children, oldIndex, newIndex);
-
-                // 提交到 API
-                const ids = newChildren.map((f: FolderWithChildren) => f.id);
-                const sortOrders = newChildren.map((_: FolderWithChildren, index: number) => (index + 1) * 1000);
-
-                reorderFoldersFetcher.submit(
-                  {
-                    intent: "reorder",
-                    ids: JSON.stringify(ids),
-                    sortOrders: JSON.stringify(sortOrders),
-                  },
-                  {
-                    method: "post",
-                    action: "/api/folders",
-                  }
-                );
-
-                return folders.map((f: FolderWithChildren) =>
-                  f.id === parentId
-                    ? { ...f, children: newChildren }
-                    : { ...f, children: f.children ? updateFolders(f.children) : [] }
-                );
-              }
-            }
-
-            // 遞迴處理子資料夾
-            return folders.map((f: FolderWithChildren) => ({
-              ...f,
-              children: f.children ? updateFolders(f.children) : [],
-            }));
-          };
-
-          return {
-            ...tab,
-            folders: updateFolders(tab.folders),
-          };
-        });
-      });
-    }
-  };
-
   const activeTab = tabsState.find((t) => t.id === activeTabId);
   const activeFoldersTab = activeTab && isFoldersTab(activeTab) ? activeTab : null;
   const activeTagsTab = activeTab && isTagsTab(activeTab) ? activeTab : null;
@@ -808,9 +805,9 @@ export default function Dashboard() {
   }, [activeFoldersTab]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent">
+    <div className="min-h-screen flex flex-col bg-transparent px-6 pt-6">
       {/* Sticky Header + Tabs */}
-      <div className="sticky top-0 z-30">
+      <div className="sticky top-6 z-30 overflow-hidden rounded-2xl border border-[color:var(--bookmark-card-border)] bg-[var(--bookmark-card-bg)] shadow-[var(--bookmark-card-shadow)] backdrop-blur-xl">
         {/* Header */}
         <DashboardHeader
           userEmail={user.email}
@@ -836,7 +833,7 @@ export default function Dashboard() {
         />
 
         {/* Tabs Bar */}
-        <div className="flex flex-col bg-background border-b border-border">
+        <div className="flex flex-col border-t border-[color:var(--bookmark-card-border)]">
           <div className="flex ps-6">
             {/* Tab 管理按鈕 */}
             <div className="flex items-center gap-1">
@@ -872,7 +869,7 @@ export default function Dashboard() {
       </div>
       {/* Main Content */}
       <main className="flex-1 relative bg-transparent">
-        <div className="p-6">
+        <div className="py-6">
           {tabsState.length === 0 ? (
             // 空狀態
             <div className="flex flex-col items-center justify-center h-full">
@@ -910,7 +907,13 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleBookmarkDragStart}
+                  onDragEnd={handleBookmarkDragEnd}
+                  onDragCancel={handleBookmarkDragCancel}
+                >
                   {/* Top-level Folders */}
                   <div className="grid grid-cols-1 gap-8 pb-16">
                     {activeFoldersTab.folders.map((folder: FolderWithChildren) => (
@@ -939,36 +942,22 @@ export default function Dashboard() {
                           setShowOrganizeSubFoldersSheet(true);
                         }}
                       >
-                        {/* Folder Bookmarks */}
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragStart={handleBookmarkDragStart}
-                          onDragEnd={getBookmarkDragEndHandler(folder.id)}
-                          onDragCancel={handleBookmarkDragCancel}
+                        <SortableContext
+                          items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
+                          strategy={verticalListSortingStrategy}
                         >
-                          <SortableContext
-                            items={folder.bookmarks?.map((b: Bookmark) => b.id) || []}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
-                              {folder.bookmarks?.map((bookmark: Bookmark) => (
-                                <SortableBookmark
-                                  key={bookmark.id}
-                                  bookmark={bookmark}
-                                  onEdit={handleEditBookmark}
-                                  onDelete={handleDeleteBookmark}
-                                  onMove={handleMoveBookmark}
-                                />
-                              ))}
-                            </div>
-                          </SortableContext>
-                          <DragOverlay>
-                            {activeDragBookmark ? (
-                              <BookmarkCard bookmark={activeDragBookmark} />
-                            ) : null}
-                          </DragOverlay>
-                        </DndContext>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ps-6 pr-0 -ml-6">
+                            {folder.bookmarks?.map((bookmark: Bookmark) => (
+                              <SortableBookmark
+                                key={bookmark.id}
+                                bookmark={bookmark}
+                                onEdit={handleEditBookmark}
+                                onDelete={handleDeleteBookmark}
+                                onMove={handleMoveBookmark}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
 
                         {/* Nested Folders (recursive) */}
                         {folder.children && folder.children.length > 0 && (
@@ -977,13 +966,6 @@ export default function Dashboard() {
                             <div className="mt-4 -mr-4">
                               <NestedFolders
                                 folders={folder.children}
-                                parentId={folder.id}
-                                sensors={sensors}
-                                activeDragBookmark={activeDragBookmark}
-                                handleNestedFolderDragEnd={handleNestedFolderDragEnd}
-                                handleBookmarkDragStart={handleBookmarkDragStart}
-                                getBookmarkDragEndHandler={getBookmarkDragEndHandler}
-                                handleBookmarkDragCancel={handleBookmarkDragCancel}
                                 handleEditBookmark={handleEditBookmark}
                                 handleDeleteBookmark={handleDeleteBookmark}
                                 handleMoveBookmark={handleMoveBookmark}
@@ -999,7 +981,12 @@ export default function Dashboard() {
                       </SortableFolder>
                     ))}
                   </div>
-                </div>
+                  <DragOverlay>
+                    {activeDragBookmark ? (
+                      <BookmarkCard bookmark={activeDragBookmark} />
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               )}
             </div>
           ) : activeTab && activeTagsTab ? (
@@ -1114,6 +1101,7 @@ export default function Dashboard() {
               ? (activeTagsTab.bookmarks.find((b) => b.id === editingBookmark.id) as BookmarkWithTags | undefined)?.tags.map((t) => t.id)
               : undefined
           }
+          onDelete={() => handleDeleteBookmark(editingBookmark.id)}
         />
       )}
       <DeleteConfirmDialog

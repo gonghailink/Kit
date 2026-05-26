@@ -1,4 +1,5 @@
 import { Plus, DotsThreeVertical, PencilSimple, Trash, ArrowBendDownRight, ArrowsDownUp, ArrowBendDownRightIcon, PlusIcon, DotsThreeVerticalIcon, ArrowsDownUpIcon, TrashIcon } from "@phosphor-icons/react";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
 import type { FolderWithChildren } from "~/lib/types";
 import {
     DropdownMenu,
@@ -13,6 +14,8 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger,
 } from "~/components/ui/context-menu";
+
+export const FOLDER_DROPPABLE_PREFIX = "folder-droppable-";
 
 interface SortableFolderProps {
     folder: FolderWithChildren;
@@ -36,10 +39,27 @@ export function SortableFolder({
     children,
 }: SortableFolderProps) {
     const hasSubfolders = folder.children && folder.children.length > 0;
+    const { setNodeRef } = useDroppable({
+        id: `${FOLDER_DROPPABLE_PREFIX}${folder.id}`,
+        data: { type: "folder", folderId: folder.id },
+    });
+    // closestCenter 在拖到資料夾內書籤上時不會讓 folder 自己 isOver。
+    // 改用 DndContext 的 over 狀態，自行判斷「目前拖曳是否屬於這個資料夾」（含拖到內部書籤的情況），整張卡才會一致高亮。
+    const { active, over } = useDndContext();
+    const isOver = (() => {
+        if (!active || !over) return false;
+        const overData = over.data.current as { type?: string; folderId?: string } | undefined;
+        if (overData?.type === "folder" && overData.folderId === folder.id) return true;
+        if (folder.bookmarks?.some((b) => b.id === over.id)) return true;
+        return false;
+    })();
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
-                <div className="px-6 pt-4 pb-5 rounded-xl bg-transparent">
+                <div
+                    ref={setNodeRef}
+                    className={`px-6 pt-4 pb-5 rounded-xl bg-transparent transition-all ${isOver ? "ring-2 ring-primary/60 ring-offset-2 ring-offset-transparent bg-primary/5" : ""}`}
+                >
                     <div className="group flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <h2 className={`flex items-center gap-2 ${isNested ? 'text-md font-medium text-muted-foreground' : 'text-lg font-semibold text-foreground'}`}>

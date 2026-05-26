@@ -1,7 +1,6 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
-import { ThemeModeToggle } from "~/components/shared/ThemeModeToggle";
 import { Kbd, KbdGroup } from "~/components/ui/kbd";
 import type { TabData } from "~/lib/types";
 
@@ -43,7 +42,7 @@ export function ViewHeader({
 
     return (
         <>
-            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm shadow-lg px-0 pt-4 pb-0 space-y-2">
+            <div className="sticky top-6 z-30 overflow-hidden rounded-2xl border border-[color:var(--bookmark-card-border)] bg-[var(--bookmark-card-bg)] shadow-[var(--bookmark-card-shadow)] backdrop-blur-xl pt-4 pb-2 space-y-2">
                 <div className="flex items-center justify-between px-6">
                     <div className="flex items-center space-x-3">
                         <h1 className="text-xl font-semibold text-foreground/90">
@@ -71,8 +70,6 @@ export function ViewHeader({
                                 </KbdGroup>
                             </div>
                         </button>
-
-                        <ThemeModeToggle />
 
                         {extraBtn && (
                             extraBtn.isLink ? (

@@ -1,6 +1,5 @@
 import { Form } from "react-router";
 import { UserIcon, EyeIcon, ShareNetworkIcon, CaretDownIcon, PencilSimpleIcon, SignOutIcon } from "@phosphor-icons/react";
-import { ThemeModeToggle } from "~/components/shared/ThemeModeToggle";
 import { Button } from "~/components/ui/button";
 import {
     DropdownMenu,
@@ -23,7 +22,7 @@ export function DashboardHeader({
     workspaceSwitcher,
 }: DashboardHeaderProps) {
     return (
-        <header className="bg-background border-border px-6 pt-4 pb-2">
+        <header className="px-6 pt-4 pb-3">
             {/* First row: Logo, workspace switcher (desktop), and action buttons */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -54,7 +53,6 @@ export function DashboardHeader({
                         <ShareNetworkIcon className="w-4 h-4" />
                         <span className="hidden md:block text-xs">分享</span>
                     </Button>
-                    <ThemeModeToggle />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button onClick={onShare} variant="ghost" className="px-4 py-1 rounded-full bg-transparent shadow-none">

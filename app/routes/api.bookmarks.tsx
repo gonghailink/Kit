@@ -242,6 +242,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       case "move": {
         const id = formData.get("id") as string;
         const newFolderId = formData.get("newFolderId") as string;
+        const sortOrderStr = formData.get("sortOrder") as string | null;
 
         if (!id) {
           return data({ error: "Bookmark ID 是必要的" }, { status: 400 });
@@ -273,16 +274,24 @@ export async function action({ request, context }: ActionFunctionArgs) {
           return data({ error: "找不到該資料夾" }, { status: 404 });
         }
 
-        // 取得目標資料夾中最大的 sort_order
-        const maxSortOrderData = await db
-          .select({ sort_order: bookmarks.sort_order })
-          .from(bookmarks)
-          .where(eq(bookmarks.folder_id, newFolderId))
-          .orderBy(desc(bookmarks.sort_order))
-          .limit(1)
-          .get();
-
-        const newSortOrder = maxSortOrderData ? (maxSortOrderData.sort_order || 0) + 1 : 0;
+        // 計算 sort_order：若 client 指定（拖曳放到特定位置）就用 client 的；否則接在最後
+        let newSortOrder: number;
+        if (sortOrderStr !== null && sortOrderStr !== "") {
+          const parsed = Number(sortOrderStr);
+          if (!Number.isFinite(parsed)) {
+            return data({ error: "sortOrder 格式不正確" }, { status: 400 });
+          }
+          newSortOrder = parsed;
+        } else {
+          const maxSortOrderData = await db
+            .select({ sort_order: bookmarks.sort_order })
+            .from(bookmarks)
+            .where(eq(bookmarks.folder_id, newFolderId))
+            .orderBy(desc(bookmarks.sort_order))
+            .limit(1)
+            .get();
+          newSortOrder = maxSortOrderData ? (maxSortOrderData.sort_order || 0) + 1 : 0;
+        }
 
         // 更新書籤的 folder_id 和 sort_order
         const updatedBookmark = await db

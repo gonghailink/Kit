@@ -20,6 +20,7 @@ interface EditBookmarkDialogProps {
   bookmark: Bookmark;
   tagGroups?: TagGroupWithTags[];
   bookmarkTagIds?: string[];
+  onDelete?: () => void;
 }
 
 type FetcherData =
@@ -32,6 +33,7 @@ export default function EditBookmarkDialog({
   bookmark,
   tagGroups,
   bookmarkTagIds,
+  onDelete,
 }: EditBookmarkDialogProps) {
   const fetcher = useFetcher<FetcherData>();
   const tagsFetcher = useFetcher();
@@ -215,7 +217,20 @@ export default function EditBookmarkDialog({
             )}
           </div>
 
-          <DialogFooter className="flex pt-4">
+          <DialogFooter className="flex items-center pt-4">
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenChange(false);
+                  onDelete();
+                }}
+                disabled={isSubmitting}
+                className="sm:mr-auto text-sm font-medium text-destructive hover:underline underline-offset-4 disabled:opacity-50"
+              >
+                刪除書籤
+              </button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -226,7 +241,7 @@ export default function EditBookmarkDialog({
               取消
             </Button>
             <Button type="submit" disabled={isSubmitting || !title.trim() || !url.trim()}
-              className="flex-1"
+              className="min-w-24"
             >
               {isSubmitting ? (
                 <>

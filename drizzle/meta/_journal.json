@@ -85,6 +85,13 @@
       "when": 1775752459811,
       "tag": "0011_polite_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1779723374501,
+      "tag": "0012_workspace_theme_settings",
+      "breakpoints": true
     }
   ]
 }
