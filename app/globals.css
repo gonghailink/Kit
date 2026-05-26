@@ -106,6 +106,36 @@
 
 }
 
+/* 圖片背景的分層渲染：::before 放圖片並套 blur，::after 放遮罩色。
+   這樣 blur 只會作用在背景圖，不會糊到上層內容。 */
+.theme-bg-layer {
+  position: relative;
+  isolation: isolate;
+}
+.theme-bg-layer::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: var(--theme-bg-image, none);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  filter: blur(var(--theme-bg-blur, 0px));
+  /* 放大一點避免 blur 把邊緣糊出空白 */
+  transform: scale(1.05);
+  pointer-events: none;
+}
+.theme-bg-layer::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--theme-bg-overlay, transparent);
+  pointer-events: none;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

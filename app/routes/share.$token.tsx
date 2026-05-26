@@ -60,6 +60,9 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
         theme_background_gradient_from: workspacesSchema.theme_background_gradient_from,
         theme_background_gradient_to: workspacesSchema.theme_background_gradient_to,
         theme_background_image_url: workspacesSchema.theme_background_image_url,
+        theme_background_image_overlay_color: workspacesSchema.theme_background_image_overlay_color,
+        theme_background_image_overlay_opacity: workspacesSchema.theme_background_image_overlay_opacity,
+        theme_background_image_blur: workspacesSchema.theme_background_image_blur,
       })
       .from(workspacesSchema)
       .where(eq(workspacesSchema.id, share.workspace_id))

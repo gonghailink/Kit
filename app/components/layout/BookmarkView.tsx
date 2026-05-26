@@ -7,7 +7,7 @@ import { ViewHeader } from "~/components/layout/ViewHeader";
 import { BookmarkItem } from "~/components/bookmarks/BookmarkItem";
 import { TagFilterBar } from "~/components/tags/TagFilterBar";
 import { SearchDialog } from "~/components/shared/SearchDialog";
-import { generateThemeStyle, type ThemeWorkspace } from "~/lib/theme";
+import { generateThemeStyle, THEME_BG_LAYER_CLASS, type ThemeWorkspace } from "~/lib/theme";
 import type { TabWithFolders, FolderWithChildren, TabData, TabWithTags, BookmarkWithTags, TagGroupWithTags, Tag } from "~/lib/types";
 
 interface BookmarkViewProps {
@@ -190,7 +190,7 @@ export function BookmarkView({
   }, [tagGroupOrderMap, groupTagIds]);
 
   return (
-    <div style={themeStyle} className="min-h-screen flex flex-col bg-background px-6 pt-6">
+    <div style={themeStyle} className={`min-h-screen flex flex-col bg-background px-6 pt-6 ${THEME_BG_LAYER_CLASS}`}>
       {/* Header */}
       <ViewHeader
         title={title}

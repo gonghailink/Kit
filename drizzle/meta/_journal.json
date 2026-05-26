@@ -92,6 +92,13 @@
       "when": 1779723374501,
       "tag": "0012_workspace_theme_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1779755427388,
+      "tag": "0013_workspace_image_effects",
+      "breakpoints": true
     }
   ]
 }

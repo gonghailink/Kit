@@ -11,6 +11,7 @@ type ActionData =
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const TEXT_COLOR_VALUES = ["black", "white"] as const;
+const OVERLAY_COLOR_VALUES = ["black", "white"] as const;
 const BACKGROUND_TYPES = ["solid", "gradient", "image"] as const;
 const HEX_THEME_FIELDS = [
   "theme_primary",
@@ -29,6 +30,19 @@ function isTextColor(value: string): value is typeof TEXT_COLOR_VALUES[number] {
 
 function isBackgroundType(value: string): value is typeof BACKGROUND_TYPES[number] {
   return (BACKGROUND_TYPES as readonly string[]).includes(value);
+}
+
+function isOverlayColor(value: string): value is typeof OVERLAY_COLOR_VALUES[number] {
+  return (OVERLAY_COLOR_VALUES as readonly string[]).includes(value);
+}
+
+// 0–100 範圍的滑桿值。空字串視為清除（null）。
+function parseSliderValue(value: string | null): { ok: true; value: number | null } | { ok: false } {
+  if (value === null) return { ok: true, value: null }; // 未提供，不更新
+  if (value === "") return { ok: true, value: null }; // 清除
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0 || num > 100) return { ok: false };
+  return { ok: true, value: num };
 }
 
 // GET - 獲取用戶的所有工作區
@@ -120,8 +134,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
           "theme_background_gradient_from",
           "theme_background_gradient_to",
           "theme_background_image_url",
+          "theme_background_image_overlay_color",
         ] as const;
-        const themeUpdate: Record<string, string | null> = {};
+        const themeUpdate: Record<string, string | number | null> = {};
         for (const field of themeFields) {
           const value = formData.get(field) as string | null;
           if (value !== null) {
@@ -130,30 +145,51 @@ export async function action({ request, context }: ActionFunctionArgs) {
         }
 
         // 驗證 theme_font 值
-        if (themeUpdate.theme_font && !["serif", "sans", "mono"].includes(themeUpdate.theme_font)) {
+        if (themeUpdate.theme_font && !["serif", "sans", "mono"].includes(themeUpdate.theme_font as string)) {
           return data({ error: "無效的字體設定" }, { status: 400 });
         }
 
-        if (themeUpdate.theme_text_color && !isTextColor(themeUpdate.theme_text_color)) {
+        if (themeUpdate.theme_text_color && !isTextColor(themeUpdate.theme_text_color as string)) {
           return data({ error: "無效的文字色彩設定" }, { status: 400 });
         }
 
-        if (themeUpdate.theme_background_type && !isBackgroundType(themeUpdate.theme_background_type)) {
+        if (themeUpdate.theme_background_type && !isBackgroundType(themeUpdate.theme_background_type as string)) {
           return data({ error: "無效的背景設定" }, { status: 400 });
+        }
+
+        if (themeUpdate.theme_background_image_overlay_color && !isOverlayColor(themeUpdate.theme_background_image_overlay_color as string)) {
+          return data({ error: "無效的遮罩色彩設定" }, { status: 400 });
         }
 
         for (const field of HEX_THEME_FIELDS) {
           const value = themeUpdate[field];
-          if (value && !HEX_COLOR_RE.test(value)) {
+          if (value && !HEX_COLOR_RE.test(value as string)) {
             return data({ error: "無效的色碼設定" }, { status: 400 });
           }
         }
 
         if (
           themeUpdate.theme_background_image_url &&
-          !isValidBackgroundImageUrl(themeUpdate.theme_background_image_url)
+          !isValidBackgroundImageUrl(themeUpdate.theme_background_image_url as string)
         ) {
           return data({ error: "背景圖片網址必須是 http(s) 或站內路徑" }, { status: 400 });
+        }
+
+        // 滑桿類欄位：0–100 數值或 null（清除）
+        const overlayOpacityResult = parseSliderValue(formData.get("theme_background_image_overlay_opacity") as string | null);
+        if (!overlayOpacityResult.ok) {
+          return data({ error: "遮罩濃度必須是 0–100" }, { status: 400 });
+        }
+        if (formData.get("theme_background_image_overlay_opacity") !== null) {
+          themeUpdate.theme_background_image_overlay_opacity = overlayOpacityResult.value;
+        }
+
+        const blurResult = parseSliderValue(formData.get("theme_background_image_blur") as string | null);
+        if (!blurResult.ok) {
+          return data({ error: "背景模糊必須是 0–100" }, { status: 400 });
+        }
+        if (formData.get("theme_background_image_blur") !== null) {
+          themeUpdate.theme_background_image_blur = blurResult.value;
         }
 
         const updatedWorkspace = await db

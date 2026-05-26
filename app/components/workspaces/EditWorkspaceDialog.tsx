@@ -21,6 +21,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Slider } from "~/components/ui/slider";
 import type { Workspace } from "~/lib/types";
 
 interface EditWorkspaceDialogProps {
@@ -35,6 +36,7 @@ type FetcherData =
 
 type TextColor = "black" | "white";
 type BackgroundType = "solid" | "gradient" | "image";
+type OverlayColor = "none" | "white" | "black";
 
 interface ThemeFormState {
   theme_primary: string;
@@ -44,6 +46,9 @@ interface ThemeFormState {
   theme_background_gradient_from: string;
   theme_background_gradient_to: string;
   theme_background_image_url: string;
+  theme_background_image_overlay_color: OverlayColor;
+  theme_background_image_overlay_opacity: number;
+  theme_background_image_blur: number;
 }
 
 const DEFAULT_THEME: ThemeFormState = {
@@ -54,7 +59,16 @@ const DEFAULT_THEME: ThemeFormState = {
   theme_background_gradient_from: "#f8fafc",
   theme_background_gradient_to: "#dbeafe",
   theme_background_image_url: "",
+  theme_background_image_overlay_color: "none",
+  theme_background_image_overlay_opacity: 0,
+  theme_background_image_blur: 0,
 };
+
+const OVERLAY_OPTIONS: Array<{ value: OverlayColor; label: string }> = [
+  { value: "none", label: "無" },
+  { value: "white", label: "白" },
+  { value: "black", label: "黑" },
+];
 
 const HEX_COLOR_RE = /^#?([0-9a-fA-F]{6})$/;
 
@@ -161,6 +175,19 @@ export default function EditWorkspaceDialog({
         theme_background_gradient_from: normalizeHexColor(workspace.theme_background_gradient_from, DEFAULT_THEME.theme_background_gradient_from),
         theme_background_gradient_to: normalizeHexColor(workspace.theme_background_gradient_to, DEFAULT_THEME.theme_background_gradient_to),
         theme_background_image_url: normalizeImageUrl(workspace.theme_background_image_url),
+        theme_background_image_overlay_color:
+          workspace.theme_background_image_overlay_color === "white" ||
+          workspace.theme_background_image_overlay_color === "black"
+            ? workspace.theme_background_image_overlay_color
+            : "none",
+        theme_background_image_overlay_opacity:
+          typeof workspace.theme_background_image_overlay_opacity === "number"
+            ? Math.min(100, Math.max(0, workspace.theme_background_image_overlay_opacity))
+            : 0,
+        theme_background_image_blur:
+          typeof workspace.theme_background_image_blur === "number"
+            ? Math.min(100, Math.max(0, workspace.theme_background_image_blur))
+            : 0,
       });
       setFont(workspace.theme_font || "sans");
     }
@@ -192,6 +219,7 @@ export default function EditWorkspaceDialog({
         : theme.theme_background_type === "gradient" ||
         theme.theme_background_color !== DEFAULT_THEME.theme_background_color;
 
+    const isImage = hasCustomBackground && theme.theme_background_type === "image";
     fetcher.submit(
       {
         intent: "update",
@@ -203,7 +231,20 @@ export default function EditWorkspaceDialog({
         theme_background_color: hasCustomBackground && theme.theme_background_type === "solid" ? theme.theme_background_color : "",
         theme_background_gradient_from: hasCustomBackground && theme.theme_background_type === "gradient" ? theme.theme_background_gradient_from : "",
         theme_background_gradient_to: hasCustomBackground && theme.theme_background_type === "gradient" ? theme.theme_background_gradient_to : "",
-        theme_background_image_url: hasCustomBackground && theme.theme_background_type === "image" ? backgroundImageUrl : "",
+        theme_background_image_url: isImage ? backgroundImageUrl : "",
+        // 圖片相關進階設定：非圖片模式或預設值時清空，讓 DB 存 null（重新進編輯時退回自動行為）。
+        theme_background_image_overlay_color:
+          isImage && theme.theme_background_image_overlay_color !== "none"
+            ? theme.theme_background_image_overlay_color
+            : "",
+        theme_background_image_overlay_opacity:
+          isImage && theme.theme_background_image_overlay_color !== "none"
+            ? String(theme.theme_background_image_overlay_opacity)
+            : "",
+        theme_background_image_blur:
+          isImage && theme.theme_background_image_blur > 0
+            ? String(theme.theme_background_image_blur)
+            : "",
         theme_font: font === "sans" ? "" : font,
       },
       {
@@ -360,7 +401,7 @@ export default function EditWorkspaceDialog({
               )}
 
               {theme.theme_background_type === "image" && (
-                <div className="grid gap-3">
+                <div className="grid gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="theme-background-image-url" className="text-sm">
                       圖片網址
@@ -380,6 +421,56 @@ export default function EditWorkspaceDialog({
                       style={{ backgroundImage: `url("${backgroundImagePreview.replace(/"/g, "%22")}")` }}
                     />
                   )}
+
+                  <div className="grid gap-3 border-t border-border/60 pt-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <Label className="text-sm">遮罩顏色</Label>
+                      <div className="flex gap-1 rounded-full border border-border bg-secondary p-0.5">
+                        {OVERLAY_OPTIONS.map((option) => {
+                          const isActive = theme.theme_background_image_overlay_color === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => updateTheme("theme_background_image_overlay_color", option.value)}
+                              disabled={isSubmitting}
+                              className={`min-w-10 rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                                isActive
+                                  ? "bg-background text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="theme-background-image-overlay-opacity" className="text-sm">
+                        遮罩濃度
+                      </Label>
+                      <Slider
+                        id="theme-background-image-overlay-opacity"
+                        value={theme.theme_background_image_overlay_opacity}
+                        onChange={(v) => updateTheme("theme_background_image_overlay_opacity", v)}
+                        disabled={isSubmitting || theme.theme_background_image_overlay_color === "none"}
+                      />
+                    </div>
+
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="theme-background-image-blur" className="text-sm">
+                        背景模糊
+                      </Label>
+                      <Slider
+                        id="theme-background-image-blur"
+                        value={theme.theme_background_image_blur}
+                        onChange={(v) => updateTheme("theme_background_image_blur", v)}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </section>

@@ -11,6 +11,9 @@ export interface Workspace {
   theme_background_gradient_from: string | null;
   theme_background_gradient_to: string | null;
   theme_background_image_url: string | null;
+  theme_background_image_overlay_color: string | null;
+  theme_background_image_overlay_opacity: number | null;
+  theme_background_image_blur: number | null;
   created_at: string;
 }
 

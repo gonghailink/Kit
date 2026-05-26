@@ -82,7 +82,17 @@ export interface ThemeWorkspace {
   theme_background_gradient_from?: string | null;
   theme_background_gradient_to?: string | null;
   theme_background_image_url?: string | null;
+  theme_background_image_overlay_color?: string | null;
+  theme_background_image_overlay_opacity?: number | null;
+  theme_background_image_blur?: number | null;
 }
+
+// CSS class to attach to the themed root container; the ::before / ::after
+// pseudo-elements in globals.css render the blurred image and overlay layers.
+export const THEME_BG_LAYER_CLASS = "theme-bg-layer";
+
+// 0–100 滑桿值映射成 0–40px CSS blur
+const MAX_BLUR_PX = 40;
 
 function isHexColor(value: string | null | undefined): value is string {
   return !!value && HEX_COLOR_RE.test(value);
@@ -162,13 +172,35 @@ export function generateThemeStyle(workspace: ThemeWorkspace | null | undefined)
 
   if (workspace.theme_background_type === "image" && workspace.theme_background_image_url) {
     const fallback = wantsWhiteText ? "#111827" : "#ffffff";
-    const overlay = wantsWhiteText
-      ? "linear-gradient(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.28))"
-      : "linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18))";
-
     vars["--background"] = hexToHsl(fallback);
     style.backgroundColor = fallback;
-    style.backgroundImage = `${overlay}, url("${escapeCssUrl(workspace.theme_background_image_url)}")`;
+    // 圖片本身放到 ::before 偽元素以便對它套 filter: blur()，避免糊到上面的內容。
+    vars["--theme-bg-image"] = `url("${escapeCssUrl(workspace.theme_background_image_url)}")`;
+
+    // 模糊：0–100 滑桿 → 0–40px。null 視為 0。
+    const blurRaw = workspace.theme_background_image_blur;
+    const blurValue = typeof blurRaw === "number" && Number.isFinite(blurRaw)
+      ? Math.min(100, Math.max(0, blurRaw))
+      : 0;
+    vars["--theme-bg-blur"] = `${(blurValue / 100) * MAX_BLUR_PX}px`;
+
+    // 遮罩：使用者未指定（null）→ 退回舊的自動行為（白字配黑遮罩 0.28、黑字配白遮罩 0.18）。
+    const overlayColor = workspace.theme_background_image_overlay_color;
+    const overlayOpacityRaw = workspace.theme_background_image_overlay_opacity;
+    let overlayRgba: string;
+    if (overlayColor === "white" || overlayColor === "black") {
+      const opacity = typeof overlayOpacityRaw === "number" && Number.isFinite(overlayOpacityRaw)
+        ? Math.min(100, Math.max(0, overlayOpacityRaw)) / 100
+        : 0;
+      overlayRgba = overlayColor === "white"
+        ? `rgba(255, 255, 255, ${opacity})`
+        : `rgba(0, 0, 0, ${opacity})`;
+    } else {
+      overlayRgba = wantsWhiteText
+        ? "rgba(0, 0, 0, 0.28)"
+        : "rgba(255, 255, 255, 0.18)";
+    }
+    vars["--theme-bg-overlay"] = overlayRgba;
   }
 
   for (const [key, value] of Object.entries(vars)) {

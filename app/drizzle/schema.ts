@@ -23,6 +23,9 @@ export const workspaces = sqliteTable("workspaces", {
     theme_background_gradient_from: text("theme_background_gradient_from"),
     theme_background_gradient_to: text("theme_background_gradient_to"),
     theme_background_image_url: text("theme_background_image_url"),
+    theme_background_image_overlay_color: text("theme_background_image_overlay_color"),
+    theme_background_image_overlay_opacity: real("theme_background_image_overlay_opacity"),
+    theme_background_image_blur: real("theme_background_image_blur"),
     created_at: text("created_at").default(sql`(CURRENT_TIMESTAMP)`).notNull(),
 });
 
